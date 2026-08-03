@@ -17,7 +17,7 @@ export async function issueAppToken(_previous: Result, data: FormData): Promise<
   const user = await currentUser();
   if (!user) return { error: "Musisz się zalogować." };
 
-  const device = String(data.get("device") ?? "").trim() || "Tablet";
+  const device = String(data.get("device") ?? "").trim() || "Urządzenie";
   const { token } = await issueToken(user.id, device);
 
   revalidatePath("/account");
@@ -53,7 +53,7 @@ export async function revokeAllDevices(_previous: Result, _data: FormData): Prom
     ? {
         success: `Unieważniono ${removed.count} ${
           removed.count === 1 ? "token" : removed.count < 5 ? "tokeny" : "tokenów"
-        }. Zaloguj tablety od nowa.`,
+        }. Zaloguj urządzenia od nowa.`,
       }
     : { error: "Nie ma żadnych tokenów do unieważnienia." };
 }
@@ -99,7 +99,7 @@ export async function changePassword(_previous: Result, data: FormData): Promise
   return {
     success: user.passwordHash
       ? "Hasło zmienione."
-      : "Hasło ustawione. Możesz się teraz logować adresem i hasłem, także w aplikacji na tablecie.",
+      : "Hasło ustawione. Możesz się teraz logować adresem i hasłem, także w aplikacji mobilnej.",
   };
 }
 

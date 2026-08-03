@@ -14,11 +14,11 @@ export default async function HomePage() {
         style={{ paddingBlock: 34, paddingInlineEnd: 30, marginBottom: 24 }}
       >
         <p className="eyebrow">Notatnik</p>
-        <h1 style={{ marginBottom: 12 }}>Zeszyt, który masz przy sobie i na komputerze</h1>
+        <h1 style={{ marginBottom: 12 }}>Jeden Kajet — telefon, tablet i komputer</h1>
         <p className="lead" style={{ maxWidth: 560 }}>
-          Kajet to notatnik na tablet z rysikiem: pismo odręczne, notatki tekstowe, mapy myśli
-          i kod. Piszesz na tablecie, a notatki trafiają tutaj i możesz je otworzyć na komputerze.
-          Kiedy nie ma internetu, wszystko zapisuje się na tablecie i dogrywa samo, gdy sieć wróci.
+          Kajet to notatnik z pismem odręcznym, tekstem, mapami myśli i kodem. Panel na stronie
+          to pełny klient: te same notatki, kosz, udostępnianie i uruchamianie programów — gdy
+          serwer na to pozwala. Aplikacja mobilna i WWW dzielą jedno konto.
         </p>
 
         <div className="row" style={{ marginTop: 22 }}>
@@ -48,18 +48,18 @@ export default async function HomePage() {
       >
         <Tile
           eyebrow="Bez konta"
-          heading="Sam tablet"
-          body="Aplikacja działa bez logowania. Notatki leżą wtedy wyłącznie na tablecie, w katalogu, który sam wskazujesz."
+          heading="Tylko urządzenie"
+          body="Aplikacja działa bez logowania. Notatki leżą wtedy wyłącznie lokalnie, w katalogu, który sam wskazujesz."
         />
         <Tile
           eyebrow="Z kontem"
-          heading="Notatki w chmurze"
-          body="Po zalogowaniu notatki i rysunki idą na serwer. Otworzysz je na komputerze i odzyskasz po zmianie tabletu."
+          heading="Wszędzie to samo"
+          body="Po zalogowaniu notatki idą na serwer. Otworzysz je w panelu WWW i w aplikacji — i odzyskasz po zmianie telefonu czy tabletu."
         />
         <Tile
           eyebrow="Razem"
-          heading="Udostępnianie"
-          body="Notatkę da się udostępnić odnośnikiem albo na adres e-mail, do czytania albo do wspólnego pisania."
+          heading="Udostępnianie i kod"
+          body="Notatkę dasz odnośnikiem albo na e-mail. Pliki z kodem uruchomisz na serwerze z panelu albo z aplikacji."
         />
       </div>
 

@@ -69,7 +69,7 @@ export default async function SharedNotePage({
 
       <hr className="divider" />
       <p className="small">
-        To jest notatka z Kajetu, notatnika na tablet z rysikiem.{" "}
+        To jest notatka z Kajetu.{" "}
         <Link href="/">Zobacz, o co chodzi</Link>
       </p>
     </main>

@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Kajet",
   description:
-    "Notatnik na tablet i na komputer. Pismo odręczne, notatki tekstowe, mapy myśli i kod, wszystko w jednym miejscu.",
+    "Notatnik na komputer i urządzenia mobilne. Pismo odręczne, notatki tekstowe, mapy myśli i kod — w jednym miejscu.",
   applicationName: "Kajet",
 };
 

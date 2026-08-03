@@ -46,7 +46,8 @@ export default async function SignInPage({
         <p className="eyebrow">Wejście</p>
         <h1 style={{ marginBottom: 8 }}>Zaloguj się</h1>
         <p className="lead">
-          Po zalogowaniu zobaczysz notatki z tabletu i będziesz mógł je tutaj poprawiać.
+          Po zalogowaniu zobaczysz swoje notatki i będziesz mógł je tu przeglądać oraz
+          poprawiać.
         </p>
 
         {message ? <p className="error">{message}</p> : null}
@@ -96,7 +97,7 @@ export default async function SignInPage({
               </button>
             </form>
             <p className="small" style={{ marginTop: 10 }}>
-              Google działa tylko w przeglądarce. W aplikacji na tablecie używasz hasła albo
+              Google działa tylko w przeglądarce. W aplikacji mobilnej używasz hasła albo
               logowania przez token ze strony konta.
             </p>
           </>

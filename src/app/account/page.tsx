@@ -137,12 +137,12 @@ export default async function AccountPage() {
         style={{ paddingBlock: 24, paddingInlineEnd: 26, marginBottom: 20 }}
       >
         <p className="eyebrow">Tokeny urządzeń</p>
-        <h2 style={{ marginBottom: 8 }}>Logowanie przez token (tablet)</h2>
+        <h2 style={{ marginBottom: 8 }}>Logowanie przez token</h2>
         <p className="lead">
-          Zwykle w aplikacji wystarczy adres e-mail i hasło. Token przydaje się, gdy konto
-          założyłeś przez Google i nie masz jeszcze hasła, albo gdy wolisz nie wpisywać hasła
-          na cudzym tablecie. To nie jest logowanie Google w aplikacji — wklejasz token ze
-          strony.
+          Zwykle w aplikacji mobilnej wystarczy adres e-mail i hasło. Token przydaje się, gdy
+          konto założyłeś przez Google i nie masz jeszcze hasła, albo gdy wolisz nie wpisywać
+          hasła na cudzym urządzeniu. To nie jest logowanie Google w aplikacji — wklejasz token
+          ze strony konta.
         </p>
         <p className="small" style={{ marginBottom: 16 }}>
           Adres serwera w aplikacji: <span className="mono">{settings.baseUrl}</span>
@@ -151,7 +151,7 @@ export default async function AccountPage() {
         <ActionForm action={issueAppToken} label="Wydaj token" busyLabel="Wydaję...">
           <div className="field">
             <label htmlFor="device">Nazwa urządzenia</label>
-            <input id="device" name="device" type="text" placeholder="np. Yoga Tab" />
+            <input id="device" name="device" type="text" placeholder="np. telefon, tablet, laptop" />
           </div>
         </ActionForm>
 
@@ -203,7 +203,7 @@ export default async function AccountPage() {
                 label="Unieważnij wszystkie tokeny"
                 compact
                 danger
-                confirmation="Unieważnić wszystkie tokeny? Każdy tablet będzie musiał zalogować się od nowa."
+                confirmation="Unieważnić wszystkie tokeny? Każde urządzenie będzie musiało zalogować się od nowa."
               />
             </div>
           </>
@@ -229,7 +229,7 @@ export default async function AccountPage() {
         <p className="lead">
           {user.passwordHash
             ? "Zmiana hasła nie wylogowuje urządzeń. Jeśli ktoś obcy dostał się do konta, unieważnij jego token wyżej."
-            : "To konto nie ma jeszcze hasła (zakładane przez Google). Ustaw hasło, jeśli chcesz logować się w aplikacji adresem i hasłem zamiast tokenem."}
+            : "To konto nie ma jeszcze hasła (zakładane przez Google). Ustaw hasło, jeśli chcesz logować się w aplikacji mobilnej adresem i hasłem zamiast tokenem."}
         </p>
         <ActionForm
           action={changePassword}
@@ -269,7 +269,7 @@ export default async function AccountPage() {
       <section className="sheet" style={{ padding: "22px 24px" }}>
         <p className="eyebrow">Sesja w przeglądarce</p>
         <p className="lead" style={{ marginBottom: 12 }}>
-          Wylogowanie zamyka sesję na tej stronie. Tokeny tabletu zostają ważne, dopóki ich
+          Wylogowanie zamyka sesję w przeglądarce. Tokeny urządzeń zostają ważne, dopóki ich
           nie unieważnisz wyżej.
         </p>
         <form action={logOut}>

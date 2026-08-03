@@ -20,7 +20,8 @@ export default async function NewTextNotePage() {
           <p className="eyebrow">Nowa notatka</p>
           <h1 style={{ marginBottom: 4 }}>Notatka tekstowa</h1>
           <p className="small" style={{ margin: 0 }}>
-            Po zapisaniu pojawi się też na tablecie przy następnej synchronizacji.
+            Po zapisaniu notatka będzie dostępna na wszystkich urządzeniach przy następnej
+            synchronizacji.
           </p>
         </div>
         <Link className="button compact" href="/library">

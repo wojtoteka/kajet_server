@@ -55,6 +55,25 @@ token?: string;
     return <TextNote document={document} noteId={noteId} token={token} />;
   }
 
+  if (document.code?.source != null || document.code?.language) {
+    return (
+      <pre
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 13,
+          background: "var(--desk)",
+          padding: "14px 16px",
+          borderRadius: "var(--radius)",
+          borderLeft: "2px solid var(--rule)",
+          overflowX: "auto",
+          whiteSpace: "pre-wrap",
+        }}
+      >
+        {document.code.source ?? ""}
+      </pre>
+    );
+  }
+
   return <p className="lead">Ta notatka jest pusta.</p>;
 }
 

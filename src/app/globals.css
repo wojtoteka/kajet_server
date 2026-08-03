@@ -390,6 +390,21 @@ code,
   word-break: break-all;
 }
 
+/* --- Library two-column layout --- */
+
+.library-layout {
+  display: grid;
+  grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 800px) {
+  .library-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* People who ask for reduced motion get no transitions at all. */
 @media (prefers-reduced-motion: reduce) {
   *,

@@ -47,7 +47,7 @@ export const POST = wrapApi(async (request: Request) => {
 
   const { token, id } = await issueToken(
     user.id,
-    device ?? request.headers.get("x-kajet-device") ?? "Tablet",
+    device ?? request.headers.get("x-kajet-device") ?? "Urządzenie",
   );
 
   await prisma.user.update({
