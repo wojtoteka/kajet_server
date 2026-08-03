@@ -97,6 +97,10 @@ export type NoteDocument = {
     viewY?: number;
     zoom?: number;
   } | null;
+  code?: {
+    language?: string;
+    source?: string;
+  } | null;
 };
 
 export function readDocument(content: string): NoteDocument | null {

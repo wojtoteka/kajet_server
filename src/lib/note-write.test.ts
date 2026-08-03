@@ -3,6 +3,7 @@ import {
   planNoteUpsert,
   outgoingNoteSchema,
   upsertNoteForUser,
+  setNoteDeletedForUser,
   type OutgoingNote,
 } from "./note-write";
 
@@ -12,6 +13,8 @@ vi.mock("@/lib/prisma", () => ({
       findUnique: vi.fn(),
       findUniqueOrThrow: vi.fn(),
       upsert: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
     },
   },
 }));
@@ -70,9 +73,17 @@ describe("planNoteUpsert", () => {
     expect(plan).toEqual({ action: "write", addedBytes: Buffer.byteLength("abc", "utf8") });
   });
 
-  it("returns unchanged when hash matches", () => {
+  it("returns unchanged when hash matches and meta is the same", () => {
     const plan = planNoteUpsert(
-      { id: "note-1", ownerId: owner, version: 3, sizeBytes: 10, hash: "hash:abc" },
+      {
+        id: "note-1",
+        ownerId: owner,
+        version: 3,
+        sizeBytes: 10,
+        hash: "hash:abc",
+        deletedAt: null,
+        favorite: false,
+      },
       note({ content: "abc", baseVersion: 3 }),
       "hash:abc",
       owner,
@@ -80,9 +91,53 @@ describe("planNoteUpsert", () => {
     expect(plan).toEqual({ action: "unchanged", version: 3 });
   });
 
+  it("writes when content hash matches but soft-delete changes", () => {
+    const plan = planNoteUpsert(
+      {
+        id: "note-1",
+        ownerId: owner,
+        version: 3,
+        sizeBytes: 10,
+        hash: "hash:abc",
+        deletedAt: null,
+        favorite: false,
+      },
+      note({ content: "abc", baseVersion: 3, deleted: true }),
+      "hash:abc",
+      owner,
+    );
+    expect(plan.action).toBe("write");
+  });
+
+  it("writes when favorite flips without content change", () => {
+    const plan = planNoteUpsert(
+      {
+        id: "note-1",
+        ownerId: owner,
+        version: 3,
+        sizeBytes: 10,
+        hash: "hash:abc",
+        deletedAt: null,
+        favorite: false,
+      },
+      note({ content: "abc", baseVersion: 3, favorite: true }),
+      "hash:abc",
+      owner,
+    );
+    expect(plan.action).toBe("write");
+  });
+
   it("returns conflict when baseVersion mismatches server version", () => {
     const plan = planNoteUpsert(
-      { id: "note-1", ownerId: owner, version: 5, sizeBytes: 10, hash: "hash:old" },
+      {
+        id: "note-1",
+        ownerId: owner,
+        version: 5,
+        sizeBytes: 10,
+        hash: "hash:old",
+        deletedAt: null,
+        favorite: false,
+      },
       note({ content: "new", baseVersion: 4 }),
       "hash:new",
       owner,
@@ -92,7 +147,15 @@ describe("planNoteUpsert", () => {
 
   it("allows first sync overwrite when baseVersion is 0", () => {
     const plan = planNoteUpsert(
-      { id: "note-1", ownerId: owner, version: 5, sizeBytes: 10, hash: "hash:old" },
+      {
+        id: "note-1",
+        ownerId: owner,
+        version: 5,
+        sizeBytes: 10,
+        hash: "hash:old",
+        deletedAt: null,
+        favorite: false,
+      },
       note({ content: "new", baseVersion: 0 }),
       "hash:new",
       owner,
@@ -102,7 +165,15 @@ describe("planNoteUpsert", () => {
 
   it("forbids writing someone else's note", () => {
     const plan = planNoteUpsert(
-      { id: "note-1", ownerId: "other", version: 1, sizeBytes: 1, hash: "h" },
+      {
+        id: "note-1",
+        ownerId: "other",
+        version: 1,
+        sizeBytes: 1,
+        hash: "h",
+        deletedAt: null,
+        favorite: false,
+      },
       note({ content: "x", baseVersion: 1 }),
       "hash:x",
       owner,
@@ -124,6 +195,8 @@ describe("upsertNoteForUser", () => {
       version: 2,
       sizeBytes: 4,
       hash: "hash:old",
+      deletedAt: null,
+      favorite: false,
     } as never);
     const updatedAt = new Date("2026-08-03T12:00:00.000Z");
     vi.mocked(prisma.note.findUniqueOrThrow).mockResolvedValue({
@@ -166,6 +239,8 @@ describe("upsertNoteForUser", () => {
       version: 2,
       sizeBytes: 3,
       hash: "hash:old",
+      deletedAt: null,
+      favorite: false,
     } as never);
     const updatedAt = new Date("2026-08-03T13:00:00.000Z");
     vi.mocked(prisma.note.upsert).mockResolvedValue({
@@ -214,6 +289,33 @@ describe("upsertNoteForUser", () => {
     expect(prisma.note.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         create: expect.objectContaining({ version: 1 }),
+      }),
+    );
+  });
+});
+
+describe("setNoteDeletedForUser", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("soft-deletes and bumps version", async () => {
+    vi.mocked(prisma.note.findUnique).mockResolvedValue({
+      id: "note-1",
+      ownerId: owner,
+      deletedAt: null,
+      version: 2,
+    } as never);
+    vi.mocked(prisma.note.update).mockResolvedValue({ version: 3 } as never);
+
+    const result = await setNoteDeletedForUser(owner, "note-1", true);
+    expect(result).toEqual({ status: "ok", version: 3 });
+    expect(prisma.note.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          deletedAt: expect.any(Date),
+          version: { increment: 1 },
+        }),
       }),
     );
   });
