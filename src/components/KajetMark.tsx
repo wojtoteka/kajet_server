@@ -3,19 +3,20 @@ export function KajetMark({ caption }: { caption?: string }) {
     <div
       style={{
         display: "flex",
-        alignItems: "baseline",
+        alignItems: "center",
         gap: 14,
         padding: "0 0 26px 0",
       }}
     >
-      <span
-        aria-hidden="true"
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/logo.svg"
+        alt=""
+        width={40}
+        height={40}
         style={{
-          display: "inline-block",
-          width: 2,
-          height: 34,
-          background: "var(--accent)",
-          transform: "translateY(6px)",
+          display: "block",
+          flexShrink: 0,
         }}
       />
       <span
@@ -24,6 +25,7 @@ export function KajetMark({ caption }: { caption?: string }) {
           fontSize: 26,
           fontWeight: 600,
           letterSpacing: "-0.01em",
+          lineHeight: 1.1,
         }}
       >
         Kajet

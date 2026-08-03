@@ -31,6 +31,9 @@ const PEN_COLORS = [
 ];
 
 const SIZES = [1.2, 2.4, 4, 8, 14];
+const PAGE_GROW_MARGIN = 96;
+const PAGE_GROW_STEP = 240;
+const MIN_PAGE_HEIGHT = 842;
 
 export function HandwritingEditor({
   action,
@@ -66,7 +69,7 @@ export function HandwritingEditor({
 
   const page = pages[pageIndex] ?? pages[0];
   const width = page?.width ?? 595;
-  const height = page?.height ?? 842;
+  const height = Math.max(MIN_PAGE_HEIGHT, page?.height ?? MIN_PAGE_HEIGHT);
 
   const payload = useMemo(
     () =>
@@ -90,14 +93,23 @@ export function HandwritingEditor({
       const local = point.matrixTransform(matrix.inverse());
       return {
         x: Math.max(0, Math.min(width, local.x)),
-        y: Math.max(0, Math.min(height, local.y)),
+        y: Math.max(0, local.y),
       };
     },
-    [width, height],
+    [width],
   );
 
   function patchPage(index: number, transform: (current: Page) => Page) {
     setPages((list) => list.map((entry, i) => (i === index ? transform(entry) : entry)));
+  }
+
+  function ensurePageHeight(y: number) {
+    patchPage(pageIndex, (current) => {
+      const h = Math.max(MIN_PAGE_HEIGHT, current.height ?? MIN_PAGE_HEIGHT);
+      if (y < h - PAGE_GROW_MARGIN) return current;
+      const needed = Math.ceil((y + PAGE_GROW_MARGIN - h) / PAGE_GROW_STEP) * PAGE_GROW_STEP;
+      return { ...current, height: h + Math.max(PAGE_GROW_STEP, needed) };
+    });
   }
 
   function applyEraser(x: number, y: number) {
@@ -128,6 +140,7 @@ export function HandwritingEditor({
     event.preventDefault();
     (event.currentTarget as Element).setPointerCapture?.(event.pointerId);
     const { x, y } = clientToPage(event.clientX, event.clientY);
+    ensurePageHeight(y);
 
     if (tool === "eraser") {
       erasing.current = true;
@@ -152,6 +165,7 @@ export function HandwritingEditor({
 
   function onPointerMove(event: React.PointerEvent) {
     const { x, y } = clientToPage(event.clientX, event.clientY);
+    ensurePageHeight(y);
 
     if (tool === "eraser" && erasing.current) {
       applyEraser(x, y);
@@ -202,7 +216,7 @@ export function HandwritingEditor({
             ? crypto.randomUUID()
             : `page-${Date.now()}`,
         width: 595,
-        height: 842,
+        height: MIN_PAGE_HEIGHT,
         strokes: [],
         texts: [],
         images: [],
@@ -262,28 +276,27 @@ export function HandwritingEditor({
           </button>
         ))}
         <span className="toolbar-sep" />
-        {PEN_COLORS.map((entry) => (
-          <button
-            key={entry.label}
-            type="button"
-            className="compact"
-            title={entry.label}
-            onClick={() => {
-              setColor(entry.color);
-              if (entry.label === "Zakreślacz") setTool("highlighter");
-              else if (tool === "eraser") setTool("pen");
-            }}
-            style={{
-              minWidth: 28,
-              paddingInline: 8,
-              background: cssColor(entry.color),
-              color: "transparent",
-              borderColor: "var(--rule)",
-            }}
-          >
-            ·
-          </button>
-        ))}
+        {PEN_COLORS.map((entry) => {
+          const active = color === entry.color;
+          return (
+            <button
+              key={entry.label}
+              type="button"
+              className={`ink-swatch${active ? " active" : ""}`}
+              title={entry.label}
+              aria-label={entry.label}
+              aria-pressed={active}
+              onClick={() => {
+                setColor(entry.color);
+                if (entry.label === "Zakreślacz") setTool("highlighter");
+                else if (tool === "eraser") setTool("pen");
+              }}
+              style={{
+                background: cssColor(entry.color),
+              }}
+            />
+          );
+        })}
         <span className="toolbar-sep" />
         {SIZES.map((value) => (
           <button
@@ -321,7 +334,7 @@ export function HandwritingEditor({
       <div className="row-spread" style={{ marginTop: 10, marginBottom: 8 }}>
         <p className="small" style={{ margin: 0 }}>
           Strona {pageIndex + 1} z {pages.length} ·{" "}
-          {(page?.strokes ?? []).length} kresek · format jak w aplikacji (6 wartości na punkt)
+          {(page?.strokes ?? []).length} kresek · strona rośnie, gdy piszesz w dół
         </p>
         <div className="row">
           <button
@@ -344,7 +357,7 @@ export function HandwritingEditor({
       </div>
 
       <div
-        className="sheet"
+        className="sheet handwriting-stage"
         style={{
           marginBottom: 16,
           overflow: "auto",
@@ -362,6 +375,7 @@ export function HandwritingEditor({
             width: "100%",
             maxWidth: 720,
             height: "auto",
+            minHeight: Math.round((720 / width) * height),
             display: "block",
             margin: "0 auto",
             background: "var(--sheet)",

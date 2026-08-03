@@ -31,8 +31,8 @@ Fallback: wklejenie tokenu ze `/account` albo `POST /api/v1/signin` (email+hasł
 | TEXT — usuwanie | Tak | Do kosza | **Done** |
 | CODE — podgląd / edycja | Pliki lokalne + runner | Notatki `CODE` na serwerze, edycja | **Done** |
 | CODE — uruchamianie | `/api/v1/code` | Ten sam runner (sesja WWW) | **Done** (wymaga `CODE_ENABLED` + Docker) |
-| MINDMAP | Edycja | Tworzenie + edycja SVG (węzły, krawędzie, przeciąganie, kolory/kształt), zapis `upsertNoteForUser` | **Done** |
-| HANDWRITTEN | Edycja rysikiem | Canvas WWW: pióro / cienkopis / zakreślacz / gumka (cięcie kresek), kolor, grubość, strony, tła; zapis kresek w formacie FORMAT | **Done** (MVP przeglądarkowy; bez pełnego silnika atramentu / lasso / linijki) |
+| MINDMAP | Edycja | Tworzenie + edycja SVG (węzły, krawędzie, przeciąganie, kolory/kształt), Ctrl+przeciągnięcie = pan, kółko = zoom, zapis `upsertNoteForUser` | **Done** |
+| HANDWRITTEN | Edycja rysikiem | Canvas WWW: pióro / cienkopis / zakreślacz / gumka, kolor (wyraźny aktywny swatch), grubość, strony rosnące w dół, tła; zapis kresek w formacie FORMAT | **Done** (MVP przeglądarkowy; bez pełnego silnika atramentu / lasso / linijki) |
 | Załączniki | Sync API | Upload / podgląd / usuwanie na WWW | **Done** |
 | Sync / wersje / konflikty | Sync | Zapis TEXT/CODE/MINDMAP/HANDWRITTEN przez te same reguły wersji | **Done** |
 | Konto — wylogowanie | Tak | Sesja przeglądarki | **Done** |

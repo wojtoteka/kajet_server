@@ -6,6 +6,10 @@ export const metadata: Metadata = {
   description:
     "Notatnik na komputer i urządzenia mobilne. Pismo odręczne, notatki tekstowe, mapy myśli i kod — w jednym miejscu.",
   applicationName: "Kajet",
+  icons: {
+    icon: "/logo.svg",
+    apple: "/logo.svg",
+  },
 };
 
 export const viewport: Viewport = {

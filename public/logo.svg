@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96" role="img" aria-label="Kajet">
+  <title>Kajet</title>
+  <!-- Znak Kajetu: kartka ze scietym rogiem, linia marginesu
+       i jedna kreska o zmiennej grubosci, taka jak spod rysika.
+       Przy 24 px kontur kartki znika, a zostaje margines i kreska. -->
+  <g fill="none" stroke="#0F6B5C" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M16 10 H66 L80 24 V86 H16 Z" />
+    <path d="M36 10 V86" />
+  </g>
+  <path d="M22 62 C34 56, 44 44, 74 38"
+        fill="none" stroke="#0F6B5C" stroke-linecap="round"
+        stroke-width="6">
+    <animate attributeName="stroke-width" values="6;6" dur="0s" />
+  </path>
+</svg>

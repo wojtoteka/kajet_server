@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { humanSize, quotaState } from "@/lib/quota";
-import { settings } from "@/lib/settings";
 import { KajetMark } from "@/components/KajetMark";
 import { ActionForm } from "@/components/ActionForm";
 import {
@@ -138,14 +137,11 @@ export default async function AccountPage() {
       >
         <p className="eyebrow">Tokeny urządzeń</p>
         <h2 style={{ marginBottom: 8 }}>Logowanie przez token</h2>
-        <p className="lead">
+        <p className="lead" style={{ marginBottom: 16 }}>
           Zwykle w aplikacji mobilnej wystarczy adres e-mail i hasło. Token przydaje się, gdy
           konto założyłeś przez Google i nie masz jeszcze hasła, albo gdy wolisz nie wpisywać
           hasła na cudzym urządzeniu. To nie jest logowanie Google w aplikacji — wklejasz token
           ze strony konta.
-        </p>
-        <p className="small" style={{ marginBottom: 16 }}>
-          Adres serwera w aplikacji: <span className="mono">{settings.baseUrl}</span>
         </p>
 
         <ActionForm action={issueAppToken} label="Wydaj token" busyLabel="Wydaję...">

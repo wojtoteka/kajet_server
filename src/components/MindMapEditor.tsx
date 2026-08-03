@@ -13,6 +13,10 @@ type Action = (previous: ActionResult, data: FormData) => Promise<ActionResult>;
 
 const GAP_X = 48;
 const GAP_Y = 24;
+const VIEWPORT_W = 960;
+const VIEWPORT_H = 540;
+const MIN_ZOOM = 0.25;
+const MAX_ZOOM = 3;
 const COLORS: { id: string; label: string; custom: number }[] = [
   { id: "grafit", label: "Grafit", custom: 0 },
   { id: "morski", label: "Morski", custom: -15261604 }, // #0f6b5c-ish
@@ -43,30 +47,32 @@ export function MindMapEditor({
   );
   const [mode, setMode] = useState<"move" | "connect">("move");
   const [connectFrom, setConnectFrom] = useState<string | null>(null);
+  const [viewX, setViewX] = useState(initial.viewX);
+  const [viewY, setViewY] = useState(initial.viewY);
+  const [zoom, setZoom] = useState(
+    Number.isFinite(initial.zoom) && initial.zoom > 0 ? initial.zoom : 1,
+  );
+
   const drag = useRef<{ id: string; ox: number; oy: number } | null>(null);
+  const pan = useRef<{ sx: number; sy: number; vx: number; vy: number } | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
 
   const payload = useMemo(
-    () => JSON.stringify({ nodes, edges, viewX: initial.viewX, viewY: initial.viewY, zoom: initial.zoom }),
-    [nodes, edges, initial.viewX, initial.viewY, initial.zoom],
+    () => JSON.stringify({ nodes, edges, viewX, viewY, zoom }),
+    [nodes, edges, viewX, viewY, zoom],
   );
 
   const selected = nodes.find((node) => node.id === selectedId) ?? null;
 
-  const viewBox = useMemo(() => {
-    if (nodes.length === 0) return { left: 0, top: 0, width: 800, height: 500 };
-    const slack = 80;
-    const left = Math.min(...nodes.map((n) => n.x)) - slack;
-    const top = Math.min(...nodes.map((n) => n.y)) - slack;
-    const right = Math.max(...nodes.map((n) => n.x + (n.width ?? 160))) + slack;
-    const bottom = Math.max(...nodes.map((n) => n.y + (n.height ?? 64))) + slack;
-    return {
-      left,
-      top,
-      width: Math.max(640, right - left),
-      height: Math.max(420, bottom - top),
-    };
-  }, [nodes]);
+  const worldView = useMemo(
+    () => ({
+      left: viewX,
+      top: viewY,
+      width: VIEWPORT_W / zoom,
+      height: VIEWPORT_H / zoom,
+    }),
+    [viewX, viewY, zoom],
+  );
 
   const clientToSvg = useCallback((clientX: number, clientY: number) => {
     const svg = svgRef.current;
@@ -116,8 +122,24 @@ export function MindMapEditor({
     setSelectedId(null);
   }
 
+  function beginPan(event: React.PointerEvent) {
+    pan.current = {
+      sx: event.clientX,
+      sy: event.clientY,
+      vx: viewX,
+      vy: viewY,
+    };
+    (event.currentTarget as Element).setPointerCapture?.(event.pointerId);
+  }
+
   function onNodePointerDown(event: React.PointerEvent, id: string) {
     event.stopPropagation();
+
+    if (event.ctrlKey || event.metaKey || event.button === 1) {
+      beginPan(event);
+      return;
+    }
+
     setSelectedId(id);
 
     if (mode === "connect") {
@@ -147,7 +169,30 @@ export function MindMapEditor({
     (event.target as Element).setPointerCapture?.(event.pointerId);
   }
 
+  function onBackgroundPointerDown(event: React.PointerEvent) {
+    if (event.button !== 0 && event.button !== 1) return;
+    if (event.ctrlKey || event.metaKey || event.button === 1) {
+      event.preventDefault();
+      beginPan(event);
+      return;
+    }
+    setSelectedId(null);
+    setConnectFrom(null);
+  }
+
   function onPointerMove(event: React.PointerEvent) {
+    if (pan.current) {
+      const svg = svgRef.current;
+      if (!svg) return;
+      const rect = svg.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
+      const scaleX = worldView.width / rect.width;
+      const scaleY = worldView.height / rect.height;
+      setViewX(pan.current.vx - (event.clientX - pan.current.sx) * scaleX);
+      setViewY(pan.current.vy - (event.clientY - pan.current.sy) * scaleY);
+      return;
+    }
+
     if (!drag.current) return;
     const point = clientToSvg(event.clientX, event.clientY);
     const { id, ox, oy } = drag.current;
@@ -156,9 +201,32 @@ export function MindMapEditor({
 
   function onPointerUp() {
     drag.current = null;
+    pan.current = null;
+  }
+
+  function onWheel(event: React.WheelEvent) {
+    event.preventDefault();
+    const svg = svgRef.current;
+    if (!svg) return;
+    const rect = svg.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+
+    const factor = event.deltaY > 0 ? 0.9 : 1.1;
+    const nextZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom * factor));
+    if (nextZoom === zoom) return;
+
+    const relX = (event.clientX - rect.left) / rect.width;
+    const relY = (event.clientY - rect.top) / rect.height;
+    const worldX = viewX + relX * (VIEWPORT_W / zoom);
+    const worldY = viewY + relY * (VIEWPORT_H / zoom);
+
+    setZoom(nextZoom);
+    setViewX(worldX - relX * (VIEWPORT_W / nextZoom));
+    setViewY(worldY - relY * (VIEWPORT_H / nextZoom));
   }
 
   const byId = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes]);
+  const canvasCursor = mode === "connect" ? "crosshair" : "default";
 
   return (
     <form action={submit} className="sheet" style={{ padding: "22px 24px" }}>
@@ -184,7 +252,11 @@ export function MindMapEditor({
       </div>
 
       <div className="editor-toolbar" role="toolbar" aria-label="Mapa myśli">
-        <button type="button" className="compact" onClick={() => addNodeAt(viewBox.left + 40, viewBox.top + 40)}>
+        <button
+          type="button"
+          className="compact"
+          onClick={() => addNodeAt(viewX + 40, viewY + 40)}
+        >
           + Węzeł
         </button>
         <button type="button" className="compact" disabled={!selected} onClick={addChild}>
@@ -257,7 +329,7 @@ export function MindMapEditor({
         </div>
       ) : (
         <p className="small" style={{ marginTop: 8 }}>
-          Przeciągaj węzły myszą. Tryb „Połącz” łączy dwa kliknięte węzły (from → to).
+          Przeciągaj węzły myszą. Ctrl + przeciągnięcie przesuwa płótno, kółko myszy przybliża.
         </p>
       )}
 
@@ -266,25 +338,41 @@ export function MindMapEditor({
         style={{
           marginTop: 12,
           marginBottom: 16,
-          overflow: "auto",
+          overflow: "hidden",
           background: "var(--desk)",
           touchAction: "none",
         }}
+        onWheel={onWheel}
       >
         <svg
           ref={svgRef}
-          viewBox={`${viewBox.left} ${viewBox.top} ${viewBox.width} ${viewBox.height}`}
+          viewBox={`${worldView.left} ${worldView.top} ${worldView.width} ${worldView.height}`}
           role="img"
           aria-label="Edytor mapy myśli"
-          style={{ width: "100%", minHeight: 420, display: "block", cursor: mode === "connect" ? "crosshair" : "default" }}
+          style={{
+            width: "100%",
+            minHeight: 420,
+            display: "block",
+            cursor: canvasCursor,
+          }}
+          onPointerDown={onBackgroundPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerLeave={onPointerUp}
           onDoubleClick={(event) => {
+            if (event.ctrlKey || event.metaKey) return;
             const point = clientToSvg(event.clientX, event.clientY);
             addNodeAt(point.x - 80, point.y - 32);
           }}
         >
+          <rect
+            x={worldView.left}
+            y={worldView.top}
+            width={worldView.width}
+            height={worldView.height}
+            fill="transparent"
+          />
+
           {edges.map((edge) => {
             const from = byId.get(edge.fromId);
             const to = byId.get(edge.toId);
@@ -396,8 +484,8 @@ export function MindMapEditor({
       </div>
 
       <p className="small" style={{ marginTop: -8, marginBottom: 14 }}>
-        {nodes.length} węzłów · {edges.length} połączeń · podwójne kliknięcie w tło dodaje węzeł ·
-        klik w linię usuwa połączenie
+        {nodes.length} węzłów · {edges.length} połączeń · Ctrl+przeciągnięcie = przesuwanie ·
+        kółko = zoom · podwójne kliknięcie dodaje węzeł
       </p>
 
       <button type="submit" className="primary" disabled={busy}>

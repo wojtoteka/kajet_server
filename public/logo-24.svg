@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Kajet">
+  <title>Kajet</title>
+  <!-- Wersja na male rozmiary. Kontur kartki znika, zostaje margines
+       i przechodzaca przez niego kreska. Czytelne przy 24 px. -->
+  <g fill="none" stroke="#0F6B5C" stroke-width="2.2" stroke-linecap="round">
+    <path d="M9 2.5 V21.5" />
+    <path d="M5 15.5 C9 13, 13 10, 19 9" />
+  </g>
+</svg>

@@ -155,8 +155,8 @@ export default async function LibraryPage({
       </div>
 
       <section className="sheet" style={{ padding: "16px 18px", marginBottom: 16 }}>
-        <form method="get" className="row" style={{ flexWrap: "wrap", gap: 10, alignItems: "end" }}>
-          <div className="field" style={{ margin: 0, flex: "1 1 200px" }}>
+        <form method="get" className="library-filters">
+          <div className="field field-search">
             <label htmlFor="q">Szukaj</label>
             <input
               id="q"
@@ -166,7 +166,7 @@ export default async function LibraryPage({
               placeholder="Tytuł lub tag…"
             />
           </div>
-          <div className="field" style={{ margin: 0, minWidth: 160 }}>
+          <div className="field field-folder">
             <label htmlFor="folder">Folder</label>
             <select id="folder" name="folder" defaultValue={folderFilter}>
               <option value="">Wszystkie</option>
@@ -178,7 +178,7 @@ export default async function LibraryPage({
               ))}
             </select>
           </div>
-          <div className="field" style={{ margin: 0, minWidth: 140 }}>
+          <div className="field field-kind">
             <label htmlFor="kind">Rodzaj</label>
             <select id="kind" name="kind" defaultValue={kindFilter}>
               <option value="">Wszystkie</option>
@@ -188,32 +188,26 @@ export default async function LibraryPage({
               <option value="MINDMAP">Mapy myśli</option>
             </select>
           </div>
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              marginBottom: 10,
-              fontSize: 14,
-            }}
-          >
+          <label className="filter-check" htmlFor="favorites">
             <input
+              id="favorites"
               type="checkbox"
               name="favorites"
               value="1"
               defaultChecked={favoritesOnly}
-              style={{ width: "auto" }}
             />
             Tylko ulubione
           </label>
-          <button type="submit" className="compact">
-            Filtruj
-          </button>
-          {query || folderFilter || favoritesOnly || kindFilter ? (
-            <Link className="button compact" href="/library">
-              Wyczyść
-            </Link>
-          ) : null}
+          <div className="filter-actions">
+            <button type="submit" className="compact primary">
+              Filtruj
+            </button>
+            {query || folderFilter || favoritesOnly || kindFilter ? (
+              <Link className="button compact" href="/library">
+                Wyczyść
+              </Link>
+            ) : null}
+          </div>
         </form>
       </section>
 

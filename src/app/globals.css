@@ -233,6 +233,7 @@ input[type="text"],
 input[type="email"],
 input[type="password"],
 input[type="number"],
+input[type="search"],
 input[type="datetime-local"],
 select,
 textarea {
@@ -241,7 +242,7 @@ textarea {
   font-family: inherit;
   font-size: 15px;
   color: var(--text);
-  background: var(--sheet);
+  background: var(--desk);
   border: var(--hairline) solid var(--rule);
   border-radius: var(--radius);
 }
@@ -250,10 +251,98 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--accent);
+  outline: none;
+}
+
+input[type="search"] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 .field {
   margin-bottom: var(--space-4);
+}
+
+.field > label {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Library filter bar — one polished row that wraps cleanly on narrow screens */
+.library-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 14px;
+}
+
+.library-filters .field {
+  margin: 0;
+}
+
+.library-filters .field-search {
+  flex: 1 1 220px;
+  min-width: min(100%, 200px);
+}
+
+.library-filters .field-folder {
+  flex: 0 1 170px;
+  min-width: 140px;
+}
+
+.library-filters .field-kind {
+  flex: 0 1 150px;
+  min-width: 130px;
+}
+
+.library-filters .filter-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 2px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.library-filters .filter-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.library-filters .filter-actions button,
+.library-filters .filter-actions .button {
+  min-height: 44px;
+}
+
+@media (max-width: 720px) {
+  .library-filters .filter-actions {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .library-filters .filter-actions button,
+  .library-filters .filter-actions .button {
+    flex: 1 1 auto;
+  }
 }
 
 button,
@@ -326,6 +415,34 @@ button.compact,
   min-height: 22px;
   background: var(--rule);
   margin-inline: 4px;
+}
+
+.ink-swatch {
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
+  min-width: 30px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid var(--rule);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.ink-swatch:hover {
+  border-color: var(--text-muted);
+}
+
+.ink-swatch.active {
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
+  min-width: 34px;
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 2px var(--sheet),
+    0 0 0 4px var(--accent);
 }
 
 .editor-split {
