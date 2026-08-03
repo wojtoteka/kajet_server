@@ -1,16 +1,15 @@
-import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { error, userFromRequest, json, wrapApi } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
-import { reserveBytes, changeUsed } from "@/lib/quota";
-import { contentHash } from "@/lib/files";
+import {
+  SYNC_KINDS,
+  outgoingNoteSchema,
+  upsertNoteForUser,
+} from "@/lib/note-write";
 
 export { OPTIONS } from "@/lib/api";
 
 const PAGE_SIZE = 200;
-
-/** Kinds the tablet sync API understands. CODE notes stay on the web only. */
-const SYNC_KINDS = ["HANDWRITTEN", "TEXT", "MINDMAP"] as const;
 
 // --- Fetching changes ---
 //
@@ -94,22 +93,9 @@ export const GET = wrapApi(async (request: Request) => {
 
 // --- Sending a note ---
 
-const outgoingNote = z.object({
-  id: z.string().min(1).max(64),
-  title: z.string().max(300),
-  kind: z.enum(SYNC_KINDS),
-  favorite: z.boolean().optional(),
-  tags: z.array(z.string()).optional(),
-  folderId: z.string().nullable().optional(),
-  content: z.string(),
-  baseVersion: z.number().int().min(0),
-  deleted: z.boolean().optional(),
-});
-
 export const PUT = wrapApi(async (request: Request) => {
   const result = await userFromRequest(request);
   if ("errorResponse" in result) return result.errorResponse;
-  const user = result.user;
 
   let data: unknown;
   try {
@@ -118,99 +104,18 @@ export const PUT = wrapApi(async (request: Request) => {
     return error("bad-request", "Nie udało się odczytać zapytania.", 400);
   }
 
-  const parsed = outgoingNote.safeParse(data);
+  const parsed = outgoingNoteSchema.safeParse(data);
   if (!parsed.success) {
     return error("bad-request", "Notatka ma nieznany kształt. Zaktualizuj aplikację.", 400);
   }
 
-  const note = parsed.data;
-  const size = Buffer.byteLength(note.content, "utf8");
-  const hash = contentHash(note.content);
+  const outcome = await upsertNoteForUser(result.user.id, parsed.data);
 
-  const existing = await prisma.note.findUnique({
-    where: { id: note.id },
-    select: { id: true, ownerId: true, version: true, sizeBytes: true, hash: true },
-  });
-
-  if (existing && existing.ownerId !== user.id) {
-    return error("not-yours", "Ta notatka należy do kogoś innego.", 403);
+  if (outcome.status === "error") {
+    return error(outcome.code, outcome.message, outcome.httpStatus);
   }
 
-  // Nothing changed. We send back the current state and leave the database
-  // alone, so that re-syncing the same thing does not bump the version forever.
-  if (existing && existing.hash === hash) {
-    return json({ status: "unchanged", version: existing.version });
-  }
-
-  // Somebody changed this note after the tablet fetched its copy.
-  // HTTP 200 so the tablet reads the body (it treats non-2xx as hard errors).
-  if (existing && note.baseVersion > 0 && existing.version !== note.baseVersion) {
-    const full = await prisma.note.findUniqueOrThrow({
-      where: { id: note.id },
-      select: {
-        id: true,
-        title: true,
-        kind: true,
-        favorite: true,
-        tags: true,
-        content: true,
-        version: true,
-        updatedAt: true,
-      },
-    });
-    return json({
-      status: "conflict",
-      message:
-        "Ta notatka zmieniła się także gdzie indziej. Zapisz swoją wersję obok, żeby nic nie przepadło.",
-      onServer: {
-        ...full,
-        updatedAt: full.updatedAt.getTime(),
-      },
-    });
-  }
-
-  const added = size - (existing?.sizeBytes ?? 0);
-  const room = await reserveBytes(user.id, added);
-  if (!room.ok) return error("out-of-space", room.reason, 507);
-
-  try {
-    const saved = await prisma.note.upsert({
-      where: { id: note.id },
-      create: {
-        id: note.id,
-        ownerId: user.id,
-        folderId: note.folderId ?? null,
-        title: note.title,
-        kind: note.kind,
-        favorite: note.favorite ?? false,
-        tags: (note.tags ?? []).join("|"),
-        content: note.content,
-        sizeBytes: size,
-        hash,
-        version: 1,
-        deletedAt: note.deleted ? new Date() : null,
-      },
-      update: {
-        folderId: note.folderId ?? null,
-        title: note.title,
-        favorite: note.favorite ?? false,
-        tags: (note.tags ?? []).join("|"),
-        content: note.content,
-        sizeBytes: size,
-        hash,
-        version: { increment: 1 },
-        deletedAt: note.deleted ? new Date() : null,
-      },
-      select: { version: true, updatedAt: true },
-    });
-
-    return json({
-      status: existing ? "saved" : "created",
-      version: saved.version,
-      updatedAt: saved.updatedAt.getTime(),
-    });
-  } catch (problem) {
-    await changeUsed(user.id, -added);
-    throw problem;
-  }
+  // conflict / unchanged / saved / created — always HTTP 200 so the tablet
+  // can read the body (it treats non-2xx as hard errors before parsing JSON).
+  return json(outcome);
 });

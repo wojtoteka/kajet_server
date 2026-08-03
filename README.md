@@ -117,6 +117,15 @@ server {
 - Udostępnianie: odnośnikiem (działa bez konta) albo imiennie na adres e-mail,
   do czytania albo do poprawiania, z terminem ważności i cofaniem.
 
+## Format notatki
+
+Opis JSON-u notatki (`FORMAT.md`) należy do repozytorium aplikacji na tablet
+(`C:\Users\Wojte\AndroidStudioProjects\Notatnik\FORMAT.md`). To jest źródło
+prawdy; serwer nie trzyma już kopii w `apka/`. Do odczytu na stronie służy
+lustro typów w `src/lib/document.ts` (m.in. czcionki mapy myśli:
+`heading` | `body` | `mono`). Zapis z tabletu i przyszły zapis z WWW musi iść
+przez `src/lib/note-write.ts` (wersja, hash, konflikt, limit miejsca).
+
 ## Czego jeszcze nie ma
 
 - Edytora notatek w przeglądarce. Strona pokazuje notatkę, ale jej nie zmienia;
