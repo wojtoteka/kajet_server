@@ -30,10 +30,13 @@ export default async function SignInPage({
 }: {
   searchParams: Promise<{ error?: string; next?: string }>;
 }) {
-  const session = await auth();
-  if (session?.user?.id) redirect("/library");
-
   const params = await searchParams;
+  const session = await auth();
+  if (session?.user?.id) {
+    const next = params.next?.startsWith("/") ? params.next : "/library";
+    redirect(next);
+  }
+
   const message = params.error
     ? (MESSAGES[params.error] ?? MESSAGES.Default)
     : null;
@@ -97,8 +100,9 @@ export default async function SignInPage({
               </button>
             </form>
             <p className="small" style={{ marginTop: 10 }}>
-              Google działa tylko w przeglądarce. W aplikacji mobilnej używasz hasła albo
-              logowania przez token ze strony konta.
+              W aplikacji mobilnej Kajet możesz zalogować się przez Google przyciskiem
+              „Zaloguj przez Google” (otwiera tę stronę w przeglądarce w aplikacji),
+              hasłem albo tokenem ze strony konta.
             </p>
           </>
         ) : null}

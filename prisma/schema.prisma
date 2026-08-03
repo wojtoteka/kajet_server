@@ -57,6 +57,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   tokens        AppToken[]
+  loginChallenges LoginChallenge[]
   folders       Folder[]
   notes         Note[]
   issuedCodes   InviteCode[] @relation("IssuedCodes")
@@ -109,7 +110,7 @@ model VerificationToken {
   @@map("email_tokens")
 }
 
-/// Token for the tablet app. The app has no browser cookies, so every device
+/// Token for the mobile app. The app has no browser cookies, so every device
 /// gets its own token and sends it in the Authorization header. A token can be
 /// revoked separately for a single device.
 model AppToken {
@@ -128,6 +129,33 @@ model AppToken {
 
   @@index([userId])
   @@map("app_tokens")
+}
+
+enum LoginChallengeStatus {
+  PENDING
+  APPROVED
+  DENIED
+  REDEEMED
+}
+
+/// One-time login for the mobile app. The app opens /signin/device with the
+/// code; the user signs in (Google or password) in the browser and approves.
+/// The app then polls until the challenge is redeemed for an AppToken.
+model LoginChallenge {
+  id           String               @id @default(cuid())
+  /// Secret the app polls with. Stored hashed, same idea as AppToken.
+  codeHash     String               @unique
+  device       String
+  status       LoginChallengeStatus @default(PENDING)
+  userId       String?
+  approvedAt   DateTime?
+  expiresAt    DateTime
+  createdAt    DateTime             @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("login_challenges")
 }
 
 // --- Invite-only registration ---

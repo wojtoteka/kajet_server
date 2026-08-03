@@ -198,6 +198,8 @@ Wszystko pod `/api/v1`. Poza logowaniem każde zapytanie niesie nagłówek
 | Metoda i adres | Do czego |
 | --- | --- |
 | `POST /api/v1/signin` | Adres i hasło w zamian za token urządzenia |
+| `POST /api/v1/signin/device` | Start logowania z aplikacji (Google/hasło na WWW); zwraca `code` i `verificationUri` |
+| `GET /api/v1/signin/device?code=` | Poll: `pending` (202) albo gotowy token (jak signin) |
 | `GET /api/v1/account` | Kim jestem, ile mam miejsca |
 | `GET /api/v1/notes?since=<ms>&afterId=<id>` | Co się zmieniło od ostatniej synchronizacji |
 | `PUT /api/v1/notes` | Wysłanie notatki; przy rozbieżności odpowiada 200 ze `status: "conflict"` |
@@ -209,8 +211,10 @@ Wszystko pod `/api/v1`. Poza logowaniem każde zapytanie niesie nagłówek
 | `POST /api/v1/code` | Uruchomienie kodu (`language`, `code`, `input`; akceptuje też `stdin`) |
 
 Konto założone przez Google nie ma hasła, więc `POST /api/v1/signin` na nim
-nie zadziała. Taka osoba odbiera token na stronie `/account` i wpisuje go
-do aplikacji ręcznie.
+nie zadziała. Aplikacja loguje się wtedy przez `POST/GET /api/v1/signin/device`
+(otwiera `/signin/device` w przeglądarce w aplikacji — Google lub hasło —
+i odbiera token po zatwierdzeniu). Awaryjnie nadal działa wklejenie tokenu
+ze strony `/account`.
 
 Parametr `withContent=no` przy `GET /api/v1/notes` zwraca same nagłówki
 bez treści notatek. Przydaje się, gdy chcesz tylko sprawdzić, co się zmieniło,

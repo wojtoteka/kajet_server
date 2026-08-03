@@ -1,8 +1,20 @@
 # Panel WWW Kajet — plan i status
 
-Stan: **3 sierpnia 2026**. Panel ma być pełnoprawnym klientem Kajetu (nie „podglądem tabletu”).
+Stan: **3 sierpnia 2026**. Panel ma być pełnoprawnym klientem Kajetu (nie „podglądem urządzenia”).
 
 Wspólna ścieżka zapisu: `src/lib/note-write.ts` (`upsertNoteForUser`, `upsertCodeNoteForUser`, soft-delete / ulubione / purge). Sync aplikacji: `PUT/GET /api/v1/notes` (bez `CODE`).
+
+### Logowanie aplikacji (Google / hasło przez stronę)
+
+1. Aplikacja: `POST /api/v1/signin/device` → `{ code, verificationUri, expiresIn, interval }`.
+2. Otwiera `verificationUri` (Custom Tabs) → `/signin/device?code=…`.
+3. Użytkownik loguje się na WWW (Google albo hasło), zatwierdza urządzenie.
+4. Aplikacja polluje `GET /api/v1/signin/device?code=…` aż dostanie token (kształt jak `POST /api/v1/signin`).
+5. Po zatwierdzeniu strona może też otworzyć `kajet://auth?code=…` (powrót do aplikacji); token i tak wychodzi tylko z poll/redeem.
+
+Fallback: wklejenie tokenu ze `/account` albo `POST /api/v1/signin` (email+hasło).
+
+**Deploy:** po tym commicie `npm run db:push` (nowa tabela `login_challenges`), potem build/restart. `NEXT_PUBLIC_BASE_URL` / `AUTH_URL` muszą wskazywać publiczny HTTPS (np. `https://kajet.wojtoteka.ovh`), żeby `verificationUri` i Google callback były poprawne.
 
 ---
 
@@ -26,7 +38,8 @@ Wspólna ścieżka zapisu: `src/lib/note-write.ts` (`upsertNoteForUser`, `upsert
 | Konto — wylogowanie | Tak | Sesja przeglądarki | **Done** |
 | Konto — tokeny | Logowanie tokenem | Wydaj / unieważnij / unieważnij wszystkie | **Done** |
 | Konto — hasło | Tak | Ustaw / zmień | **Done** |
-| Google OAuth | Tylko w przeglądarce | Prawdziwy OAuth (nie w appce) | **Done** |
+| Google OAuth | Device login (Custom Tabs + poll) | Prawdziwy OAuth na WWW | **Done** |
+| Logowanie z aplikacji | Hasło / token / Google przez `/signin/device` | Zatwierdzenie challenge | **Done** |
 | Udostępnianie | Link / e-mail | Formularz + lista + cofanie | **Done** |
 
 ---
