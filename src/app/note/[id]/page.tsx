@@ -4,11 +4,13 @@ import { prisma } from "@/lib/prisma";
 import { humanSize } from "@/lib/quota";
 import { settings, mailWorks } from "@/lib/settings";
 import { shareUrl, ownerAccess } from "@/lib/sharing";
+import { textMarkdownFromContent } from "@/lib/text-note";
 import { KajetMark } from "@/components/KajetMark";
 import { NotePreview } from "@/components/NotePreview";
+import { TextNoteEditor } from "@/components/TextNoteEditor";
 import { ActionForm } from "@/components/ActionForm";
 import { CopyableLink } from "@/components/CopyableLink";
-import { revokeShare, share } from "./actions";
+import { revokeShare, share, saveTextNote } from "./actions";
 
 const KIND_NAMES: Record<string, string> = {
   HANDWRITTEN: "Notatka odręczna",
@@ -52,9 +54,39 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 24 }}>
-        <section>
-          <NotePreview content={note.content} noteId={note.id} />
-        </section>
+        {note.kind === "TEXT" ? (
+          <section>
+            <p className="eyebrow" style={{ marginBottom: 10 }}>
+              Edycja
+            </p>
+            <TextNoteEditor
+              action={saveTextNote}
+              noteId={note.id}
+              version={note.version}
+              title={note.title}
+              markdown={textMarkdownFromContent(note.content)}
+              submitLabel="Zapisz"
+            />
+            <details style={{ marginTop: 20 }}>
+              <summary className="small" style={{ cursor: "pointer" }}>
+                Podgląd sformatowany
+              </summary>
+              <div style={{ marginTop: 12 }}>
+                <NotePreview content={note.content} noteId={note.id} />
+              </div>
+            </details>
+          </section>
+        ) : (
+          <section>
+            {note.kind === "HANDWRITTEN" || note.kind === "MINDMAP" ? (
+              <p className="small" style={{ marginBottom: 12 }}>
+                Notatki odręczne i mapy myśli na stronie są tylko do odczytu. Poprawisz je na
+                tablecie.
+              </p>
+            ) : null}
+            <NotePreview content={note.content} noteId={note.id} />
+          </section>
+        )}
 
         <section className="sheet-ruled" style={{ paddingBlock: 24, paddingInlineEnd: 26 }}>
           <p className="eyebrow">Udostępnianie</p>

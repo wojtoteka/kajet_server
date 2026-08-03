@@ -6,7 +6,14 @@ import { humanSize, quotaState } from "@/lib/quota";
 import { settings } from "@/lib/settings";
 import { KajetMark } from "@/components/KajetMark";
 import { ActionForm } from "@/components/ActionForm";
-import { revokeDevice, issueAppToken, changePassword, changeOwnLogin } from "./actions";
+import {
+  revokeDevice,
+  revokeAllDevices,
+  issueAppToken,
+  changePassword,
+  changeOwnLogin,
+  logOut,
+} from "./actions";
 
 export const metadata = { title: "Moje konto — Kajet" };
 
@@ -14,13 +21,17 @@ export default async function AccountPage() {
   const user = await currentUser();
   if (!user) redirect("/signin?next=/account");
 
-  const [devices, storage, noteCount] = await Promise.all([
+  const [devices, storage, noteCount, googleLinked] = await Promise.all([
     prisma.appToken.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
     }),
     quotaState(user.id),
     prisma.note.count({ where: { ownerId: user.id, deletedAt: null } }),
+    prisma.account.findFirst({
+      where: { userId: user.id, provider: "google" },
+      select: { providerAccountId: true },
+    }),
   ]);
 
   const percent =
@@ -43,8 +54,64 @@ export default async function AccountPage() {
               Panel administratora
             </Link>
           ) : null}
+          <form action={logOut}>
+            <button type="submit" className="compact danger">
+              Wyloguj się
+            </button>
+          </form>
         </div>
       </div>
+
+      <section className="sheet" style={{ padding: "22px 24px", marginBottom: 20 }}>
+        <p className="eyebrow">Profil</p>
+        <h2 style={{ marginBottom: 8 }}>{user.login}</h2>
+        <dl
+          style={{
+            display: "grid",
+            gridTemplateColumns: "auto 1fr",
+            gap: "6px 16px",
+            margin: 0,
+          }}
+        >
+          <dt className="small" style={{ margin: 0 }}>
+            Adres e-mail
+          </dt>
+          <dd style={{ margin: 0 }}>{user.email}</dd>
+          <dt className="small" style={{ margin: 0 }}>
+            Rola
+          </dt>
+          <dd style={{ margin: 0 }}>{user.role === "ADMIN" ? "Administrator" : "Użytkownik"}</dd>
+          <dt className="small" style={{ margin: 0 }}>
+            Logowanie na stronie
+          </dt>
+          <dd style={{ margin: 0 }}>
+            {[
+              user.passwordHash ? "hasło" : null,
+              googleLinked ? "Google" : null,
+              !user.passwordHash && !googleLinked ? "sesja (bez hasła)" : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </dd>
+          <dt className="small" style={{ margin: 0 }}>
+            Ostatnie logowanie
+          </dt>
+          <dd style={{ margin: 0 }}>
+            {user.lastSignInAt
+              ? user.lastSignInAt.toLocaleString("pl-PL")
+              : "jeszcze nie zanotowane"}
+          </dd>
+          <dt className="small" style={{ margin: 0 }}>
+            Konto od
+          </dt>
+          <dd style={{ margin: 0 }}>{user.createdAt.toLocaleDateString("pl-PL")}</dd>
+        </dl>
+        <p className="small" style={{ marginTop: 14, marginBottom: 0 }}>
+          <Link href="/password">Nie pamiętam hasła</Link>
+          {" · "}
+          <Link href="/library">Lista notatek</Link>
+        </p>
+      </section>
 
       <section className="sheet" style={{ padding: "22px 24px", marginBottom: 20 }}>
         <p className="eyebrow">Miejsce</p>
@@ -69,15 +136,16 @@ export default async function AccountPage() {
         className="sheet-ruled"
         style={{ paddingBlock: 24, paddingInlineEnd: 26, marginBottom: 20 }}
       >
-        <p className="eyebrow">Urządzenia</p>
-        <h2 style={{ marginBottom: 8 }}>Aplikacja na tablecie</h2>
+        <p className="eyebrow">Tokeny urządzeń</p>
+        <h2 style={{ marginBottom: 8 }}>Logowanie przez token (tablet)</h2>
         <p className="lead">
-          Zwykle wystarczy zalogować się w aplikacji adresem i hasłem. Token przydaje się wtedy,
-          gdy konto założyłeś przez Google i nie masz hasła, albo gdy wolisz nie wpisywać hasła
-          na cudzym urządzeniu.
+          Zwykle w aplikacji wystarczy adres e-mail i hasło. Token przydaje się, gdy konto
+          założyłeś przez Google i nie masz jeszcze hasła, albo gdy wolisz nie wpisywać hasła
+          na cudzym tablecie. To nie jest logowanie Google w aplikacji — wklejasz token ze
+          strony.
         </p>
         <p className="small" style={{ marginBottom: 16 }}>
-          Adres serwera do wpisania w aplikacji: <span className="mono">{settings.baseUrl}</span>
+          Adres serwera w aplikacji: <span className="mono">{settings.baseUrl}</span>
         </p>
 
         <ActionForm action={issueAppToken} label="Wydaj token" busyLabel="Wydaję...">
@@ -96,7 +164,7 @@ export default async function AccountPage() {
                   <tr>
                     <th>Urządzenie</th>
                     <th style={{ width: 160 }}>Ostatnie użycie</th>
-                    <th />
+                    <th style={{ width: 140 }} />
                   </tr>
                 </thead>
                 <tbody>
@@ -105,21 +173,21 @@ export default async function AccountPage() {
                       <td>
                         <strong>{device.device}</strong>
                         <p className="small" style={{ margin: "2px 0 0 0" }}>
-                          podłączone {device.createdAt.toLocaleDateString("pl-PL")}
+                          wydany {device.createdAt.toLocaleDateString("pl-PL")}
                         </p>
                       </td>
                       <td className="small">
                         {device.lastUsedAt
                           ? device.lastUsedAt.toLocaleString("pl-PL")
-                          : "jeszcze nie użyte"}
+                          : "jeszcze nie użyty"}
                       </td>
                       <td>
                         <ActionForm
                           action={revokeDevice}
-                          label="Odłącz"
+                          label="Unieważnij"
                           compact
                           danger
-                          confirmation="Odłączyć to urządzenie? Aplikacja poprosi na nim o ponowne zalogowanie."
+                          confirmation="Unieważnić ten token? Aplikacja na tym urządzeniu poprosi o ponowne zalogowanie."
                         >
                           <input type="hidden" name="id" value={device.id} />
                         </ActionForm>
@@ -129,8 +197,21 @@ export default async function AccountPage() {
                 </tbody>
               </table>
             </div>
+            <div style={{ marginTop: 16 }}>
+              <ActionForm
+                action={revokeAllDevices}
+                label="Unieważnij wszystkie tokeny"
+                compact
+                danger
+                confirmation="Unieważnić wszystkie tokeny? Każdy tablet będzie musiał zalogować się od nowa."
+              />
+            </div>
           </>
-        ) : null}
+        ) : (
+          <p className="small" style={{ marginTop: 16 }}>
+            Nie ma jeszcze żadnego tokenu. Wydaj jeden, jeśli logujesz się w aplikacji bez hasła.
+          </p>
+        )}
       </section>
 
       <section className="sheet" style={{ padding: "22px 24px", marginBottom: 20 }}>
@@ -143,12 +224,12 @@ export default async function AccountPage() {
         </ActionForm>
       </section>
 
-      <section className="sheet" style={{ padding: "22px 24px" }}>
+      <section className="sheet" style={{ padding: "22px 24px", marginBottom: 20 }}>
         <p className="eyebrow">Hasło</p>
         <p className="lead">
           {user.passwordHash
-            ? "Zmiana hasła nie wylogowuje urządzeń. Jeśli ktoś obcy dostał się do konta, odłącz je ręcznie wyżej."
-            : "To konto nie ma jeszcze hasła, bo założyłeś je przez Google. Ustaw hasło, jeśli chcesz logować się także bez Google."}
+            ? "Zmiana hasła nie wylogowuje urządzeń. Jeśli ktoś obcy dostał się do konta, unieważnij jego token wyżej."
+            : "To konto nie ma jeszcze hasła (zakładane przez Google). Ustaw hasło, jeśli chcesz logować się w aplikacji adresem i hasłem zamiast tokenem."}
         </p>
         <ActionForm
           action={changePassword}
@@ -183,6 +264,19 @@ export default async function AccountPage() {
             />
           </div>
         </ActionForm>
+      </section>
+
+      <section className="sheet" style={{ padding: "22px 24px" }}>
+        <p className="eyebrow">Sesja w przeglądarce</p>
+        <p className="lead" style={{ marginBottom: 12 }}>
+          Wylogowanie zamyka sesję na tej stronie. Tokeny tabletu zostają ważne, dopóki ich
+          nie unieważnisz wyżej.
+        </p>
+        <form action={logOut}>
+          <button type="submit" className="danger">
+            Wyloguj się ze strony
+          </button>
+        </form>
       </section>
     </main>
   );

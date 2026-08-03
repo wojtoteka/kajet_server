@@ -468,10 +468,28 @@ Chmura jest kopią, nie właścicielem.
 Port zajęty przez coś innego. `sudo ss -tlnp | grep 9081` pokaże co.
 Zmień `PORT` w `.env` i w nginx.
 
-**Logowanie przez Google wraca na localhost**
-Brakuje nagłówków `X-Forwarded-*` w nginx albo `AUTH_URL` nie zgadza się
-z prawdziwym adresem. Sprawdź też, czy adres powrotu w konsoli Google
-to dokładnie `https://kajet.wojtoteka.ovh/api/auth/callback/google`.
+**Logowanie przez Google wraca na localhost albo w logach widać
+`[auth][details]: { "parameters": {}, "provider": "google" }`**
+
+To prawie zawsze konfiguracja na hoście, nie „zepsuty kod”:
+
+1. W `.env` muszą być (bez cudzysłowów albo w cudzysłowach — byle bez spacji):
+   - `AUTH_URL=https://kajet.wojtoteka.ovh` (ten sam host co w przeglądarce)
+   - `AUTH_TRUST_HOST=true`
+   - `AUTH_SECRET=...` (stały; zmiana wylogowuje wszystkich)
+   - `AUTH_GOOGLE_ID=...apps.googleusercontent.com`
+   - `AUTH_GOOGLE_SECRET=...`
+2. W Google Cloud Console → identyfikator klienta typu **aplikacja sieciowa**,
+   adres powrotu **dokładnie**:
+   `https://kajet.wojtoteka.ovh/api/auth/callback/google`
+3. W nginx muszą być nagłówki `Host`, `X-Forwarded-Proto`, `X-Forwarded-For`
+   (wzór wyżej) — bez nich Auth.js buduje callback na `http://localhost`.
+4. Po zmianie `.env` zrestartuj usługę Kajetu (`systemctl restart kajet`).
+   Przy `npm run build` na serwerze zmienne muszą już siedzieć w `.env`.
+
+Nowe konto przez Google wymaga wcześniej kodu zaproszenia na stronie
+`/register` (przycisk konta Google) — bez tego wrócisz na
+`/signin?error=code-required`.
 
 **`Can't reach database server at 127.0.0.1:3306`**
 MySQL nie chodzi albo `DB_PASSWORD`, `DB_USER` czy `DB_HOST` się nie zgadzają.

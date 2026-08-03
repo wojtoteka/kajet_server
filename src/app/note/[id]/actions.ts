@@ -1,14 +1,108 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { currentUser } from "@/lib/auth";
 import { shareMail, send } from "@/lib/mail";
 import { settings } from "@/lib/settings";
 import { shareUrl, createShare } from "@/lib/sharing";
+import { upsertNoteForUser } from "@/lib/note-write";
+import { buildTextNoteContent, parseExistingTextDocument } from "@/lib/text-note";
 
 export type Result = { error?: string; success?: string };
+
+const textNoteForm = z.object({
+  noteId: z.string().min(1).max(64).optional(),
+  title: z.string().max(300),
+  markdown: z.string().max(2_000_000),
+  baseVersion: z.coerce.number().int().min(0).optional(),
+});
+
+export async function saveTextNote(_previous: Result, data: FormData): Promise<Result> {
+  const user = await currentUser();
+  if (!user) return { error: "Musisz się zalogować." };
+
+  const parsed = textNoteForm.safeParse({
+    noteId: data.get("noteId") || undefined,
+    title: data.get("title") ?? "",
+    markdown: data.get("markdown") ?? "",
+    baseVersion: data.get("baseVersion") ?? 0,
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Sprawdź wpisane dane." };
+  }
+
+  const title = parsed.data.title.trim() || "Bez nazwy";
+  const markdown = parsed.data.markdown;
+  const existingId = parsed.data.noteId;
+
+  let noteId = existingId;
+  let existingDocument = null;
+  let baseVersion = parsed.data.baseVersion ?? 0;
+
+  if (existingId) {
+    const row = await prisma.note.findUnique({
+      where: { id: existingId },
+      select: { id: true, ownerId: true, kind: true, content: true, version: true, deletedAt: true },
+    });
+    if (!row || row.deletedAt) return { error: "Nie ma takiej notatki." };
+    if (row.ownerId !== user.id) return { error: "To nie jest Twoja notatka." };
+    if (row.kind !== "TEXT") {
+      return { error: "Na stronie da się na razie poprawiać tylko notatki tekstowe." };
+    }
+    existingDocument = parseExistingTextDocument(row.content);
+    // Prefer the version the form was rendered with; fall back to current.
+    if (baseVersion <= 0) baseVersion = row.version;
+  } else {
+    noteId = randomUUID();
+    baseVersion = 0;
+  }
+
+  const content = buildTextNoteContent({
+    id: noteId!,
+    title,
+    markdown,
+    existing: existingDocument,
+  });
+
+  const outcome = await upsertNoteForUser(user.id, {
+    id: noteId!,
+    title,
+    kind: "TEXT",
+    content,
+    baseVersion,
+    favorite: existingDocument?.favorite ?? false,
+    tags: existingDocument?.tags,
+  });
+
+  if (outcome.status === "error") {
+    return { error: outcome.message };
+  }
+  if (outcome.status === "conflict") {
+    return {
+      error:
+        outcome.message +
+        " Odśwież stronę, żeby zobaczyć wersję z serwera, i zapisz jeszcze raz jeśli trzeba.",
+    };
+  }
+
+  revalidatePath("/library");
+  revalidatePath(`/note/${noteId}`);
+
+  if (!existingId) {
+    redirect(`/note/${noteId}`);
+  }
+
+  return {
+    success:
+      outcome.status === "unchanged"
+        ? "Nic się nie zmieniło."
+        : `Zapisane (wersja ${outcome.version}).`,
+  };
+}
 
 const form = z.object({
   noteId: z.string().min(1),

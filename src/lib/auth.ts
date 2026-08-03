@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import type { NextAuthConfig } from "next-auth";
+import type { Adapter } from "next-auth/adapters";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
@@ -53,8 +54,64 @@ if (googleWorks()) {
   );
 }
 
+/**
+ * Prisma User.login is required and has no DB default. Auth.js's stock
+ * createUser only sends email/name/image — new Google accounts then fail
+ * mid-callback with an empty [auth][details] blob. We set login (and the
+ * parked invite quota) here before the row is written.
+ */
+function kajetAdapter(): Adapter {
+  const base = PrismaAdapter(prisma) as Adapter;
+
+  return {
+    ...base,
+    async createUser(data) {
+      const email = data.email?.toLowerCase();
+      if (!email) {
+        throw new Error("Google nie zwróciło adresu e-mail.");
+      }
+
+      const code = await findParkedCode(email);
+      const login = await freeLogin(email);
+
+      const user = await prisma.user.create({
+        data: {
+          email,
+          emailVerified: data.emailVerified ?? new Date(),
+          name: data.name ?? null,
+          image: data.image ?? null,
+          login,
+          quotaBytes: code?.quotaBytes ?? undefined,
+          permanentQuotaBytes: code?.quotaBytes ?? undefined,
+        },
+      });
+
+      if (code) {
+        await prisma.inviteCode.update({
+          where: { id: code.id },
+          data: {
+            usedSeats: { increment: 1 },
+            usedById: code.seats === 1 ? user.id : undefined,
+          },
+        });
+        await prisma.verificationToken.deleteMany({
+          where: { identifier: `code:${email}` },
+        });
+      }
+
+      return {
+        id: user.id,
+        email: user.email!,
+        emailVerified: user.emailVerified,
+        name: user.name,
+        image: user.image,
+      };
+    },
+  };
+}
+
 export const authConfig: NextAuthConfig = {
-  adapter: PrismaAdapter(prisma),
+  adapter: kajetAdapter(),
   providers,
   // Credentials only work with JWT sessions. Database sessions are for OAuth
   // alone; mixing them throws UnsupportedStrategy and login silently fails.
@@ -70,7 +127,7 @@ export const authConfig: NextAuthConfig = {
       if (account?.provider !== "google") return true;
 
       const email = user.email?.toLowerCase();
-      if (!email) return false;
+      if (!email) return "/signin?error=AccessDenied";
 
       const existing = await prisma.user.findUnique({ where: { email } });
       if (existing) {
@@ -140,33 +197,12 @@ export const authConfig: NextAuthConfig = {
     },
   },
 
-  events: {
-    async createUser({ user }) {
-      const email = user.email?.toLowerCase();
-      if (!email) return;
-
-      const code = await findParkedCode(email);
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          login: await freeLogin(email),
-          quotaBytes: code?.quotaBytes ?? undefined,
-          permanentQuotaBytes: code?.quotaBytes ?? undefined,
-          emailVerified: new Date(),
-        },
-      });
-
-      if (code) {
-        await prisma.inviteCode.update({
-          where: { id: code.id },
-          data: {
-            usedSeats: { increment: 1 },
-            usedById: code.seats === 1 ? user.id : undefined,
-          },
-        });
-        await prisma.verificationToken.deleteMany({
-          where: { identifier: `code:${email}` },
-        });
+  logger: {
+    error(error) {
+      // Surface enough to diagnose Google callback failures without dumping tokens.
+      console.error("[auth]", error.name, error.message);
+      if ("cause" in error && error.cause) {
+        console.error("[auth] cause:", error.cause);
       }
     },
   },

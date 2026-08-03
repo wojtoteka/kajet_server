@@ -6,11 +6,19 @@ import { settings } from "@/lib/settings";
 
 export { OPTIONS } from "@/lib/api";
 
-const runRequest = z.object({
-  language: z.string().min(1).max(32),
-  code: z.string().max(200_000),
-  input: z.string().max(100_000).optional(),
-});
+const runRequest = z
+  .object({
+    language: z.string().min(1).max(32),
+    code: z.string().max(200_000),
+    input: z.string().max(100_000).optional(),
+    // Older docs/clients said "stdin"; accept both.
+    stdin: z.string().max(100_000).optional(),
+  })
+  .transform((value) => ({
+    language: value.language,
+    code: value.code,
+    input: value.input ?? value.stdin ?? "",
+  }));
 
 export const GET = wrapApi(async (request: Request) => {
   const result = await userFromRequest(request);
@@ -79,7 +87,7 @@ export const POST = wrapApi(async (request: Request) => {
   }
 
   try {
-    return json(await run(language, code, input ?? ""));
+    return json(await run(language, code, input));
   } finally {
     slot.release();
   }

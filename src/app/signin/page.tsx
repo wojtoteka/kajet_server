@@ -11,7 +11,18 @@ const MESSAGES: Record<string, string> = {
   "code-required":
     "Na ten adres nie ma jeszcze konta. Konto zakłada się na kod od administratora, na stronie rejestracji.",
   CredentialsSignin: "Zły adres albo złe hasło.",
-  OAuthAccountNotLinked: "Ten adres jest już używany przy logowaniu hasłem. Zaloguj się hasłem.",
+  OAuthAccountNotLinked:
+    "Ten adres jest już używany przy logowaniu hasłem. Zaloguj się hasłem, a potem możesz powiązać Google.",
+  Configuration:
+    "Logowanie przez Google nie jest poprawnie ustawione na serwerze (klucze, adres powrotu albo AUTH_URL). Napisz do administratora albo zaloguj się hasłem.",
+  AccessDenied: "Google nie pozwoliło na logowanie, albo to konto nie ma dostępu.",
+  OAuthSignin: "Nie udało się rozpocząć logowania przez Google. Spróbuj jeszcze raz.",
+  OAuthCallback:
+    "Google nie dokończyło logowania. Sprawdź, czy wracasz na ten sam adres strony (https), albo spróbuj jeszcze raz. Jeśli problem wraca — to zwykle zły adres powrotu w konsoli Google albo brak AUTH_URL.",
+  OAuthCreateAccount: "Nie udało się założyć konta przez Google. Spróbuj jeszcze raz albo załóż konto hasłem na kodzie zaproszenia.",
+  Callback: "Logowanie zostało przerwane. Spróbuj jeszcze raz.",
+  Verification: "Odnośnik do logowania wygasł albo został już użyty.",
+  Default: "Nie udało się zalogować. Spróbuj jeszcze raz.",
 };
 
 export default async function SignInPage({
@@ -24,7 +35,7 @@ export default async function SignInPage({
 
   const params = await searchParams;
   const message = params.error
-    ? (MESSAGES[params.error] ?? "Nie udało się zalogować. Spróbuj jeszcze raz.")
+    ? (MESSAGES[params.error] ?? MESSAGES.Default)
     : null;
 
   return (
@@ -35,7 +46,7 @@ export default async function SignInPage({
         <p className="eyebrow">Wejście</p>
         <h1 style={{ marginBottom: 8 }}>Zaloguj się</h1>
         <p className="lead">
-          Po zalogowaniu zobaczysz notatki wysłane z tabletu i będziesz mógł je tutaj poprawiać.
+          Po zalogowaniu zobaczysz notatki z tabletu i będziesz mógł je tutaj poprawiać.
         </p>
 
         {message ? <p className="error">{message}</p> : null}
@@ -84,6 +95,10 @@ export default async function SignInPage({
                 Zaloguj się przez Google
               </button>
             </form>
+            <p className="small" style={{ marginTop: 10 }}>
+              Google działa tylko w przeglądarce. W aplikacji na tablecie używasz hasła albo
+              logowania przez token ze strony konta.
+            </p>
           </>
         ) : null}
 

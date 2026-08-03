@@ -52,7 +52,7 @@ export default async function LibraryPage() {
           <p className="small" style={{ margin: 0 }}>
             {notes.length === 0
               ? "Nic tu jeszcze nie ma."
-              : `${notes.length} notatek przysłanych z tabletu.`}
+              : `${notes.length} notatek (tablet i strona).`}
           </p>
         </div>
 
@@ -70,6 +70,9 @@ export default async function LibraryPage() {
         </div>
 
         <div className="row">
+          <Link className="button compact primary" href="/note/new">
+            Nowa notatka tekstowa
+          </Link>
           <Link className="button compact" href="/account">
             Moje konto
           </Link>
@@ -84,12 +87,14 @@ export default async function LibraryPage() {
       {notes.length === 0 ? (
         <div className="sheet-ruled" style={{ paddingBlock: 28, paddingInlineEnd: 26 }}>
           <p className="eyebrow">Pusto</p>
-          <h2 style={{ marginBottom: 8 }}>Jeszcze nic nie doszło z tabletu</h2>
-          <p className="lead" style={{ margin: 0, maxWidth: 520 }}>
+          <h2 style={{ marginBottom: 8 }}>Jeszcze nic tu nie ma</h2>
+          <p className="lead" style={{ margin: "0 0 16px 0", maxWidth: 520 }}>
             Zaloguj się w aplikacji na tablecie tym samym adresem, a notatki zaczną się tu
-            pojawiać. Kiedy tablet nie ma internetu, zapisuje wszystko u siebie i dosyła,
-            gdy sieć wróci.
+            pojawiać — albo napisz pierwszą notatkę tekstową od razu na komputerze.
           </p>
+          <Link className="button primary" href="/note/new">
+            Napisz notatkę tekstową
+          </Link>
         </div>
       ) : (
         <div className="sheet table-scroll">

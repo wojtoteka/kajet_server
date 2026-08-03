@@ -3,11 +3,15 @@
 import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { currentUser } from "@/lib/auth";
+import { currentUser, signOut } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { issueToken } from "@/lib/app-token";
 
 export type Result = { error?: string; success?: string };
+
+export async function logOut(): Promise<void> {
+  await signOut({ redirectTo: "/signin" });
+}
 
 export async function issueAppToken(_previous: Result, data: FormData): Promise<Result> {
   const user = await currentUser();
@@ -35,8 +39,23 @@ export async function revokeDevice(_previous: Result, data: FormData): Promise<R
 
   revalidatePath("/account");
   return removed.count > 0
-    ? { success: "Urządzenie odłączone. Aplikacja na nim poprosi o ponowne zalogowanie." }
-    : { error: "Nie ma już takiego urządzenia." };
+    ? { success: "Token unieważniony. Aplikacja na tym urządzeniu poprosi o ponowne zalogowanie." }
+    : { error: "Nie ma już takiego tokenu." };
+}
+
+export async function revokeAllDevices(_previous: Result, _data: FormData): Promise<Result> {
+  const user = await currentUser();
+  if (!user) return { error: "Musisz się zalogować." };
+
+  const removed = await prisma.appToken.deleteMany({ where: { userId: user.id } });
+  revalidatePath("/account");
+  return removed.count > 0
+    ? {
+        success: `Unieważniono ${removed.count} ${
+          removed.count === 1 ? "token" : removed.count < 5 ? "tokeny" : "tokenów"
+        }. Zaloguj tablety od nowa.`,
+      }
+    : { error: "Nie ma żadnych tokenów do unieważnienia." };
 }
 
 const passwordForm = z.object({
@@ -80,7 +99,7 @@ export async function changePassword(_previous: Result, data: FormData): Promise
   return {
     success: user.passwordHash
       ? "Hasło zmienione."
-      : "Hasło ustawione. Możesz się teraz logować także adresem i hasłem, bez Google.",
+      : "Hasło ustawione. Możesz się teraz logować adresem i hasłem, także w aplikacji na tablecie.",
   };
 }
 

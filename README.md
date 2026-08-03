@@ -100,8 +100,8 @@ server {
 
 - Konta: rejestracja tylko na kod zaproszenia, logowanie hasłem i przez Google,
   potwierdzanie adresu (`/confirm`), odzyskiwanie hasła (`/password`).
-- Ustawienia konta (`/account`): własny login, ustawianie i zmiana hasła,
-  wydawanie tokenów dla urządzeń i odłączanie zgubionego tabletu.
+- Ustawienia konta (`/account`): profil, wylogowanie, własny login, hasło,
+  wydawanie i unieważnianie tokenów urządzeń (także wszystkich naraz).
 - Tokeny dla aplikacji: każde urządzenie dostaje własny, unieważnialny osobno.
 - Panel administratora: wydawanie kodów (ręcznych i w postaci gotowego
   odnośnika), limity miejsca na stałe i na czas określony, limit zerowy
@@ -128,8 +128,10 @@ przez `src/lib/note-write.ts` (wersja, hash, konflikt, limit miejsca).
 
 ## Czego jeszcze nie ma
 
-- Edytora notatek w przeglądarce. Strona pokazuje notatkę, ale jej nie zmienia;
-  udostępnienie „do poprawiania" jest już zapisywane, tylko nie ma czym poprawiać.
+- Pełnego edytora w przeglądarce: notatki tekstowe (Markdown) da się już tworzyć
+  i poprawiać na stronie (`/note/new`, edycja na `/note/<id>`); odręczne i mapy
+  myśli zostają tylko do odczytu. Udostępnienie „do poprawiania" dla gościa
+  nadal nie ma formularza edycji.
 - Edycji na żywo. Tabela `LiveChange` czeka, gniazda WebSocket jeszcze nie ma.
 - Folderów w przeglądarce — model jest, lista jest płaska.
 - Kosza i trwałego kasowania po stronie strony.
@@ -204,7 +206,7 @@ Wszystko pod `/api/v1`. Poza logowaniem każde zapytanie niesie nagłówek
 | `POST /api/v1/notes/<id>/attachments` | Wysłanie pliku (formularz: `file`, `name`) |
 | `DELETE /api/v1/notes/<id>/attachments?name=<nazwa>` | Skasowanie pliku |
 | `GET /api/v1/code` | Spis języków, które ten serwer umie uruchomić |
-| `POST /api/v1/code` | Uruchomienie kodu (`language`, `code`, `stdin`) |
+| `POST /api/v1/code` | Uruchomienie kodu (`language`, `code`, `input`; akceptuje też `stdin`) |
 
 Konto założone przez Google nie ma hasła, więc `POST /api/v1/signin` na nim
 nie zadziała. Taka osoba odbiera token na stronie `/account` i wpisuje go
