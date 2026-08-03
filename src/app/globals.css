@@ -307,6 +307,52 @@ button.compact,
   font-size: 12px;
 }
 
+/* --- Note editors --- */
+
+.editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--desk);
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+}
+
+.toolbar-sep {
+  width: 1px;
+  align-self: stretch;
+  min-height: 22px;
+  background: var(--rule);
+  margin-inline: 4px;
+}
+
+.editor-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+@media (max-width: 860px) {
+  .editor-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* --- Tables --- */
 
 table {

@@ -2,7 +2,7 @@
 
 Stan: **3 sierpnia 2026**. Panel ma być pełnoprawnym klientem Kajetu (nie „podglądem urządzenia”).
 
-Wspólna ścieżka zapisu: `src/lib/note-write.ts` (`upsertNoteForUser`, `upsertCodeNoteForUser`, soft-delete / ulubione / purge). Sync aplikacji: `PUT/GET /api/v1/notes` (bez `CODE`).
+Wspólna ścieżka zapisu: `src/lib/note-write.ts` (`upsertNoteForUser`, `upsertCodeNoteForUser`, soft-delete / ulubione / purge). Sync aplikacji: `PUT/GET /api/v1/notes` (bez `CODE`). Format dokumentu: jak w aplikacji (`FORMAT.md` / `src/lib/document.ts`) — `kind` lowercase (`text` | `mindmap` | `handwritten`), fonty `heading`|`body`|`mono`, kreski po 6 floatów na punkt.
 
 ### Logowanie aplikacji (Google / hasło przez stronę)
 
@@ -14,7 +14,7 @@ Wspólna ścieżka zapisu: `src/lib/note-write.ts` (`upsertNoteForUser`, `upsert
 
 Fallback: wklejenie tokenu ze `/account` albo `POST /api/v1/signin` (email+hasło).
 
-**Deploy:** po tym commicie `npm run db:push` (nowa tabela `login_challenges`), potem build/restart. `NEXT_PUBLIC_BASE_URL` / `AUTH_URL` muszą wskazywać publiczny HTTPS (np. `https://kajet.wojtoteka.ovh`), żeby `verificationUri` i Google callback były poprawne.
+**Deploy:** po commicie device-login `npm run db:push` (tabela `login_challenges`), potem build/restart. `NEXT_PUBLIC_BASE_URL` / `AUTH_URL` muszą wskazywać publiczny HTTPS.
 
 ---
 
@@ -27,14 +27,14 @@ Fallback: wklejenie tokenu ze `/account` albo `POST /api/v1/signin` (email+hasł
 | Ulubione | Tak | Przełączanie w liście i na notatce | **Done** |
 | Foldery | Tak | Lista, tworzenie, przenoszenie | **Done** (bez zagnieżdżania UI) |
 | Kosz / przywracanie | Soft delete (`.trash`) | Soft delete (`deletedAt`), kosz, purge, opróżnianie | **Done** |
-| TEXT — tworzenie / edycja | Tak | `/note/new`, edytor Markdown | **Done** |
+| TEXT — tworzenie / edycja | Tak | `/note/new`, pasek Markdown (H1–H3, B/I, listy, link, kod, tabela…), podgląd / edycja / obok | **Done** |
 | TEXT — usuwanie | Tak | Do kosza | **Done** |
 | CODE — podgląd / edycja | Pliki lokalne + runner | Notatki `CODE` na serwerze, edycja | **Done** |
 | CODE — uruchamianie | `/api/v1/code` | Ten sam runner (sesja WWW) | **Done** (wymaga `CODE_ENABLED` + Docker) |
-| MINDMAP | Edycja | Podgląd SVG | **Done** (podgląd) / **Later** (edycja) |
-| HANDWRITTEN | Edycja rysikiem | Podgląd SVG stron | **Done** (podgląd) / **Later** (silnik atramentu) |
+| MINDMAP | Edycja | Tworzenie + edycja SVG (węzły, krawędzie, przeciąganie, kolory/kształt), zapis `upsertNoteForUser` | **Done** |
+| HANDWRITTEN | Edycja rysikiem | Canvas WWW: pióro / cienkopis / zakreślacz / gumka (cięcie kresek), kolor, grubość, strony, tła; zapis kresek w formacie FORMAT | **Done** (MVP przeglądarkowy; bez pełnego silnika atramentu / lasso / linijki) |
 | Załączniki | Sync API | Upload / podgląd / usuwanie na WWW | **Done** |
-| Sync / wersje / konflikty | Sync | Zapis TEXT/CODE przez te same reguły wersji | **Done** |
+| Sync / wersje / konflikty | Sync | Zapis TEXT/CODE/MINDMAP/HANDWRITTEN przez te same reguły wersji | **Done** |
 | Konto — wylogowanie | Tak | Sesja przeglądarki | **Done** |
 | Konto — tokeny | Logowanie tokenem | Wydaj / unieważnij / unieważnij wszystkie | **Done** |
 | Konto — hasło | Tak | Ustaw / zmień | **Done** |
@@ -51,17 +51,18 @@ Fallback: wklejenie tokenu ze `/account` albo `POST /api/v1/signin` (email+hasł
 3. ~~CODE: podgląd + run~~ **Done**
 4. ~~Biblioteka: ulubione, szukaj, foldery~~ **Done**
 5. ~~Załączniki na WWW~~ **Done**
-6. **Next:** zagnieżdżone foldery / drag-and-drop; bogatszy edytor TEXT (podgląd live)
-7. **Later:** edycja mindmap w przeglądarce; pełny handwriting engine; live collaborative editing (`LiveChange`)
+6. ~~Edycja MINDMAP / HANDWRITTEN / bogaty TEXT~~ **Done**
+7. **Next:** zagnieżdżone foldery / drag-and-drop; pola tekstowe i obrazy na stronie odręcznej (dziś tylko podgląd + zachowanie przy zapisie kresek)
+8. **Later:** pełny silnik atramentu (ołówek z teksturą, lasso, linijka, nacisk jak na tablecie); live collaborative editing (`LiveChange`)
 
 ---
 
 ## Świadomie Later
 
-- **Pełny silnik atramentu w przeglądarce** — za duży na jeden przebieg; podgląd SVG wystarczy do parytetu odczytu.
-- **Edycja mapy myśli** — podgląd jest; edycja węzłów to osobny projekt UI.
+- **Pełny silnik atramentu jak na tablecie** — WWW ma działające pióro/gumkę i kompatybilny JSON kresek; brakuje zaawansowanych narzędzi ink (lasso, linijka, ołówek z teksturą, edycja pól `texts` / `images` na stronie).
 - **Sync `CODE` do aplikacji jako `.note`** — w appce kod to zwykłe pliki; notatki `CODE` zostają WWW / runner API.
 - **Zagnieżdżone foldery + DnD** — schemat ma `parentId`, UI na razie płaskie.
+- **Live collaborative editing** — osobny tor (`LiveChange`).
 
 ---
 
@@ -80,3 +81,11 @@ npm run build
 - Baza i `FILES_DIR` jak dotychczas.
 
 Testy lokalne przed deployem: `npm run typecheck` i `npm test`.
+
+### Jak sprawdzić edytory na stronie
+
+1. Zaloguj się → **Moje notatki**.
+2. **Nowa tekstowa** — pasek formatowania, tryb Obok/Podgląd, Zapisz.
+3. **Mapa myśli** — dodaj węzeł/dziecko, przeciągnij, połącz, zapisz; otwórz ponownie.
+4. **Odręczna** — narysuj piórem, wytnij gumką, zmień tło, zapisz; sprawdź sync na tablecie.
+5. Konflikt: zmień tę samą notatkę w app i na WWW bez odświeżenia — WWW ma odmówić nadpisania.

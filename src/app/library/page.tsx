@@ -131,6 +131,12 @@ export default async function LibraryPage({
           <Link className="button compact primary" href="/note/new">
             Nowa tekstowa
           </Link>
+          <Link className="button compact" href="/note/new/mindmap">
+            Mapa myśli
+          </Link>
+          <Link className="button compact" href="/note/new/handwriting">
+            Odręczna
+          </Link>
           <Link className="button compact" href="/note/new/code">
             Nowy kod
           </Link>

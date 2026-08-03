@@ -17,7 +17,16 @@ import {
   purgeNoteForUser,
 } from "@/lib/note-write";
 import { buildTextNoteContent, parseExistingTextDocument } from "@/lib/text-note";
+import {
+  buildMindMapNoteContent,
+  parseExistingMindMapDocument,
+} from "@/lib/mindmap-note";
+import {
+  buildHandwritingNoteContent,
+  parseExistingHandwritingDocument,
+} from "@/lib/handwriting-note";
 import { buildCodeNoteContent, parseCodeNote, guessLanguageFromTitle } from "@/lib/code-note";
+import type { MindEdge, MindNode, Page } from "@/lib/document";
 import { LANGUAGES, run, runnerState } from "@/lib/code-runner";
 import { checkLimit, takeSlot } from "@/lib/run-limits";
 import {
@@ -123,6 +132,245 @@ export async function saveTextNote(_previous: Result, data: FormData): Promise<R
   if (!existingId) {
     redirect(`/note/${noteId}`);
   }
+
+  return {
+    success:
+      outcome.status === "unchanged"
+        ? "Nic się nie zmieniło."
+        : `Zapisane (wersja ${outcome.version}).`,
+  };
+}
+
+const mindMapForm = z.object({
+  noteId: z.string().min(1).max(64).optional(),
+  title: z.string().max(300),
+  mindMapJson: z.string().max(5_000_000),
+  baseVersion: z.coerce.number().int().min(0).optional(),
+});
+
+export async function saveMindMapNote(_previous: Result, data: FormData): Promise<Result> {
+  const user = await currentUser();
+  if (!user) return { error: "Musisz się zalogować." };
+
+  const parsed = mindMapForm.safeParse({
+    noteId: data.get("noteId") || undefined,
+    title: data.get("title") ?? "",
+    mindMapJson: data.get("mindMapJson") ?? "",
+    baseVersion: data.get("baseVersion") ?? 0,
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Sprawdź wpisane dane." };
+  }
+
+  let mapBody: {
+    nodes: MindNode[];
+    edges: MindEdge[];
+    viewX?: number;
+    viewY?: number;
+    zoom?: number;
+  };
+  try {
+    const raw = JSON.parse(parsed.data.mindMapJson) as {
+      nodes?: MindNode[];
+      edges?: MindEdge[];
+      viewX?: number;
+      viewY?: number;
+      zoom?: number;
+    };
+    mapBody = {
+      nodes: Array.isArray(raw.nodes) ? raw.nodes : [],
+      edges: Array.isArray(raw.edges) ? raw.edges : [],
+      viewX: raw.viewX,
+      viewY: raw.viewY,
+      zoom: raw.zoom,
+    };
+  } catch {
+    return { error: "Nie udało się odczytać mapy myśli." };
+  }
+
+  const title = parsed.data.title.trim() || "Bez nazwy";
+  const existingId = parsed.data.noteId;
+
+  let noteId = existingId;
+  let existingDocument = null;
+  let baseVersion = parsed.data.baseVersion ?? 0;
+  let favorite = false;
+  let tags: string[] | undefined;
+
+  if (existingId) {
+    const row = await prisma.note.findUnique({
+      where: { id: existingId },
+      select: {
+        id: true,
+        ownerId: true,
+        kind: true,
+        content: true,
+        version: true,
+        deletedAt: true,
+        favorite: true,
+        tags: true,
+      },
+    });
+    if (!row || row.deletedAt) return { error: "Nie ma takiej notatki." };
+    if (row.ownerId !== user.id) return { error: "To nie jest Twoja notatka." };
+    if (row.kind !== "MINDMAP") return { error: "To nie jest mapa myśli." };
+    existingDocument = parseExistingMindMapDocument(row.content);
+    favorite = row.favorite;
+    tags = row.tags ? row.tags.split("|").filter(Boolean) : [];
+    if (baseVersion <= 0) baseVersion = row.version;
+  } else {
+    noteId = randomUUID();
+    baseVersion = 0;
+  }
+
+  const content = buildMindMapNoteContent({
+    id: noteId!,
+    title,
+    nodes: mapBody.nodes,
+    edges: mapBody.edges,
+    viewX: mapBody.viewX,
+    viewY: mapBody.viewY,
+    zoom: mapBody.zoom,
+    existing: existingDocument,
+  });
+
+  const outcome = await upsertNoteForUser(user.id, {
+    id: noteId!,
+    title,
+    kind: "MINDMAP",
+    content,
+    baseVersion,
+    favorite,
+    tags,
+  });
+
+  if (outcome.status === "error") return { error: outcome.message };
+  if (outcome.status === "conflict") {
+    return {
+      error:
+        outcome.message +
+        " Odśwież stronę, żeby zobaczyć wersję z serwera, i zapisz jeszcze raz jeśli trzeba.",
+    };
+  }
+
+  revalidatePath("/library");
+  revalidatePath(`/note/${noteId}`);
+  if (!existingId) redirect(`/note/${noteId}`);
+
+  return {
+    success:
+      outcome.status === "unchanged"
+        ? "Nic się nie zmieniło."
+        : `Zapisane (wersja ${outcome.version}).`,
+  };
+}
+
+const handwritingForm = z.object({
+  noteId: z.string().min(1).max(64).optional(),
+  title: z.string().max(300),
+  handwritingJson: z.string().max(20_000_000),
+  baseVersion: z.coerce.number().int().min(0).optional(),
+});
+
+export async function saveHandwritingNote(_previous: Result, data: FormData): Promise<Result> {
+  const user = await currentUser();
+  if (!user) return { error: "Musisz się zalogować." };
+
+  const parsed = handwritingForm.safeParse({
+    noteId: data.get("noteId") || undefined,
+    title: data.get("title") ?? "",
+    handwritingJson: data.get("handwritingJson") ?? "",
+    baseVersion: data.get("baseVersion") ?? 0,
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Sprawdź wpisane dane." };
+  }
+
+  let hwBody: { pageMode?: string; background?: string; pages: Page[] };
+  try {
+    const raw = JSON.parse(parsed.data.handwritingJson) as {
+      pageMode?: string;
+      background?: string;
+      pages?: Page[];
+    };
+    if (!Array.isArray(raw.pages) || raw.pages.length === 0) {
+      return { error: "Notatka odręczna musi mieć przynajmniej jedną stronę." };
+    }
+    hwBody = {
+      pageMode: raw.pageMode,
+      background: raw.background,
+      pages: raw.pages,
+    };
+  } catch {
+    return { error: "Nie udało się odczytać notatki odręcznej." };
+  }
+
+  const title = parsed.data.title.trim() || "Bez nazwy";
+  const existingId = parsed.data.noteId;
+
+  let noteId = existingId;
+  let existingDocument = null;
+  let baseVersion = parsed.data.baseVersion ?? 0;
+  let favorite = false;
+  let tags: string[] | undefined;
+
+  if (existingId) {
+    const row = await prisma.note.findUnique({
+      where: { id: existingId },
+      select: {
+        id: true,
+        ownerId: true,
+        kind: true,
+        content: true,
+        version: true,
+        deletedAt: true,
+        favorite: true,
+        tags: true,
+      },
+    });
+    if (!row || row.deletedAt) return { error: "Nie ma takiej notatki." };
+    if (row.ownerId !== user.id) return { error: "To nie jest Twoja notatka." };
+    if (row.kind !== "HANDWRITTEN") return { error: "To nie jest notatka odręczna." };
+    existingDocument = parseExistingHandwritingDocument(row.content);
+    favorite = row.favorite;
+    tags = row.tags ? row.tags.split("|").filter(Boolean) : [];
+    if (baseVersion <= 0) baseVersion = row.version;
+  } else {
+    noteId = randomUUID();
+    baseVersion = 0;
+  }
+
+  const content = buildHandwritingNoteContent({
+    id: noteId!,
+    title,
+    pages: hwBody.pages,
+    pageMode: hwBody.pageMode,
+    background: hwBody.background,
+    existing: existingDocument,
+  });
+
+  const outcome = await upsertNoteForUser(user.id, {
+    id: noteId!,
+    title,
+    kind: "HANDWRITTEN",
+    content,
+    baseVersion,
+    favorite,
+    tags,
+  });
+
+  if (outcome.status === "error") return { error: outcome.message };
+  if (outcome.status === "conflict") {
+    return {
+      error:
+        outcome.message +
+        " Odśwież stronę, żeby zobaczyć wersję z serwera, i zapisz jeszcze raz jeśli trzeba.",
+    };
+  }
+
+  revalidatePath("/library");
+  revalidatePath(`/note/${noteId}`);
+  if (!existingId) redirect(`/note/${noteId}`);
 
   return {
     success:

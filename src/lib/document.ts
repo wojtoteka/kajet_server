@@ -151,6 +151,121 @@ export function cssAlign(align: string | undefined): "left" | "center" | "right"
   }
 }
 
+/** Pack one stylus/mouse sample into the six floats the app expects. */
+export function packStrokePoint(
+  x: number,
+  y: number,
+  timeMs: number,
+  pressure = 0.5,
+  tilt = -1,
+  orientation = -1,
+): number[] {
+  return [
+    Math.round(x * 100) / 100,
+    Math.round(y * 100) / 100,
+    Math.round(timeMs * 100) / 100,
+    Math.round(pressure * 1000) / 1000,
+    tilt,
+    orientation,
+  ];
+}
+
+/** ARGB as a signed 32-bit int (Android / Kajet colour). */
+export function argbColor(r: number, g: number, b: number, a = 255): number {
+  return ((a << 24) | (r << 16) | (g << 8) | b) | 0;
+}
+
+export function strokeHitsCircle(
+  stroke: Stroke,
+  centerX: number,
+  centerY: number,
+  radius: number,
+): boolean {
+  const reach = radius + (stroke.size || 2) / 2;
+  const points = stroke.points ?? [];
+  const count = Math.floor(points.length / VALUES_PER_POINT);
+  if (count === 0) return false;
+
+  const x = (i: number) => points[i * VALUES_PER_POINT];
+  const y = (i: number) => points[i * VALUES_PER_POINT + 1];
+
+  if (count === 1) {
+    return Math.hypot(x(0) - centerX, y(0) - centerY) <= reach;
+  }
+
+  for (let i = 0; i < count - 1; i += 1) {
+    if (distanceToSegment(centerX, centerY, x(i), y(i), x(i + 1), y(i + 1)) <= reach) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Erase a circular region from a stroke, returning zero or more leftover pieces
+ * (same algorithm as the tablet ink engine).
+ */
+export function eraseStrokeFragment(
+  stroke: Stroke,
+  centerX: number,
+  centerY: number,
+  radius: number,
+  newId: () => string,
+): Stroke[] {
+  const reach = radius + (stroke.size || 2) / 2;
+  const points = stroke.points ?? [];
+  const count = Math.floor(points.length / VALUES_PER_POINT);
+  if (count === 0) return [];
+
+  const keep: boolean[] = [];
+  for (let i = 0; i < count; i += 1) {
+    const px = points[i * VALUES_PER_POINT];
+    const py = points[i * VALUES_PER_POINT + 1];
+    keep.push(Math.hypot(px - centerX, py - centerY) > reach);
+  }
+
+  if (keep.every(Boolean)) return [stroke];
+  if (keep.every((value) => !value)) return [];
+
+  const pieces: Stroke[] = [];
+  let start = -1;
+  for (let i = 0; i < count; i += 1) {
+    if (keep[i]) {
+      if (start < 0) start = i;
+    } else if (start >= 0) {
+      if (i - start >= 1) {
+        pieces.push(sliceStroke(stroke, start, i - 1, newId()));
+      }
+      start = -1;
+    }
+  }
+  if (start >= 0 && count - start >= 1) {
+    pieces.push(sliceStroke(stroke, start, count - 1, newId()));
+  }
+  return pieces;
+}
+
+function sliceStroke(stroke: Stroke, from: number, to: number, id: string): Stroke {
+  const points = stroke.points ?? [];
+  const sliced = points.slice(from * VALUES_PER_POINT, (to + 1) * VALUES_PER_POINT);
+  return { ...stroke, id, points: sliced };
+}
+
+function distanceToSegment(
+  px: number,
+  py: number,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+): number {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  if (dx === 0 && dy === 0) return Math.hypot(px - x1, py - y1);
+  const t = Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy)));
+  return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
+}
+
 export function strokePath(stroke: Stroke): string {
   const points = stroke.points ?? [];
   const count = Math.floor(points.length / VALUES_PER_POINT);

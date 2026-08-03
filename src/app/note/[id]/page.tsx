@@ -5,11 +5,15 @@ import { humanSize } from "@/lib/quota";
 import { settings, mailWorks } from "@/lib/settings";
 import { shareUrl, ownerAccess } from "@/lib/sharing";
 import { textMarkdownFromContent } from "@/lib/text-note";
+import { parseMindMapNote, defaultMindMapSeed } from "@/lib/mindmap-note";
+import { parseHandwritingNote } from "@/lib/handwriting-note";
 import { parseCodeNote, languageOptions, languageLabel } from "@/lib/code-note";
 import { runnerState } from "@/lib/code-runner";
 import { KajetMark } from "@/components/KajetMark";
 import { NotePreview } from "@/components/NotePreview";
 import { TextNoteEditor } from "@/components/TextNoteEditor";
+import { MindMapEditor } from "@/components/MindMapEditor";
+import { HandwritingEditor } from "@/components/HandwritingEditor";
 import { CodeNotePanel } from "@/components/CodeNotePanel";
 import { AttachmentsPanel } from "@/components/AttachmentsPanel";
 import { NoteActionsBar } from "@/components/NoteActionsBar";
@@ -19,6 +23,8 @@ import {
   revokeShare,
   share,
   saveTextNote,
+  saveMindMapNote,
+  saveHandwritingNote,
   saveCodeNote,
   runCodeAction,
   trashNote,
@@ -78,6 +84,12 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
       : runState.description;
 
   const codeBody = note.kind === "CODE" ? parseCodeNote(note.content) : null;
+  const mindMapBody =
+    note.kind === "MINDMAP"
+      ? (parseMindMapNote(note.content) ?? { ...defaultMindMapSeed(), viewX: 0, viewY: 0, zoom: 1 })
+      : null;
+  const handwritingBody =
+    note.kind === "HANDWRITTEN" ? parseHandwritingNote(note.content) : null;
 
   return (
     <main className="page wide">
@@ -122,15 +134,48 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
               markdown={textMarkdownFromContent(note.content)}
               submitLabel="Zapisz"
             />
-            <details style={{ marginTop: 20 }}>
-              <summary className="small" style={{ cursor: "pointer" }}>
-                Podgląd sformatowany
-              </summary>
-              <div style={{ marginTop: 12 }}>
-                <NotePreview content={note.content} noteId={note.id} />
-              </div>
-            </details>
           </section>
+        ) : null}
+
+        {note.kind === "MINDMAP" && mindMapBody ? (
+          <section>
+            <p className="eyebrow" style={{ marginBottom: 10 }}>
+              Edycja mapy myśli
+            </p>
+            <MindMapEditor
+              action={saveMindMapNote}
+              noteId={note.id}
+              version={note.version}
+              title={note.title}
+              initial={mindMapBody}
+              submitLabel="Zapisz"
+            />
+          </section>
+        ) : null}
+
+        {note.kind === "HANDWRITTEN" ? (
+          handwritingBody ? (
+            <section>
+              <p className="eyebrow" style={{ marginBottom: 10 }}>
+                Edycja odręczna
+              </p>
+              <HandwritingEditor
+                action={saveHandwritingNote}
+                noteId={note.id}
+                version={note.version}
+                title={note.title}
+                initial={handwritingBody}
+                submitLabel="Zapisz"
+              />
+            </section>
+          ) : (
+            <section>
+              <p className="error">
+                Nie udało się odczytać notatki odręcznej. Podgląd niedostępny — nie zapisuj, żeby nic
+                nie nadpisać.
+              </p>
+            </section>
+          )
         ) : null}
 
         {note.kind === "CODE" ? (
@@ -154,17 +199,6 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
                 {note.title ? ` (${languageLabel("python")})` : ""}.
               </p>
             ) : null}
-          </section>
-        ) : null}
-
-        {note.kind === "HANDWRITTEN" || note.kind === "MINDMAP" ? (
-          <section>
-            <p className="small" style={{ marginBottom: 12 }}>
-              {note.kind === "HANDWRITTEN"
-                ? "Notatki odręczne na stronie są do odczytu. Poprawisz je w aplikacji mobilnej."
-                : "Mapa myśli na stronie jest do odczytu. Pełna edycja jest w aplikacji mobilnej."}
-            </p>
-            <NotePreview content={note.content} noteId={note.id} />
           </section>
         ) : null}
 
