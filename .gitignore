@@ -1,0 +1,17 @@
+node_modules/
+.next/
+out/
+build/
+
+# Ustawienia z haslami i kluczami. Wzor lezy w .env.example.
+.env
+.env.local
+.env*.local
+
+# Notatki i zalaczniki uzytkownikow.
+dane/
+
+*.tsbuildinfo
+next-env.d.ts
+npm-debug.log*
+.DS_Store

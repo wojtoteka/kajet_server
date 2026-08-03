@@ -1,0 +1,316 @@
+// Kajet database.
+//
+// The principle is the same as in the tablet app: the truth about a note's
+// content lives in a single JSON document, exactly the same as the content.json
+// file inside the note directory. The database stores that document plus what
+// is not in it: who owns it, how much space it takes and who it is shared with.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Accounts ---
+
+enum AccountRole {
+  USER
+  ADMIN
+}
+
+model User {
+  id            String    @id @default(cuid())
+  /// Username shown when sharing. An admin may change it.
+  login         String    @unique
+  email         String    @unique
+  emailVerified DateTime?
+  /// Empty when the account is created through Google only.
+  passwordHash  String?   @db.Text
+  name          String?
+  image         String?   @db.Text
+  role          AccountRole @default(USER)
+
+  /// A blocked account cannot sign in and does not accept synchronisation.
+  blocked       Boolean   @default(false)
+  blockReason   String?   @db.Text
+
+  /// Whether the account may run code on the server. An admin revokes this for
+  /// a single account when someone starts straining the machine.
+  canRunCode    Boolean   @default(true)
+
+  /// Storage quota in bytes. Zero means no quota.
+  quotaBytes    BigInt    @default(524288000)
+  /// How long the quota above applies. Empty means permanently.
+  quotaUntil    DateTime?
+  /// The quota we fall back to once a temporary quota expires.
+  permanentQuotaBytes BigInt @default(524288000)
+  /// Space used, recalculated on every save. We keep it so we do not have to
+  /// sum up every note each time a quota is checked.
+  usedBytes     BigInt    @default(0)
+
+  createdAt     DateTime  @default(now())
+  lastSignInAt  DateTime?
+
+  accounts      Account[]
+  sessions      Session[]
+  tokens        AppToken[]
+  folders       Folder[]
+  notes         Note[]
+  issuedCodes   InviteCode[] @relation("IssuedCodes")
+  usedCode      InviteCode?  @relation("UsedCode")
+  shares        Share[]      @relation("SharedBy")
+
+  @@index([email])
+  @@map("users")
+}
+
+/// External accounts, for example Google. Table required by Auth.js.
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+  @@map("oauth_accounts")
+}
+
+/// Browser session. Table required by Auth.js.
+model Session {
+  sessionToken String   @id
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+/// One-time token from an e-mail: address confirmation and password recovery.
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@id([identifier, token])
+  @@map("email_tokens")
+}
+
+/// Token for the tablet app. The app has no browser cookies, so every device
+/// gets its own token and sends it in the Authorization header. A token can be
+/// revoked separately for a single device.
+model AppToken {
+  id          String   @id @default(cuid())
+  userId      String
+  /// Hash of the token. We do not keep the token itself, just as we do not
+  /// keep the password.
+  tokenHash   String   @unique
+  /// Device name shown in the list in account settings.
+  device      String
+  createdAt   DateTime @default(now())
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("app_tokens")
+}
+
+// --- Invite-only registration ---
+
+/// Code from an administrator. Without one no account can be created.
+/// The same code may be typed in by hand or received as a ready link.
+model InviteCode {
+  id           String    @id @default(cuid())
+  code         String    @unique
+  /// How many accounts may be created with this code. One is a plain invite.
+  seats        Int       @default(1)
+  usedSeats    Int       @default(0)
+  /// Storage quota an account created with this code will get.
+  quotaBytes   BigInt?
+  description  String?   @db.Text
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+
+  issuedById   String
+  issuedBy     User      @relation("IssuedCodes", fields: [issuedById], references: [id], onDelete: Cascade)
+
+  /// Filled in for a single-seat code, so it is visible who used it.
+  usedById     String?   @unique
+  usedBy       User?     @relation("UsedCode", fields: [usedById], references: [id], onDelete: SetNull)
+
+  @@index([issuedById])
+  @@map("invite_codes")
+}
+
+// --- Library ---
+
+model Folder {
+  id        String   @id @default(cuid())
+  ownerId   String
+  parentId  String?
+  name      String
+  colorId   String   @default("grafit")
+  iconId    String   @default("folder")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner    User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  parent   Folder?  @relation("FolderTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children Folder[] @relation("FolderTree")
+  notes    Note[]
+
+  @@index([ownerId, parentId])
+  @@map("folders")
+}
+
+enum NoteKind {
+  HANDWRITTEN
+  TEXT
+  MINDMAP
+  CODE
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  ownerId   String
+  folderId  String?
+  title     String
+  kind      NoteKind
+  favorite  Boolean  @default(false)
+  tags      String   @default("") @db.Text
+
+  /// The whole note content, that is the same as the content.json file
+  /// on the tablet.
+  content   String   @db.LongText
+  /// Size of the content in bytes, computed on save. Counts towards the quota.
+  sizeBytes Int      @default(0)
+
+  /// Revision number. Goes up by one on every save and is used to tell whether
+  /// the tablet has an older version than the server. Synchronisation is
+  /// built on this.
+  version   Int      @default(1)
+  /// Hash of the content. When it matches there is nothing to transfer.
+  hash      String   @default("") @db.VarChar(64)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  /// Note in the bin. It is deleted for real only when the bin is emptied.
+  deletedAt DateTime?
+
+  owner       User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  folder      Folder?      @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  attachments Attachment[]
+  shares      Share[]
+  changes     LiveChange[]
+
+  @@index([ownerId, updatedAt])
+  @@index([folderId])
+  @@map("notes")
+}
+
+/// A photo or drawing belonging to a note. The file sits on disk and only the
+/// description stays in the database, so the database does not swell up with
+/// images.
+model Attachment {
+  id        String   @id @default(cuid())
+  noteId    String
+  /// Name used inside the note content, for example zdjecie-1.png.
+  name      String
+  mime      String
+  sizeBytes Int
+  /// Path relative to the files directory.
+  path      String   @db.Text
+  hash      String   @default("") @db.VarChar(64)
+  createdAt DateTime @default(now())
+
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@unique([noteId, name])
+  @@map("attachments")
+}
+
+// --- Sharing ---
+
+enum Permission {
+  READ
+  EDIT
+}
+
+/// A shared note. Without an e-mail address it works as a link for anyone who
+/// receives it. With an e-mail address it is personal and we send a notice.
+model Share {
+  id               String     @id @default(cuid())
+  noteId           String
+  token            String     @unique
+  permission       Permission @default(READ)
+  /// Empty means a link for anyone who has it.
+  email            String?
+  /// Whether someone without an account may use this.
+  anonymousAllowed Boolean    @default(true)
+  expiresAt        DateTime?
+  createdAt        DateTime   @default(now())
+  lastUsedAt       DateTime?
+
+  sharedById String
+  sharedBy   User @relation("SharedBy", fields: [sharedById], references: [id], onDelete: Cascade)
+  note       Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@index([noteId])
+  @@index([email])
+  @@map("shares")
+}
+
+// --- Live editing ---
+
+/// A single change sent by one of the people writing.
+///
+/// Clients fetch changes newer than the one they already have and apply them
+/// locally. The row of changes is also a record of what happened, so a note can
+/// be rebuilt from it should the full save be lost. Old entries are removed by
+/// the cleanup that folds them into the whole.
+model LiveChange {
+  id         BigInt   @id @default(autoincrement())
+  noteId     String
+  /// Who sent it. Empty for someone without an account editing from a link.
+  authorId   String?
+  /// Name shown next to the other person's cursor.
+  authorName String
+  /// Description of the change in JSON. The shape depends on the note kind.
+  operation  String   @db.LongText
+  createdAt  DateTime @default(now())
+
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@index([noteId, id])
+  @@map("live_changes")
+}
+
+// --- Administrator audit log ---
+
+/// Record of administrator actions. Needed so it is possible to check who
+/// changed whose quota or who blocked whom.
+model AuditEntry {
+  id        BigInt   @id @default(autoincrement())
+  actorId   String?
+  action    String
+  details   String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("audit_log")
+}

@@ -1,0 +1,401 @@
+/*
+  Kajet's look on the web.
+
+  This is the same palette and the same rules as in the tablet app: a desk with
+  a sheet of paper lying on it, hairlines instead of shadows and card borders,
+  one small corner radius, a sparing accent.
+
+*/
+
+:root {
+  --desk: #e7e2d6;
+  --sheet: #f4f1ea;
+  --text: #23211d;
+  --text-muted: #67635a;
+  --accent: #0f6b5c;
+  --on-accent: #f4f1ea;
+  --accent-haze: rgba(15, 107, 92, 0.1);
+  --rule: #d3ccbc;
+  --warning: #a6392e;
+
+  --radius: 3px;
+  --hairline: 1px;
+  --reading-width: 720px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  --font-heading: "Archivo", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", "Cascadia Mono", ui-monospace, monospace;
+}
+
+/*
+  The dark theme is not an inverted light one. The sheet is still lighter than
+  the background, but both are a warm graphite rather than black.
+
+  The dark colours are written twice: once for the system setting, once for a
+  manual choice on the page. The second block sits lower, so it wins, and that
+  is what makes the switch work both ways.
+*/
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --desk: #171614;
+    --sheet: #24231f;
+    --text: #e8e4da;
+    --text-muted: #9a948a;
+    --accent: #4fb39c;
+    --on-accent: #10221e;
+    --accent-haze: rgba(79, 179, 156, 0.18);
+    --rule: #35332c;
+    --warning: #e2857a;
+  }
+}
+
+:root[data-theme="dark"] {
+  --desk: #171614;
+  --sheet: #24231f;
+  --text: #e8e4da;
+  --text-muted: #9a948a;
+  --accent: #4fb39c;
+  --on-accent: #10221e;
+  --accent-haze: rgba(79, 179, 156, 0.18);
+  --rule: #35332c;
+  --warning: #e2857a;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--desk);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+  text-align: left;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  margin: 0;
+}
+
+h1 {
+  font-size: 30px;
+}
+h2 {
+  font-size: 21px;
+}
+h3 {
+  font-size: 16px;
+}
+
+p {
+  margin: 0 0 var(--space-3) 0;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+/* Visible outline when moving through with the keyboard. We never remove it. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* --- Layout --- */
+
+.sheet {
+  background: var(--sheet);
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+}
+
+.sheet-ruled {
+  background: var(--sheet);
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+  padding: var(--space-5);
+}
+
+.page {
+  width: 100%;
+  max-width: var(--reading-width);
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4);
+}
+
+.wide {
+  max-width: 1180px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.row-spread {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.divider {
+  height: 1px;
+  background: var(--rule);
+  border: none;
+  margin: var(--space-4) 0;
+}
+
+/* --- Type --- */
+
+.eyebrow {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0 0 var(--space-2) 0;
+}
+
+.small {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.lead {
+  color: var(--text-muted);
+  margin: 0 0 var(--space-4) 0;
+}
+
+.error {
+  color: var(--warning);
+  border-left: 2px solid var(--warning);
+  padding: var(--space-2) var(--space-3);
+  margin: 0 0 var(--space-4) 0;
+  background: var(--sheet);
+}
+
+.success {
+  color: var(--accent);
+  border-left: 2px solid var(--accent);
+  padding: var(--space-2) var(--space-3);
+  margin: 0 0 var(--space-4) 0;
+  background: var(--sheet);
+}
+
+/* --- Fields and buttons --- */
+
+label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: var(--space-1);
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="datetime-local"],
+select,
+textarea {
+  width: 100%;
+  padding: 11px 12px;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--text);
+  background: var(--sheet);
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent);
+}
+
+.field {
+  margin-bottom: var(--space-4);
+}
+
+button,
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  /* Smallest touch target. The same rule as in the app. */
+  min-height: 48px;
+  padding: 0 20px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: var(--radius);
+  border: var(--hairline) solid var(--rule);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+button:hover,
+.button:hover {
+  border-color: var(--accent);
+  text-decoration: none;
+}
+
+button.primary,
+.button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+}
+
+button.danger,
+.button.danger {
+  color: var(--warning);
+  border-color: var(--warning);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button.compact,
+.button.compact {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+/* --- Tables --- */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: var(--hairline) solid var(--rule);
+  vertical-align: middle;
+}
+
+th {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* A wide table scrolls inside its own box, not the whole page. */
+.table-scroll {
+  overflow-x: auto;
+}
+
+/* --- State tags --- */
+
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  border-radius: var(--radius);
+  border: var(--hairline) solid var(--rule);
+  color: var(--text-muted);
+}
+
+.tag.accent {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-haze);
+}
+
+.tag.danger {
+  color: var(--warning);
+  border-color: var(--warning);
+}
+
+/* --- Used-storage bar --- */
+
+.storage-bar {
+  height: 6px;
+  background: var(--rule);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.storage-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+.storage-bar.full > span {
+  background: var(--warning);
+}
+
+code,
+.mono {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  background: var(--desk);
+  padding: 2px 6px;
+  border-radius: var(--radius);
+  word-break: break-all;
+}
+
+/* People who ask for reduced motion get no transitions at all. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
