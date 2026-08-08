@@ -1,0 +1,545 @@
+/*
+  Strona tytułowa: kartka papieru, po której ktoś przeciągnął o wiele za grubą
+  kreskę zielonego atramentu. Kreska występuje dokładnie cztery razy (wpada
+  w hero, podkreśla słowo Kajet, rozwidla się przy wyborze konta i kończy
+  haczykiem przy pobieraniu), a każdy jej zakręt coś wskazuje. Reszta strony
+  jest cicha: między sekcjami nie ma linii, oddechy robi sam odstęp.
+
+  Barwy idą z globals.css (biurko, pismo, zieleń), więc motyw ciemny i pasek
+  przeglądarki działają jak na każdej innej stronie serwisu. Własne są tylko
+  dwie: --wkladka (ciemna kartka z kodem) i --obrys (ramka przycisków,
+  mocniejsza niż linia włosowa panelu, bo tu ramki są rzadkie i muszą być
+  widoczne także dla słabszych oczu - 3:1 do tła w obu motywach).
+*/
+
+.strona {
+  font-size: 17px;
+  --wkladka: #171614;
+  --obrys: color-mix(in srgb, var(--text) 55%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-theme="light"])) .strona {
+    --wkladka: var(--sheet);
+    --obrys: color-mix(in srgb, var(--text) 40%, transparent);
+  }
+}
+
+:global(:root[data-theme="dark"]) .strona {
+  --wkladka: var(--sheet);
+  --obrys: color-mix(in srgb, var(--text) 40%, transparent);
+}
+
+/* Pismo tytułowe jest inne niż w panelu - strona ma prawo mówić głośniej
+   niż formularze. Rozmiary nadpisują h1-h3 z globals.css. */
+.strona h1,
+.strona h2,
+.strona h3 {
+  font-family: "Bricolage Grotesque", var(--font-heading);
+  letter-spacing: -0.015em;
+}
+
+.strona h1 {
+  font-size: clamp(38px, 5.4vw, 56px);
+  font-weight: 700;
+  line-height: 1.08;
+}
+
+.strona h2 {
+  font-size: clamp(26px, 3.4vw, 34px);
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.strona h3 {
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.strona p {
+  margin: 0 0 20px 0;
+  max-width: 66ch;
+}
+
+.rzad {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding-inline: 22px;
+}
+
+/* Wąska kolumna stoi przy lewej krawędzi wspólnej siatki, nie na środku okna. */
+.waska {
+  max-width: 640px;
+  margin-inline: max(22px, calc((100% - 1120px) / 2 + 22px)) auto;
+  padding-inline: 0;
+}
+
+.nadtytul {
+  font-family: "Bricolage Grotesque", var(--font-heading);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0 0 14px 0;
+}
+
+.drobne {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.przeskok {
+  position: absolute;
+  left: -9999px;
+}
+
+.przeskok:focus {
+  position: static;
+  display: inline-block;
+  margin: 10px 22px;
+}
+
+/* --- Przyciski: rzadkie, więc z wyraźniejszą ramką niż w panelu --- */
+
+.przycisk {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 24px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  background: transparent;
+  border: 1.5px solid var(--obrys);
+  border-radius: var(--radius);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.przycisk:hover {
+  border-color: var(--accent);
+  text-decoration: none;
+}
+
+.pelny {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.pelny:hover {
+  background: color-mix(in srgb, var(--accent) 86%, var(--text));
+}
+
+.przyciski {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 18px;
+  margin-bottom: 18px;
+}
+
+/* Goły odnośnik obok przycisków. Globals zdejmuje podkreślenie odnośników,
+   a tutaj bez niego zostałby sam zielony napis bez zaproszenia do kliknięcia. */
+.zwyklyOdnosnik {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* --- Pasek górny: bez tła i bez kreski, trzyma go sam odstęp --- */
+
+.naglowek {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding-block: 20px;
+}
+
+.znak {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  text-decoration: none;
+  font-family: "Bricolage Grotesque", var(--font-heading);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.znak:hover {
+  text-decoration: none;
+}
+
+.znak svg {
+  display: block;
+  color: var(--accent);
+}
+
+.naglowekPrawa {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cichy {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 8px 6px;
+}
+
+.cichy:hover {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+/* --- Otwarcie: tekst po lewej, po prawej powietrze i kreska --- */
+
+.otwarcie {
+  display: grid;
+  gap: 10px;
+  padding-block: 16px 72px;
+}
+
+/*
+  Na wąskim ekranie kreski nie ma wcale. W jednej kolumnie zostawał z niej
+  ucięty kawałek łuku bez początku i końca, wiszący w pustym, 130-pikselowym
+  pasie nad nagłówkiem. Rysunek ma sens dopiero obok tekstu, więc wraca
+  razem z układem dwukolumnowym.
+*/
+.gest {
+  display: none;
+}
+
+.gest svg {
+  height: 320px;
+  width: auto;
+  flex-shrink: 0;
+}
+
+@media (min-width: 900px) {
+  .otwarcie {
+    grid-template-columns: 7fr 5fr;
+    align-items: center;
+    gap: 24px;
+    min-height: 72vh;
+    padding-block: 0 96px;
+  }
+
+  .gest {
+    display: flex;
+    justify-content: flex-end;
+    overflow: hidden;
+    height: 100%;
+    min-height: 520px;
+    align-items: flex-start;
+  }
+
+  .gest svg {
+    height: min(640px, 78vh);
+  }
+}
+
+.otwarcie h1 {
+  margin-bottom: 22px;
+  max-width: 14ch;
+}
+
+.zajawka {
+  font-size: 19px;
+  line-height: 1.55;
+  color: var(--text-muted);
+  max-width: 46ch;
+  margin-bottom: 26px;
+}
+
+/* Podkreślenie przyklejone do samego słowa, więc nie rozjedzie się przy
+   żadnej szerokości okna ani po zmianie języka. */
+.podkreslone {
+  position: relative;
+  white-space: nowrap;
+}
+
+.podkreslone svg {
+  position: absolute;
+  left: -0.12em;
+  bottom: -0.22em;
+  width: calc(100% + 0.4em);
+  height: 0.36em;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* Kreska w hero kreśli się raz przy wczytaniu. Tylko ona się rusza i tylko
+   u ludzi, którzy nie prosili o spokój (globals.css i tak zeruje animacje
+   przy prefers-reduced-motion, ale nie ma co na tym polegać w ciemno). */
+@media (prefers-reduced-motion: no-preference) {
+  .gestKreska {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: kreslenie 1.1s ease-out 0.2s forwards;
+  }
+
+  @keyframes kreslenie {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+}
+
+/* --- Cztery rodzaje notatek: cztery pasma, każde inne --- */
+
+.rodzaje {
+  padding-block: 0 48px;
+}
+
+.rodzaje h2 {
+  margin-bottom: 10px;
+}
+
+.wstep {
+  color: var(--text-muted);
+  margin-bottom: 34px;
+}
+
+.rodzaje h3 {
+  margin-bottom: 8px;
+}
+
+.pasmoPismo {
+  display: grid;
+  gap: 18px;
+  padding-block: 26px 42px;
+}
+
+@media (min-width: 880px) {
+  .pasmoPismo {
+    grid-template-columns: 5fr 7fr;
+    gap: 48px;
+    align-items: center;
+    padding-block: 30px 56px;
+  }
+}
+
+.pasmoPismo figure {
+  margin: 0;
+}
+
+.pasmoPismo figure svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  color: var(--text);
+}
+
+/* Pasmo tekstu jest celowo niskie i wąskie. Cisza też jest rytmem. */
+.pasmoTekst {
+  max-width: 560px;
+  padding-block: 10px 40px;
+}
+
+.pasmoMapa {
+  display: grid;
+  gap: 18px;
+  padding-block: 18px 44px;
+}
+
+@media (min-width: 880px) {
+  .pasmoMapa {
+    grid-template-columns: 4fr 7fr;
+    gap: 48px;
+    align-items: center;
+  }
+}
+
+.pasmoMapa svg {
+  display: block;
+  width: min(300px, 100%);
+  height: auto;
+  color: var(--text);
+}
+
+.pasmoKod {
+  display: grid;
+  gap: 18px;
+  padding-block: 14px 30px;
+}
+
+@media (min-width: 880px) {
+  .pasmoKod {
+    grid-template-columns: 6fr 6fr;
+    gap: 48px;
+    align-items: center;
+  }
+}
+
+/* Ciemna wkładka z kodem zapowiada motyw ciemny, zanim ktoś kliknie
+   przełącznik. Kod to kreski w układzie wcięć, nie trzeci krój pisma. */
+.wkladka {
+  margin: 0;
+  background: var(--wkladka);
+  border-radius: var(--radius);
+  padding: 22px 24px;
+}
+
+.wkladka svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* --- Rozwidlenie: katalog na urządzeniu albo konto na serwerze --- */
+
+.wybor {
+  padding-block: 40px 64px;
+}
+
+.wybor h2 {
+  margin-bottom: 6px;
+  max-width: 24ch;
+}
+
+.rozwidlenie {
+  display: none;
+}
+
+@media (min-width: 880px) {
+  .rozwidlenie {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin-block: 4px 8px;
+  }
+}
+
+.kolumny {
+  display: grid;
+  gap: 26px;
+}
+
+@media (min-width: 880px) {
+  .kolumny {
+    grid-template-columns: 5fr 7fr;
+    gap: 56px;
+    align-items: start;
+  }
+}
+
+.kolumny h3 {
+  margin-bottom: 8px;
+}
+
+.kolumny p:last-child {
+  margin-bottom: 0;
+}
+
+/* Konto dostaje własny arkusz - jaśniejszą kartkę położoną na biurku,
+   tak jak arkusze w całym panelu. Bez ramki. */
+.zKontem {
+  background: var(--sheet);
+  border-radius: var(--radius);
+  padding: 26px 28px 20px;
+}
+
+@media (min-width: 880px) {
+  .zKontem {
+    margin-top: 34px;
+  }
+}
+
+/* --- Udostępnianie: mała, cicha, sam tekst --- */
+
+.udostepnianie {
+  padding-block: 0 64px;
+}
+
+.udostepnianie h2 {
+  font-size: 22px;
+  margin-bottom: 8px;
+}
+
+.udostepnianie p {
+  margin-bottom: 0;
+  color: var(--text-muted);
+}
+
+/* --- Pobranie i zaproszenie --- */
+
+.pobranie {
+  padding-block: 0 84px;
+}
+
+.pobranieKolumny {
+  display: grid;
+  gap: 40px;
+}
+
+@media (min-width: 880px) {
+  .pobranieKolumny {
+    grid-template-columns: 7fr 5fr;
+    gap: 72px;
+    align-items: start;
+  }
+}
+
+.pobranie h2 {
+  margin-bottom: 14px;
+}
+
+.pobranie h3 {
+  margin-bottom: 8px;
+}
+
+/* Margines wyrównuje prawą kolumnę do h2 z lewej, więc obowiązuje tylko
+   wtedy, gdy lewa kolumna (wydanie aplikacji) naprawdę stoi obok. */
+@media (min-width: 880px) {
+  .pobranieKolumny > div + .pobraniePrawa {
+    margin-top: 62px;
+  }
+}
+
+.kroki {
+  margin: 0 0 24px 0;
+  padding-left: 22px;
+  max-width: 58ch;
+}
+
+.kroki li {
+  margin-bottom: 8px;
+  padding-left: 4px;
+}
+
+.hakPrzycisk {
+  position: relative;
+  display: inline-flex;
+  margin-bottom: 20px;
+}
+
+.hak {
+  display: none;
+}
+
+@media (min-width: 880px) {
+  .hak {
+    display: block;
+    position: absolute;
+    left: calc(100% + 14px);
+    top: -14px;
+    width: 92px;
+    height: auto;
+  }
+}
+
+.pobraniePrawa .przycisk {
+  margin-top: 4px;
+}

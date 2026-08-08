@@ -345,6 +345,96 @@ input[type="checkbox"] {
   }
 }
 
+/*
+  Zwijane filtry na telefonie. Karta z trzema polami i przyciskiem zabierała
+  pół ekranu, zanim w ogóle było widać notatki. Bez JavaScriptu: ukryte pole
+  wyboru steruje widocznością formularza, więc nic nie mruga przy wczytaniu.
+  Na szerokim ekranie przełącznika nie widać, a formularz stoi jak dotąd -
+  co do piksela, bo znaczniki przełącznika nie zajmują tam miejsca.
+*/
+.filter-toggle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.filter-summary {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .filter-summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 34px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  /* Znaczek rozwinięcia rysowany, jak strzałka w listach wyboru. */
+  .filter-summary::after {
+    content: "";
+    width: 12px;
+    height: 8px;
+    margin-left: auto;
+    background: var(--caret) center / contain no-repeat;
+    transition: transform 0.15s ease;
+  }
+
+  .filter-toggle:focus-visible ~ .filter-summary {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .filter-toggle:checked ~ .filter-summary {
+    margin-bottom: 14px;
+  }
+
+  .filter-toggle:checked ~ .filter-summary::after {
+    transform: rotate(180deg);
+  }
+
+  .library-filters {
+    display: none;
+  }
+
+  .filter-toggle:checked ~ .library-filters {
+    display: flex;
+  }
+}
+
+/*
+  Przyciski nad biblioteką. Na telefonie rząd łamał się na cztery nierówne
+  wiersze i zabierał więcej miejsca niż spis notatek. Siatka daje równe
+  kolumny (ten sam chwyt co .admin-nav), a nowa notatka - rzecz, po którą
+  się tu przychodzi - dostaje własny, pełny wiersz.
+*/
+@media (max-width: 600px) {
+  .library-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+  }
+
+  .library-actions .button {
+    padding: 0 6px;
+    font-size: 12px;
+    text-align: center;
+    line-height: 1.25;
+  }
+
+  .library-actions .button.primary {
+    grid-column: 1 / -1;
+    font-size: 13px;
+  }
+}
+
 button,
 .button {
   display: inline-flex;
@@ -498,6 +588,124 @@ th {
 /* A wide table scrolls inside its own box, not the whole page. */
 .table-scroll {
   overflow-x: auto;
+}
+
+/* Numer wersji stoi pod datą - własny wiersz w kolumnie „Zmiana". */
+.note-version {
+  display: block;
+}
+
+/*
+  Spis notatek na telefonie: te same wiersze tabeli ułożone w karty.
+
+  Pięć kolumn nie mieści się na wąskim ekranie. Tabela przewijała się w bok
+  w swojej ramce: tytuł notatki - jedyne, po czym się ją poznaje - ściskał
+  się do dwóch słów na wiersz, a rozmiar, data i działania stały poza
+  ekranem. Karta układa to jedno pod drugim: tytuł, drobna linia z rodzajem,
+  rozmiarem i datą, folder, działania. Znaczniki zostają te same - to wciąż
+  tabela, tylko inaczej ułożona - więc widok szeroki nie zmienia się wcale,
+  a czytnik ekranu dalej dostaje nagłówki kolumn.
+*/
+@media (max-width: 700px) {
+  .table-scroll .notes-table {
+    min-width: 0;
+  }
+
+  /* Nie display:none - czytnik ekranu ma dalej wiedzieć, co jest czym. */
+  .notes-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .notes-table,
+  .notes-table tbody {
+    display: block;
+  }
+
+  .notes-table tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 10px;
+    padding: 14px 0;
+    border-bottom: var(--hairline) solid var(--rule);
+  }
+
+  .notes-table tr:last-child {
+    border-bottom: 0;
+  }
+
+  .notes-table td {
+    display: block;
+    padding: 0;
+    border: 0;
+  }
+
+  /* Tytuł na całą szerokość, pod nim jedna drobna linia z resztą. */
+  .notes-table td:nth-child(1) {
+    flex: 1 0 100%;
+    order: 1;
+    font-size: 15px;
+  }
+
+  .notes-table td:nth-child(2) {
+    order: 2;
+  }
+
+  .notes-table td:nth-child(4) {
+    order: 3;
+  }
+
+  .notes-table td:nth-child(5) {
+    order: 4;
+  }
+
+  /* Kropka rozdziela to, co w tabeli rozdzielały kolumny. */
+  .notes-table td:nth-child(2)::after,
+  .notes-table td:nth-child(4)::after {
+    content: "·";
+    margin-left: 10px;
+    color: var(--text-muted);
+  }
+
+  /* Numer wersji dołącza do daty zamiast stawać w swoim wierszu. */
+  .notes-table .note-version {
+    display: inline;
+  }
+
+  .notes-table .note-version::before {
+    content: "· ";
+    margin-left: 6px;
+    color: var(--text-muted);
+  }
+
+  .notes-table td:nth-child(3) {
+    flex: 1 0 100%;
+    order: 5;
+    margin-top: 4px;
+  }
+
+  /* Wybór folderu na całą szerokość karty - w kolumnie tabeli musiał być
+     wąski, tu nie ma powodu urywać nazwy w połowie. */
+  .notes-table .folder-pick,
+  .notes-table .folder-pick-shell {
+    display: flex;
+    width: 100%;
+  }
+
+  .notes-table .folder-pick select {
+    width: 100%;
+    max-width: none;
+  }
+
+  .notes-table td:nth-child(6) {
+    flex: 1 0 100%;
+    order: 6;
+  }
 }
 
 /* --- State tags --- */

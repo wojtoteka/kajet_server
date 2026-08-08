@@ -127,7 +127,7 @@ export default async function LibraryPage({
           </div>
         </div>
 
-        <div className="row" style={{ flexWrap: "wrap" }}>
+        <div className="row library-actions" style={{ flexWrap: "wrap" }}>
           <Link className="button compact primary" href="/note/new">
             Nowa tekstowa
           </Link>
@@ -155,6 +155,15 @@ export default async function LibraryPage({
       </div>
 
       <section className="sheet" style={{ padding: "16px 18px", marginBottom: 16 }}>
+        {/*
+          Zwijane na telefonie (sam CSS, patrz .filter-toggle w globals.css):
+          karta filtrów zabierała pół ekranu, zanim było widać notatki.
+          Na szerokim ekranie ta para znaczników jest niewidoczna.
+        */}
+        <input type="checkbox" id="filter-fold" className="filter-toggle" />
+        <label htmlFor="filter-fold" className="filter-summary">
+          Filtry
+        </label>
         <form method="get" className="library-filters">
           <div className="field field-search">
             <label htmlFor="q">Szukaj</label>
@@ -285,7 +294,7 @@ export default async function LibraryPage({
             </div>
           ) : (
             <div className="sheet table-scroll">
-              <table>
+              <table className="notes-table">
                 <thead>
                   <tr>
                     <th>Notatka</th>
@@ -324,8 +333,7 @@ export default async function LibraryPage({
                       <td className="small">{humanSize(note.sizeBytes)}</td>
                       <td className="small">
                         {note.updatedAt.toLocaleString("pl-PL")}
-                        <br />
-                        wersja {note.version}
+                        <span className="note-version">wersja {note.version}</span>
                       </td>
                       <td>
                         <div className="row" style={{ flexWrap: "wrap", gap: 4 }}>
