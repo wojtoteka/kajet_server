@@ -32,6 +32,13 @@ path: string;
   sizeBytes: number;
 };
 
+/**
+ * Odmowa zapisu z komunikatem przeznaczonym dla użytkownika. Każdy inny
+ * wyjątek z zapisu (błędy dysku) niesie w treści ścieżki serwera i ma
+ * zostać w dzienniku, nie w odpowiedzi.
+ */
+export class RefusedUpload extends Error {}
+
 export async function storeAttachment(
   ownerId: string,
   noteId: string,
@@ -39,7 +46,7 @@ export async function storeAttachment(
   data: Buffer,
 ): Promise<StoredFile> {
   if (data.byteLength > settings.files.maxFileBytes) {
-    throw new Error(
+    throw new RefusedUpload(
       `Plik jest za duży. Największy przyjmowany rozmiar to ${Math.round(settings.files.maxFileBytes / 1024 / 1024)} MB.`,
     );
   }

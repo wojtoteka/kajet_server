@@ -34,6 +34,7 @@ import {
   resolveUploadMime,
   storeAttachment,
   deleteAttachment,
+  RefusedUpload,
 } from "@/lib/files";
 import { reserveBytes, changeUsed } from "@/lib/quota";
 
@@ -661,8 +662,11 @@ export async function uploadAttachment(_previous: Result, data: FormData): Promi
     stored = await storeAttachment(user.id, noteId, name, buffer);
   } catch (problem) {
     await changeUsed(user.id, -added);
+    // Błędy dysku niosą w treści pełne ścieżki serwera - do przeglądarki
+    // idzie tylko zdanie, że się nie udało, a szczegół zostaje w dzienniku.
+    console.error("[panel] attachment save", problem);
     return {
-      error: problem instanceof Error ? problem.message : "Nie udało się zapisać pliku.",
+      error: problem instanceof RefusedUpload ? problem.message : "Nie udało się zapisać pliku.",
     };
   }
 

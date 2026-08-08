@@ -115,9 +115,12 @@ export async function run(languageId: string, code: string, input = ""): Promise
 
     return await execute(language, directory, fileName, containerName, input, startedAt);
   } catch (problem) {
+    // Failures here come from mkdtemp/writeFile/chmod and carry server paths
+    // in the message - the client only hears that the run failed.
+    console.error("[code-runner]", problem);
     return {
       output: "",
-      errors: problem instanceof Error ? problem.message : "Nie udało się uruchomić programu.",
+      errors: "Nie udało się uruchomić programu.",
       exitCode: null,
       interrupted: false,
       timeMs: Date.now() - startedAt,
@@ -280,7 +283,11 @@ function readableError(problem: Error, dockerErrors: string): string {
       "Dodaj go do grupy docker i uruchom serwer ponownie."
     );
   }
-  return problem.message;
+  // An unrecognised failure of execFile has the whole docker command line in
+  // the message - host paths, mounted directories, limits. The client gets a
+  // plain sentence and the detail stays in the server log.
+  console.error("[code-runner]", problem, dockerErrors);
+  return "Uruchamianie kodu na tym serwerze nie działa. Szczegóły są w dzienniku serwera.";
 }
 
 export async function runnerState(): Promise<{ works: boolean; description: string }> {

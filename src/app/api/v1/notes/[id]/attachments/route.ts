@@ -7,6 +7,7 @@ import {
   resolveUploadMime,
   deleteAttachment,
   storeAttachment,
+  RefusedUpload,
 } from "@/lib/files";
 
 export { OPTIONS } from "@/lib/api";
@@ -71,9 +72,12 @@ export const POST = wrapApi(async (request: Request, { params }: { params: Promi
     stored = await storeAttachment(user.id, noteId, name, data);
   } catch (problem) {
     await changeUsed(user.id, -added);
+    // Disk errors carry absolute server paths in the message - the client
+    // only hears that the save failed, the detail stays in the log.
+    console.error("[api/v1] attachment save", problem);
     return error(
       "save-failed",
-      problem instanceof Error ? problem.message : "Nie udało się zapisać pliku.",
+      problem instanceof RefusedUpload ? problem.message : "Nie udało się zapisać pliku.",
       400,
     );
   }

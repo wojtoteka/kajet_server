@@ -30,11 +30,10 @@ export function wrapApi<Args extends unknown[]>(
       return await handler(...args);
     } catch (problem) {
       console.error("[api/v1]", problem);
-      return error(
-        "server-error",
-        problem instanceof Error ? problem.message : "Nieoczekiwany błąd serwera.",
-        500,
-      );
+      // The raw message stays in the log. Prisma is talkative: its messages
+      // carry table and column names, query shapes, even the duplicated value
+      // on a unique violation - a free map of the database for an attacker.
+      return error("server-error", "Nieoczekiwany błąd serwera.", 500);
     }
   };
 }
