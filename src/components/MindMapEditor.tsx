@@ -29,6 +29,9 @@ import { mapTally, type Words } from "@/lib/i18n";
 import { SaveStatus } from "@/components/SaveStatus";
 import { useAutosave } from "@/components/useAutosave";
 import { useSavedNote } from "@/components/useSavedNote";
+import { useNoteFlush } from "@/components/NoteSync";
+import { nodeGrowth } from "@/components/measureNodeText";
+import { arrangeMindMap } from "@/lib/mindmap-layout";
 import { TITLE_LIMIT } from "@/lib/note-title";
 
 type ActionResult = { error?: string; success?: string; version?: number; noteId?: string };
@@ -42,6 +45,9 @@ const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 4;
 const MIN_W = 80;
 const MIN_H = 40;
+
+/** Pola węzła, po których hasło może przestać się mieścić w pudełku. */
+const GROWING = ["text", "font", "fontSize", "bold", "italic"] as const;
 
 /*
   Barwy węzłów. `customColor` to liczba ARGB - dokładnie to, co trzyma plik
@@ -138,6 +144,26 @@ export function MindMapEditor({
   });
 
   /*
+    Zapis na żądanie asystenta. Nie idzie przez `flush` z autozapisu, bo tamten
+    odmawia w dwóch sytuacjach, które są tu właśnie te najważniejsze: gdy nic
+    się nie zmieniło i gdy notatki jeszcze nie ma. KajetAI czyta mapę z bazy,
+    więc mapa musi tam być - także wtedy, gdy powstała minutę temu i nikt jej
+    nie nazwał. `autosave=1` zostawia człowieka na tej samej stronie.
+  */
+  const saveForAssistant = useCallback((): boolean => {
+    const form = formRef.current;
+    if (!form) return false;
+    // Zapis już leci - jego odpowiedź i tak przyjdzie, nie ma po co wysyłać dwóch.
+    if (busy) return true;
+    markSent();
+    const data = new FormData(form);
+    data.set("autosave", "1");
+    startTransition(() => submit(data));
+    return true;
+  }, [busy, markSent, submit]);
+  useNoteFlush(saveForAssistant);
+
+  /*
     Zapis przyciskiem idzie tą samą drogą co autozapis. Gdyby szedł przez
     action={...} formularza, React po każdym zapisie czyściłby pola formularza.
   */
@@ -206,9 +232,26 @@ export function MindMapEditor({
 
   // --- Zmiany w węzłach ---
 
+  /*
+    Zmiany, po których hasło może przestać się mieścić. Węzeł ma `overflow:
+    hidden`, więc niezmieszczony napis nie wystaje - po prostu znika, i to bez
+    śladu. Dlatego po każdej takiej zmianie węzeł jest domierzany w
+    przeglądarce i, jeśli trzeba, ROŚNIE.
+
+    Rośnie, a nie „dopasowuje się": skurczenie pudełka po skasowaniu połowy
+    hasła cofałoby ręczne rozciągnięcie przy poprawianiu literówki. Od
+    zmniejszania jest uchwyt w rogu.
+  */
   function updateNode(id: string, patch: Partial<MindNode>, keep = false) {
     if (!keep) remember();
-    setNodes((list) => list.map((node) => (node.id === id ? { ...node, ...patch } : node)));
+    const mayOverflow = GROWING.some((field) => field in patch);
+    setNodes((list) =>
+      list.map((node) => {
+        if (node.id !== id) return node;
+        const next = { ...node, ...patch };
+        return mayOverflow ? { ...next, ...(nodeGrowth(next) ?? {}) } : next;
+      }),
+    );
   }
 
   /** Ta sama zmiana w trakcie ciągnięcia - bez zapisu do historii co klatkę. */
@@ -308,47 +351,25 @@ export function MindMapEditor({
     (edge) => !hidden.has(edge.fromId) && !hidden.has(edge.toId),
   );
 
-  /** Rozkłada mapę w drzewo: korzenie po lewej, dzieci kolumnami w prawo. */
+  /*
+    Rozkłada mapę promieniście: temat główny w środku, gałęzie dookoła.
+
+    Układ liczy `lib/mindmap-layout.ts` - ten sam, którego używa KajetAI po
+    swoich zmianach. Wcześniej były dwa osobne rachunki, jeden tu i jeden na
+    serwerze, i mapa układana przyciskiem wyglądała inaczej niż ta ułożona
+    przez asystenta.
+
+    Przy okazji każdy węzeł jest domierzany: „Rozłóż" to naturalny moment na
+    naprawienie pudełek, w których hasło nie mieściło się od dawna - na
+    przykład takich narysowanych na tablecie.
+  */
   function arrange() {
     remember();
-    const hasParent = new Set(edges.map((edge) => edge.toId));
-    const roots = nodes.filter((node) => !hasParent.has(node.id));
-    const placed = new Map<string, { x: number; y: number }>();
-    const seen = new Set<string>();
-    let cursorY = 40;
-
-    const walk = (id: string, depth: number): number => {
-      if (seen.has(id)) return cursorY;
-      seen.add(id);
-      const node = nodes.find((entry) => entry.id === id);
-      const height = node?.height ?? 64;
-      const kids = (childrenOf.get(id) ?? []).filter((child) => !seen.has(child));
-
-      const x = 40 + depth * (200 + GAP_X);
-      if (kids.length === 0 || node?.collapsed) {
-        placed.set(id, { x, y: cursorY });
-        cursorY += height + GAP_Y;
-        return cursorY;
-      }
-
-      const from = cursorY;
-      for (const child of kids) walk(child, depth + 1);
-      const to = cursorY;
-      placed.set(id, { x, y: (from + to) / 2 - height / 2 });
-      return cursorY;
-    };
-
-    for (const root of roots) walk(root.id, 0);
-    // Węzły bez żadnego połączenia lądują na dole, żeby nie przepadły.
-    for (const node of nodes) {
-      if (!placed.has(node.id)) {
-        placed.set(node.id, { x: 40, y: cursorY });
-        cursorY += (node.height ?? 64) + GAP_Y;
-      }
-    }
-
     setNodes((list) =>
-      list.map((node) => ({ ...node, ...(placed.get(node.id) ?? {}) })),
+      arrangeMindMap(
+        list.map((node) => ({ ...node, ...(nodeGrowth(node) ?? {}) })),
+        edges,
+      ),
     );
   }
 
