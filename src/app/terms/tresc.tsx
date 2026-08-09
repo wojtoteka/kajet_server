@@ -16,7 +16,7 @@ export function RegulaminPl() {
       <div className="legal-sheet legal-accent">
         <p className="eyebrow">Kajet</p>
         <h1>Regulamin</h1>
-        <p className="lead">Ostatnia aktualizacja: 7 sierpnia 2026 r.</p>
+        <p className="lead">Ostatnia aktualizacja: 9 sierpnia 2026 r.</p>
       </div>
 
       <div className="legal-sheet legal-toc">
@@ -33,6 +33,7 @@ export function RegulaminPl() {
           <li><a href="#par9">§ 9. Notatki należą do użytkownika</a></li>
           <li><a href="#par10">§ 10. Udostępnianie notatek</a></li>
           <li><a href="#par11">§ 11. Uruchamianie kodu</a></li>
+          <li><a href="#par11a">§ 11a. Asystent KajetAI</a></li>
           <li><a href="#par12">§ 12. Blokada konta</a></li>
           <li><a href="#par13">§ 13. Rezygnacja i usunięcie konta</a></li>
           <li><a href="#par14">§ 14. Etap rozwojowy i ryzyko utraty danych</a></li>
@@ -156,6 +157,18 @@ export function RegulaminPl() {
         <li>Administrator może odebrać prawo uruchamiania kodu pojedynczemu Kontu albo wyłączyć tę funkcję dla wszystkich, w szczególności gdy obciąża ona serwer. Pozostałe funkcje Kajetu działają wtedy bez zmian. <strong>W chwili ostatniej aktualizacji regulaminu uruchamianie kodu na serwerze jest wyłączone</strong>, a kod uruchamia się wyłącznie na urządzeniu.</li>
       </ol>
 
+      <h2 id="par11a">§ 11a. Asystent KajetAI</h2>
+      <ol className="legal-items">
+        <li>Kajet udostępnia asystenta, który na polecenie Użytkownika zmienia treść notatki tekstowej, mapy myśli albo pliku z kodem. Przy notatkach odręcznych asystent nie działa.</li>
+        <li>Funkcja jest <strong>opcjonalna i domyślnie niedostępna</strong>. Prawo do korzystania z niej nadaje pojedynczemu Kontu Administrator i może je w każdej chwili odebrać. Pozostałe funkcje Kajetu działają wtedy bez zmian.</li>
+        <li>Skorzystanie z asystenta oznacza, że <strong>treść notatki jest wysyłana do zewnętrznego dostawcy — Google LLC</strong> — którego model językowy wprowadza zmianę. Zasady przetwarzania tych danych, w tym wykorzystanie ich przez Google do rozwoju własnych produktów, opisuje punkt 3.9 <a href="/privacy#sek3">Polityki prywatności</a>.</li>
+        <li>Przed pierwszym użyciem Użytkownik potwierdza zgodę na wysyłanie treści notatek do Google. <strong>Bez zgody asystent nie działa.</strong> Zgodę można wycofać w każdej chwili w ustawieniach konta.</li>
+        <li><strong>Wyniki pracy modelu mogą być błędne, niepełne lub niezgodne z poleceniem.</strong> Model może też zmienić więcej, niż o to poproszono. Użytkownik odpowiada za sprawdzenie wprowadzonych zmian, zanim uzna notatkę za poprawną.</li>
+        <li>Każdą zmianę wprowadzoną przez asystenta można cofnąć jednym kliknięciem, dopóki nie zostanie zastąpiona kolejną zmianą. Administrator nie przechowuje wersji notatki sprzed zmiany dłużej niż do zamknięcia edytora.</li>
+        <li>Liczba wywołań asystenta jest ograniczona dobowo i godzinowo; Administrator może ustawić własny limit dla pojedynczego Konta oraz wyłączyć funkcję dla wszystkich, w szczególności gdy jej koszt albo obciążenie serwera tego wymagają.</li>
+        <li>Zabronione jest używanie asystenta do treści bezprawnych (§ 8), do obchodzenia limitów oraz do zautomatyzowanego, masowego przetwarzania treści.</li>
+      </ol>
+
       <h2 id="par12">§ 12. Blokada konta</h2>
       <ol className="legal-items">
         <li>Administrator może zablokować Konto, jeżeli Użytkownik rażąco lub uporczywie narusza regulamin, w szczególności § 7 i § 8, albo gdy Konto zagraża bezpieczeństwu Kajetu lub innych Użytkowników.</li>
@@ -257,7 +270,7 @@ export function RegulaminEn() {
       <div className="legal-sheet legal-accent">
         <p className="eyebrow">Kajet</p>
         <h1>Terms of service</h1>
-        <p className="lead">Last updated: 7 August 2026</p>
+        <p className="lead">Last updated: 9 August 2026</p>
       </div>
 
       <div className="legal-note">
@@ -278,6 +291,7 @@ export function RegulaminEn() {
           <li><a href="#par9">§ 9. Your notes are yours</a></li>
           <li><a href="#par10">§ 10. Sharing notes</a></li>
           <li><a href="#par11">§ 11. Running code</a></li>
+          <li><a href="#par11a">§ 11a. The KajetAI assistant</a></li>
           <li><a href="#par12">§ 12. Blocking an account</a></li>
           <li><a href="#par13">§ 13. Leaving and deleting the account</a></li>
           <li><a href="#par14">§ 14. Early development and the risk of losing data</a></li>
@@ -399,6 +413,18 @@ export function RegulaminEn() {
         <li>Code run on the server works inside a container cut off from the network, with limited running time, memory and privileges, and has no access to other Users' data.</li>
         <li>It is forbidden to run code meant to bypass those limits, to load the server, to mine cryptocurrency, to attack other systems or to reach other people's data.</li>
         <li>The Administrator may withdraw the right to run code from a single Account, or switch the feature off for everyone, in particular when it burdens the server. The rest of Kajet keeps working. <strong>As of the last update of these terms, running code on the server is switched off</strong> and code runs on the device only.</li>
+      </ol>
+
+      <h2 id="par11a">§ 11a. The KajetAI assistant</h2>
+      <ol className="legal-items">
+        <li>Kajet offers an assistant that, on the User's instruction, changes the content of a text note, a mind map or a code file. It does not work on handwritten notes.</li>
+        <li>The feature is <strong>optional and unavailable by default</strong>. The right to use it is granted to a single Account by the Administrator, who may withdraw it at any time. The rest of Kajet keeps working.</li>
+        <li>Using the assistant means that <strong>the content of the note is sent to an external provider — Google LLC</strong> — whose language model makes the change. How that data is processed, including Google's use of it to develop its own products, is described in section 3.9 of the <a href="/privacy#sek3">Privacy Policy</a>.</li>
+        <li>Before first use the User confirms consent to sending note content to Google. <strong>Without consent the assistant does not work.</strong> The consent can be withdrawn at any time in account settings.</li>
+        <li><strong>The model's output may be wrong, incomplete or not what was asked for.</strong> It may also change more than was requested. The User is responsible for checking the changes made before treating the note as correct.</li>
+        <li>Every change made by the assistant can be undone with one click, until it is replaced by a further change. The Administrator does not keep the version of the note from before the change beyond the closing of the editor.</li>
+        <li>The number of assistant calls is limited per day and per hour; the Administrator may set a separate limit for a single Account and may switch the feature off for everyone, in particular where its cost or the load on the server requires it.</li>
+        <li>Using the assistant for unlawful content (§ 8), to circumvent limits, or for automated bulk processing of content, is forbidden.</li>
       </ol>
 
       <h2 id="par12">§ 12. Blocking an account</h2>
