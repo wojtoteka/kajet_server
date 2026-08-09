@@ -902,6 +902,13 @@ export type Words = {
   apiNothingToRun: string;
   apiUnknownAddress: string;
   apiAiNoConsent: string;
+  apiAiWrongKind: string;
+  apiAiNoInstruction: string;
+  apiAiTimeout: string;
+  apiAiBusy: string;
+  apiAiBroken: string;
+  apiAiNoAnswer: string;
+  apiAiHistoryCleared: string;
 
 
   apiServerBusy: string;
@@ -2072,6 +2079,20 @@ const pl: Words = {
   apiAiNoConsent:
     "Zanim asystent ruszy, trzeba potwierdzić zgodę na wysyłanie treści notatki do Google. " +
     "Zgoda jest w ustawieniach konta.",
+  apiAiWrongKind:
+    "Asystent pracuje przy notatkach tekstowych, mapach myśli i kodzie. Przy notatce " +
+    "odręcznej nie ma czego czytać.",
+  apiAiNoInstruction: "Napisz, co asystent ma zmienić w notatce.",
+  apiAiTimeout:
+    "Asystent nie odpowiedział na czas. Notatka została nietknięta – spróbuj jeszcze raz.",
+  apiAiBusy:
+    "Model odmówił obsługi – na dziś skończył się limit zapytań. Spróbuj później; " +
+    "notatka została nietknięta.",
+  apiAiBroken:
+    "Nie udało się porozumieć z modelem. Notatka została nietknięta.",
+  apiAiNoAnswer:
+    "Asystent nie zaproponował żadnej zmiany. Spróbuj napisać polecenie inaczej.",
+  apiAiHistoryCleared: "Rozmowa z asystentem przy tej notatce została wyczyszczona.",
 
   apiServerBusy: "Serwer uruchamia już tyle programów naraz, ile może.",
   apiTryInSeconds: "Spróbuj za kilka sekund.",
@@ -3263,6 +3284,19 @@ const en: Words = {
   apiAiNoConsent:
     "Before the assistant will work, consent to sending note content to Google has to be " +
     "confirmed. The consent sits in account settings.",
+  apiAiWrongKind:
+    "The assistant works on text notes, mind maps and code. There is nothing for it to " +
+    "read in a handwritten note.",
+  apiAiNoInstruction: "Write what the assistant should change in the note.",
+  apiAiTimeout:
+    "The assistant did not answer in time. The note was left untouched – try again.",
+  apiAiBusy:
+    "The model turned the request down – the quota of requests has run out for now. " +
+    "Try later; the note was left untouched.",
+  apiAiBroken: "Could not reach the model. The note was left untouched.",
+  apiAiNoAnswer:
+    "The assistant proposed no change at all. Try putting the instruction differently.",
+  apiAiHistoryCleared: "The conversation with the assistant about this note has been cleared.",
 
   apiServerBusy: "The server is already running as many programs at once as it can.",
   apiTryInSeconds: "Try again in a few seconds.",
@@ -3594,6 +3628,21 @@ export function tooManyRuns(words: Words, limit: number, retryInSeconds: number)
   }
   const times = limit === 1 ? "raz" : `${limit} razy`;
   return `Kod uruchomił się już ${times} w ciągu minuty. Odczekaj ${retryInSeconds} s i spróbuj jeszcze raz.`;
+}
+
+/**
+ * Notatka za duża dla asystenta. Nigdy nie obcinamy jej po cichu - notatka
+ * wróciłaby wtedy skrócona o połowę, a człowiek dowiedziałby się o tym dopiero
+ * przy czytaniu.
+ */
+export function aiNoteTooBig(words: Words, chars: number, most: number): string {
+  const has = chars.toLocaleString(words.locale);
+  const limit = most.toLocaleString(words.locale);
+  return words.locale === "en-GB"
+    ? `This note has ${has} characters and the assistant takes at most ${limit}. ` +
+        `Split it into a few smaller notes, or change the part you need by hand.`
+    : `Ta notatka ma ${has} znaków, a asystent przyjmuje najwyżej ${limit}. ` +
+        `Podziel ją na kilka mniejszych albo popraw ten fragment ręcznie.`;
 }
 
 /** Załącznik cięższy, niż serwer przyjmuje. */
