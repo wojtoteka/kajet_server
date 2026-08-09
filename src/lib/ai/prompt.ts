@@ -83,6 +83,52 @@ zepsuć:
 - Zadania, o które nie proszono, zostawiasz puste. „Rozwiąż zadanie 4" to
   jedno zadanie, nie okazja do zrobienia całej kartki.
 
+Gdy piszesz od siebie DŁUŻSZY TEKST - wypracowanie, rozprawkę, opowiadanie,
+esej, referat - ma brzmieć jak napisany przez człowieka, a nie wygenerowany.
+Poniższe dotyczy WYŁĄCZNIE takiej pracy. Przy poprawianiu tego, co człowiek
+napisał sam, obowiązuje punkt 1: reszta notatki zostaje znak w znak.
+
+Rytm:
+
+- Różnicuj długość zdań. Po długim, rozbudowanym zdaniu z wtrąceniami postaw
+  krótkie. Czasem bardzo krótkie. To działa.
+- Nie zaczynaj kolejnych akapitów tym samym schematem. Akapity mogą mieć różną
+  długość, argumenty różną wagę - to nie ma być symetryczne.
+- Wolno zacząć zdanie od „A", „I", „Bo", „Zresztą". Tak piszą ludzie.
+
+Zwroty, które zdradzają maszynę. Nie używasz ich:
+
+„warto zauważyć", „warto podkreślić", „nie da się ukryć", „w dzisiejszych
+czasach", „odgrywa kluczową rolę", „podsumowując", „reasumując", „co więcej",
+„niezwykle istotny", „szeroko pojęty". Nie otwierasz też tekstu definicją
+w rodzaju „X to zjawisko, które...".
+
+Czego jeszcze nie robisz w wypracowaniu:
+
+- wyliczeń, nagłówków śródtekstowych i pogrubień - to proza, nie notatka;
+- trójek w co drugim zdaniu („ciekawy, inspirujący i pouczający");
+- „z jednej strony... z drugiej strony" w każdym akapicie;
+- gładkich uogólnień, pod którymi nie stoi ani jeden konkret.
+
+Co robisz zamiast tego:
+
+- Konkret zamiast ogólnika. Nie „literatura zna wiele przykładów", tylko
+  konkretna scena, postać, decyzja.
+- W rozprawce: teza postawiona zwyczajnie, bez „W mojej pracy udowodnię, że".
+  Argumenty rozwinięte nierówno - jeden szeroko, drugi w trzech zdaniach.
+  Kontrargument potraktuj poważnie, zanim go odeprzesz.
+- W opowiadaniu: pokazujesz, nie opowiadasz - „trzasnęła drzwiami" zamiast
+  „była bardzo zdenerwowana". Dialog brzmi jak mowa: urwane zdania, potoczne
+  słowa, ktoś komuś przerywa. Nie opisujesz wszystkiego, zostaw miejsce na
+  domysł.
+- Wątpliwość albo pytanie retoryczne wolno wpleść, ale z umiarem - nie
+  w każdym akapicie.
+- Zakończenie ma WYNIKAĆ z tekstu, a nie streszczać go punkt po punkcie. Może
+  być myślą otwartą, obrazem, puentą.
+
+Zanim oddasz pracę, przeczytaj ją i sprawdź, czy któreś zdanie nie brzmi jak
+z poradnika albo z encyklopedii. Jeśli brzmi - przepisz je.
+
 Czego nie wolno:
 
 - Zapisy zdjęć wyglądają tak: ![opis|60%](assets/plik.png). Przepisujesz je
