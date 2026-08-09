@@ -2145,10 +2145,24 @@ tbody tr:last-child td {
   width: auto;
 }
 
+/*
+  Formularz z polem obok przycisku - to ten od powodu blokady. Pole i przycisk
+  jako elementy liniowe wyrównywały się do linii pisma, a dolny odstęp pola
+  podnosił przycisk o dziewięć pikseli ponad dolną krawędź formularza; w rzędzie
+  wyglądał przez to na przesunięty w górę wobec sąsiadów.
+*/
+.account-columns .account-buttons form {
+  display: flex;
+  /* Do DOLNEJ krawędzi, nie do środka: pole jest o cztery piksele wyższe od
+     przycisku, więc wyśrodkowanie podnosiło przycisk ponad linię sąsiadów. */
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
 .account-columns .account-buttons input:not([type="checkbox"]) {
   width: 200px;
   max-width: 100%;
-  margin-bottom: 6px;
+  margin-bottom: 0;
 }
 
 /* Skasowanie konta odsunięte na koniec pasa - to jedyna nieodwracalna rzecz
@@ -2221,6 +2235,12 @@ tbody tr:last-child td {
 
   .account-columns .account-buttons button {
     width: 100%;
+  }
+
+  /* Na jednej kolumnie pole i przycisk schodzą pod siebie, każde na pełną
+     szerokość - obok siebie zostałyby po połowie i nie zmieściłyby podpisu. */
+  .account-columns .account-buttons form {
+    flex-wrap: wrap;
   }
 
   .account-columns .account-buttons input:not([type="checkbox"]) {

@@ -35,6 +35,46 @@ export const LAYOUT_GAP_Y = 20;
 const DEFAULT_WIDTH = 160;
 const DEFAULT_HEIGHT = 64;
 
+/*
+  Rozmiar węzła pod długość hasła.
+
+  Węzeł ma na sztywno 160×64 i `overflow: hidden`, więc dłuższe hasło było po
+  prostu UCINANE - a mapa od asystenta bywa pełna haseł w rodzaju „Koalicja
+  polsko-litewska". Do tego jeden bardzo szeroki węzeł odsuwa całą następną
+  kolumnę, bo kolumny stoją za najszerszym węzłem poziomu; dlatego jest górna
+  granica szerokości, a dłuższe hasła schodzą do drugiego wiersza.
+
+  Miar pisma na serwerze nie ma, więc szerokość znaku jest oszacowana: przy
+  15 px krój tekstowy daje średnio około 7,8 px na znak. Wynik nie musi być
+  co do piksela - ma sprawić, żeby napis się zmieścił, a nie żeby przylegał.
+*/
+const NODE_MAX_WIDTH = 280;
+const CHAR_WIDTH = 7.8;
+const LINE_HEIGHT = 20;
+const PAD_X = 20;
+const PAD_Y = 12;
+
+/** Szerokość i wysokość węzła, w których hasło się zmieści. */
+export function fitNodeSize(text: string | undefined): { width: number; height: number } {
+  const clean = (text ?? "").trim();
+  if (!clean) return { width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT };
+
+  const ink = clean.length * CHAR_WIDTH;
+
+  // Najpierw poszerzamy do granicy - dopiero potem łamiemy na kolejne wiersze.
+  // Zaokrąglenie do dwudziestki, żeby kolumny nie stały na przypadkowych
+  // ułamkach piksela.
+  const width = Math.min(
+    NODE_MAX_WIDTH,
+    Math.max(DEFAULT_WIDTH, Math.ceil((ink + PAD_X) / 20) * 20),
+  );
+
+  const lines = Math.max(1, Math.ceil(ink / (width - PAD_X)));
+  const height = Math.max(DEFAULT_HEIGHT, lines * LINE_HEIGHT + PAD_Y);
+
+  return { width, height };
+}
+
 /**
  * Nowe położenia wszystkich węzłów. Reszta węzła - napis, barwa, kształt,
  * pismo odręczne - zostaje nietknięta.

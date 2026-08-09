@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { arrangeMindMap, LAYOUT_GAP_Y } from "@/lib/mindmap-layout";
+import { arrangeMindMap, fitNodeSize, LAYOUT_GAP_Y } from "@/lib/mindmap-layout";
 import { createMindEdge, createMindNode } from "@/lib/mindmap-note";
 import type { MindEdge, MindNode } from "@/lib/document";
 
@@ -133,5 +133,47 @@ describe("układ mapy myśli", () => {
     expect(ulozone.filter((node) => node.id === "wspolny")).toHaveLength(1);
     const punkty = ulozone.map((node) => `${node.x}:${node.y}`);
     expect(new Set(punkty).size).toBe(3);
+  });
+});
+
+describe("rozmiar węzła pod hasło", () => {
+  it("krótkie hasło zostaje w rozmiarze domyślnym", () => {
+    expect(fitNodeSize("Zakupy")).toEqual({ width: 160, height: 64 });
+  });
+
+  it("pusty węzeł też - może w nim być pismo odręczne", () => {
+    expect(fitNodeSize("")).toEqual({ width: 160, height: 64 });
+    expect(fitNodeSize(undefined)).toEqual({ width: 160, height: 64 });
+  });
+
+  it("dłuższe hasło dostaje szerszy węzeł, żeby nie zostało ucięte", () => {
+    const { width } = fitNodeSize("Koalicja polsko-litewska");
+    expect(width).toBeGreaterThan(160);
+  });
+
+  it("szerokość ma górną granicę - inaczej jeden węzeł odsuwałby całą kolumnę", () => {
+    const { width } = fitNodeSize("bardzo długie hasło ".repeat(10));
+    expect(width).toBeLessThanOrEqual(280);
+  });
+
+  it("po dojściu do granicy hasło schodzi do kolejnych wierszy", () => {
+    const krotkie = fitNodeSize("Pokój w Toruniu");
+    const dlugie = fitNodeSize("bardzo długie hasło ".repeat(10));
+    expect(dlugie.height).toBeGreaterThan(krotkie.height);
+  });
+
+  it("mapa ułożona po dopasowaniu rozmiarów nadal nie nakłada węzłów", () => {
+    const { nodes, edges } = grunwald();
+    const zRozmiarem = nodes.map((node) => ({ ...node, ...fitNodeSize(node.text) }));
+    const ulozone = arrangeMindMap(zRozmiarem, edges);
+
+    const punkty = ulozone.map((node) => `${node.x}:${node.y}`);
+    expect(new Set(punkty).size).toBe(ulozone.length);
+
+    // Kolumny nie zachodzą na siebie: prawa krawędź poziomu jest na lewo od
+    // lewej krawędzi następnego.
+    const korzen = ulozone.find((n) => n.id === "korzen")!;
+    const galaz = ulozone.find((n) => n.id === "g0")!;
+    expect(korzen.x + (korzen.width ?? 160)).toBeLessThanOrEqual(galaz.x);
   });
 });
