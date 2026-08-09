@@ -2,6 +2,7 @@
 
 import { startTransition, useActionState, useCallback, useMemo, useRef, useState } from "react";
 import { assistKey, type CodeAssistEdit } from "@/lib/code-assist";
+import { previewDocument } from "@/lib/code-preview";
 import { useWords } from "@/components/LanguageProvider";
 import { SaveStatus } from "@/components/SaveStatus";
 import { useAutosave } from "@/components/useAutosave";
@@ -270,6 +271,11 @@ export function CodeNotePanel({
           Ramka jest odcięta od reszty strony: `sandbox` bez `allow-same-origin`
           daje jej własne, obce pochodzenie, więc skrypty w podglądzie działają,
           ale nie sięgną ani do ciasteczek Kajetu, ani do notatek obok.
+
+          Odnośniki do innych stron otwierają się w nowej karcie (lib/code-preview.ts),
+          bo w ramce większość z nich pokazałaby tylko „serwer odrzucił połączenie".
+          Nowa karta ma być zwykłą kartą, a nie kolejnym odciętym pudełkiem - stąd
+          `allow-popups-to-escape-sandbox`; sam podgląd zostaje odcięty jak był.
         */
         <section className="sheet" style={{ padding: "22px 24px" }}>
           <p className="eyebrow">{words.previewEyebrow}</p>
@@ -279,8 +285,8 @@ export function CodeNotePanel({
           </p>
           <iframe
             title={words.htmlPreviewFrame}
-            sandbox="allow-scripts allow-forms allow-modals allow-popups"
-            srcDoc={currentSource}
+            sandbox="allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox"
+            srcDoc={previewDocument(currentSource)}
             style={{
               width: "100%",
               minHeight: 360,
