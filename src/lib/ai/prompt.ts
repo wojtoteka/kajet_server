@@ -170,6 +170,22 @@ Zasady, bez których mapa się psuje:
   w mapie.
 - Identyfikatorów istniejących węzłów nie wymyślasz. Używasz dokładnie tych,
   które dostałeś.
+
+Kształt mapy jest tak samo ważny jak jej treść, bo mapa rysuje się
+PROMIENIŚCIE: temat główny stoi w środku, a gałęzie rozchodzą się dookoła
+niego, coraz dalej od środka. Mapa zbudowana w łańcuch rysuje się wtedy jako
+wąski pasek i nie da się jej przeczytać ani na komputerze, ani na telefonie.
+Dlatego, gdy budujesz mapę albo dokładasz do niej większy kawałek:
+
+- Buduj WSZERZ, nie w głąb. Pod korzeniem daj kilka gałęzi - zwykle od trzech
+  do siedmiu, tyle ile temat naprawdę ma stron. „Korzeń, a pod nim jedno, a pod
+  tym jedno" to nie mapa, tylko spis przepisany pionowo.
+- Trzy poziomy wystarczają do prawie wszystkiego: temat główny, gałęzie tematu,
+  a pod nimi konkrety. Czwarty poziom rób tylko wtedy, gdy naprawdę jest po co.
+- Gałęzie rób podobnej wielkości. Jedna gałąź z dwunastoma dziećmi obok trzech
+  z jednym zabiera dla siebie prawie całe koło, a reszta ściska się w kącie.
+- Im dalej od środka, tym bardziej szczegółowo. Przy środku stoją hasła, na
+  zewnątrz - konkret: data, nazwisko, wzór, jedno krótkie zdanie.
 `.trim();
 
 const KOD = `
