@@ -95,6 +95,27 @@ export function shareWriteDecision(
   return { allowed: true, isOwner: decision.isOwner };
 }
 
+/** Jak rzadko odnotowujemy otwarcie odnośnika - patrz TOUCH_EVERY_MS w app-token.ts. */
+const TOUCH_EVERY_MS = 5 * 60_000;
+
+/**
+ * Odnotowanie, że z odnośnika skorzystano. Bez czekania i z rzadka.
+ *
+ * Ta sama rzecz co przy tokenach aplikacji i z tego samego powodu: `update`
+ * z warunkiem na kluczu robi w Prismie odczyt, a potem zapis, więc dwa
+ * otwarcia naraz potrafią wywrócić się na „Record has changed since last
+ * read". `updateMany` idzie jednym poleceniem, a warunek na starej wartości
+ * sprawia, że przegrany wyścig po prostu nic nie robi.
+ */
+function touchShare(id: string, lastUsedAt: Date | null): void {
+  const now = Date.now();
+  if (lastUsedAt && now - lastUsedAt.getTime() < TOUCH_EVERY_MS) return;
+
+  void prisma.share
+    .updateMany({ where: { id, lastUsedAt }, data: { lastUsedAt: new Date(now) } })
+    .catch(() => undefined);
+}
+
 export async function ownerAccess(noteId: string): Promise<AccessResult> {
   const session = await auth();
   if (!session?.user?.id) return { ok: false, reason: (await apiWords()).apiMustSignIn };
@@ -173,9 +194,7 @@ export async function tokenAccess(token: string): Promise<AccessResult> {
     };
   }
 
-  void prisma.share
-    .update({ where: { id: share.id }, data: { lastUsedAt: new Date() } })
-    .catch(() => undefined);
+  touchShare(share.id, share.lastUsedAt);
 
   return {
     ok: true,
@@ -219,11 +238,7 @@ export async function tokenWriteAccess(token: string): Promise<AccessResult> {
   }
 
   // Zapis to też użycie odnośnika - panel pokazuje przy nim ostatnie otwarcie.
-  if (!decision.isOwner) {
-    void prisma.share
-      .update({ where: { id: share.id }, data: { lastUsedAt: new Date() } })
-      .catch(() => undefined);
-  }
+  if (!decision.isOwner) touchShare(share.id, share.lastUsedAt);
 
   return {
     ok: true,

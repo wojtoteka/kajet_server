@@ -13,7 +13,10 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     share: {
       findUnique: vi.fn(),
-      update: vi.fn(async () => ({})),
+      // Odnotowanie otwarcia odnośnika idzie przez updateMany, nie update -
+      // update robi w Prismie odczyt przed zapisem i przy dwóch otwarciach
+      // naraz wywracało się na „Record has changed since last read".
+      updateMany: vi.fn(async () => ({ count: 1 })),
     },
   },
 }));
