@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Icon } from "@/components/Icon";
@@ -15,12 +15,36 @@ import type { AiAnswer } from "@/app/note/[id]/actions";
   prawdziwa i tak stoi na serwerze - ukrycie pola nigdy nie było
   zabezpieczeniem.
 
-  Cofnięcie działa na treści, którą trzymamy w pamięci przeglądarki OD PRZED
-  zmiany. Nie ma osobnej ścieżki „przywróć" na serwerze: stara treść wraca
-  zwykłym zapisem, jako kolejna wersja notatki.
+  Panel stoi POD edytorem i jest domyślnie zwinięty. Wcześniej siedział nad
+  notatką, zawsze otwarty, i zabierał dwieście pikseli, zanim widać było
+  pierwszą literę.
+
+  Cofnięcie działa na treści zapamiętanej W CHWILI WYSYŁANIA POLECENIA, a nie
+  na tej z propsa. Props po odświeżeniu strony niesie już treść PO zmianie -
+  cofanie do niej wysyłało to samo, co jest, serwer stwierdzał brak zmian,
+  a panel i tak meldował sukces. Nie ma osobnej ścieżki „przywróć" na serwerze:
+  stara treść wraca zwykłym zapisem, jako kolejna wersja notatki.
 */
 
 type Turn = { request: string; reply: string };
+
+export type AiPanelProps = {
+  noteId: string;
+  version: number;
+  /** Treść notatki teraz - to od niej zaczyna się „Cofnij" przy najbliższej prośbie. */
+  contentBefore: string;
+  consented: boolean;
+  askAction: (noteId: string, instruction: string, baseVersion: number) => Promise<AiAnswer>;
+  undoAction: (noteId: string, content: string, baseVersion: number) => Promise<AiAnswer>;
+  historyAction: (noteId: string) => Promise<Turn[]>;
+  clearAction: (noteId: string) => Promise<boolean>;
+  /**
+   * Melunek dla strony: asystent doprowadził notatkę do tej wersji. Strona
+   * czeka, aż serwer poda jej tę wersję, i dopiero wtedy przerysowuje edytor -
+   * bez tego pole do pisania pokazywałoby starą treść aż do odświeżenia.
+   */
+  onApplied?: (version: number) => void;
+};
 
 export function AiPanel({
   noteId,
@@ -31,17 +55,8 @@ export function AiPanel({
   undoAction,
   historyAction,
   clearAction,
-}: {
-  noteId: string;
-  version: number;
-  /** Treść notatki teraz - to do niej wraca „Cofnij". */
-  contentBefore: string;
-  consented: boolean;
-  askAction: (noteId: string, instruction: string, baseVersion: number) => Promise<AiAnswer>;
-  undoAction: (noteId: string, content: string, baseVersion: number) => Promise<AiAnswer>;
-  historyAction: (noteId: string) => Promise<Turn[]>;
-  clearAction: (noteId: string) => Promise<boolean>;
-}) {
+  onApplied,
+}: AiPanelProps) {
   const words = useWords();
   const router = useRouter();
   const [busy, startTransition] = useTransition();
@@ -51,19 +66,8 @@ export function AiPanel({
   const [undoneAt, setUndoneAt] = useState<number | null>(null);
   const [turns, setTurns] = useState<Turn[] | null>(null);
 
-  if (!consented) {
-    return (
-      <section className="sheet ai-panel">
-        <p className="eyebrow">{words.aiTitle}</p>
-        <p className="lead" style={{ margin: "6px 0 12px 0" }}>
-          {words.aiNeedsConsent}
-        </p>
-        <Link className="button compact" href="/account#asystent">
-          {words.aiGoToAccount}
-        </Link>
-      </section>
-    );
-  }
+  /** Treść sprzed ostatniej prośby. To do niej wraca „Cofnij". */
+  const before = useRef<string | null>(null);
 
   /** Wersja, na której stoi kolejny zapis: po zmianie asystenta ta nowa. */
   const currentVersion = answer?.status === "zmieniono" ? answer.version : version;
@@ -71,6 +75,8 @@ export function AiPanel({
   function ask() {
     const asked = instruction.trim();
     if (!asked) return;
+    // Migawka PRZED wysłaniem - potem props już nie będzie tym, czym był.
+    before.current = contentBefore;
     startTransition(async () => {
       const result = await askAction(noteId, asked, currentVersion);
       setAnswer(result);
@@ -79,6 +85,7 @@ export function AiPanel({
       // zostać, żeby dało się poprawić jedno słowo i spróbować znowu.
       if (result.status === "zmieniono") {
         setInstruction("");
+        onApplied?.(result.version);
         router.refresh();
       }
       if (turns !== null) setTurns(await historyAction(noteId));
@@ -86,11 +93,14 @@ export function AiPanel({
   }
 
   function undo() {
+    const back = before.current ?? contentBefore;
     startTransition(async () => {
-      const result = await undoAction(noteId, contentBefore, currentVersion);
+      const result = await undoAction(noteId, back, currentVersion);
       if (result.status === "zmieniono") {
         setAnswer(null);
         setUndoneAt(Date.now());
+        before.current = null;
+        onApplied?.(result.version);
         router.refresh();
       } else if (result.status === "blad") {
         setAnswer(result);
@@ -99,101 +109,116 @@ export function AiPanel({
   }
 
   return (
-    <section className="sheet ai-panel">
-      <p className="eyebrow">{words.aiTitle}</p>
+    <details className="sheet ai-fold">
+      <summary>
+        <span className="eyebrow">{words.aiTitle}</span>
+      </summary>
 
-      <div className="field" style={{ marginBottom: 10 }}>
-        <label htmlFor="ai-instruction">{words.aiHint}</label>
-        <textarea
-          id="ai-instruction"
-          rows={2}
-          value={instruction}
-          disabled={busy}
-          onChange={(event) => setInstruction(event.target.value)}
-        />
+      <div className="ai-body">
+        {!consented ? (
+          <>
+            <p className="lead" style={{ margin: "0 0 12px 0" }}>{words.aiNeedsConsent}</p>
+            <Link className="button compact" href="/account#asystent">
+              {words.aiGoToAccount}
+            </Link>
+          </>
+        ) : (
+          <>
+            <div className="field" style={{ marginBottom: 10 }}>
+              <label htmlFor="ai-instruction">{words.aiHint}</label>
+              <textarea
+                id="ai-instruction"
+                rows={2}
+                value={instruction}
+                disabled={busy}
+                onChange={(event) => setInstruction(event.target.value)}
+              />
+            </div>
+
+            <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
+              <button
+                type="button"
+                className="compact primary"
+                onClick={ask}
+                disabled={busy || instruction.trim() === ""}
+              >
+                {busy ? words.aiWorking : words.aiAsk}
+              </button>
+
+              {answer?.status === "zmieniono" ? (
+                <button type="button" className="compact" onClick={undo} disabled={busy}>
+                  <Icon name="undo" size={18} />
+                  {words.aiUndo}
+                </button>
+              ) : null}
+            </div>
+
+            {answer?.status === "zmieniono" ? (
+              <p className="lead" style={{ margin: "12px 0 0 0" }}>{answer.opis}</p>
+            ) : null}
+
+            {answer?.status === "pytanie" ? (
+              <div style={{ marginTop: 12 }}>
+                <p className="eyebrow">{words.aiQuestionLabel}</p>
+                <p className="lead" style={{ margin: "4px 0 0 0" }}>{answer.pytanie}</p>
+              </div>
+            ) : null}
+
+            {answer?.status === "konflikt" ? (
+              <p className="error" style={{ marginTop: 12 }}>{words.apiConflict}</p>
+            ) : null}
+
+            {answer?.status === "blad" ? (
+              <p className="error" style={{ marginTop: 12 }}>{answer.message}</p>
+            ) : null}
+
+            {undoneAt !== null ? (
+              <p className="lead" style={{ margin: "12px 0 0 0" }}>{words.aiUndone}</p>
+            ) : null}
+
+            <details
+              style={{ marginTop: 14 }}
+              onToggle={async (event) => {
+                if ((event.target as HTMLDetailsElement).open && turns === null) {
+                  setTurns(await historyAction(noteId));
+                }
+              }}
+            >
+              <summary className="eyebrow" style={{ cursor: "pointer" }}>
+                {words.aiHistoryTitle}
+              </summary>
+
+              {turns !== null && turns.length === 0 ? (
+                <p className="small" style={{ marginTop: 8 }}>{words.aiHistoryEmpty}</p>
+              ) : null}
+
+              {turns?.map((turn, at) => (
+                <div key={at} style={{ marginTop: 10 }}>
+                  <p style={{ margin: 0, fontWeight: 500 }}>{turn.request}</p>
+                  <p className="small" style={{ margin: "2px 0 0 0" }}>{turn.reply}</p>
+                </div>
+              ))}
+
+              {turns !== null && turns.length > 0 ? (
+                <button
+                  type="button"
+                  className="compact"
+                  style={{ marginTop: 12 }}
+                  disabled={busy}
+                  onClick={() =>
+                    startTransition(async () => {
+                      await clearAction(noteId);
+                      setTurns([]);
+                    })
+                  }
+                >
+                  {words.aiForgetHistory}
+                </button>
+              ) : null}
+            </details>
+          </>
+        )}
       </div>
-
-      <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
-        <button
-          type="button"
-          className="compact primary"
-          onClick={ask}
-          disabled={busy || instruction.trim() === ""}
-        >
-          {busy ? words.aiWorking : words.aiAsk}
-        </button>
-
-        {answer?.status === "zmieniono" ? (
-          <button type="button" className="compact" onClick={undo} disabled={busy}>
-            <Icon name="undo" size={18} />
-            {words.aiUndo}
-          </button>
-        ) : null}
-      </div>
-
-      {answer?.status === "zmieniono" ? (
-        <p className="lead" style={{ margin: "12px 0 0 0" }}>{answer.opis}</p>
-      ) : null}
-
-      {answer?.status === "pytanie" ? (
-        <div style={{ marginTop: 12 }}>
-          <p className="eyebrow">{words.aiQuestionLabel}</p>
-          <p className="lead" style={{ margin: "4px 0 0 0" }}>{answer.pytanie}</p>
-        </div>
-      ) : null}
-
-      {answer?.status === "konflikt" ? (
-        <p className="error" style={{ marginTop: 12 }}>{words.apiConflict}</p>
-      ) : null}
-
-      {answer?.status === "blad" ? (
-        <p className="error" style={{ marginTop: 12 }}>{answer.message}</p>
-      ) : null}
-
-      {undoneAt !== null ? (
-        <p className="lead" style={{ margin: "12px 0 0 0" }}>{words.aiUndone}</p>
-      ) : null}
-
-      <details
-        style={{ marginTop: 14 }}
-        onToggle={async (event) => {
-          if ((event.target as HTMLDetailsElement).open && turns === null) {
-            setTurns(await historyAction(noteId));
-          }
-        }}
-      >
-        <summary className="eyebrow" style={{ cursor: "pointer" }}>
-          {words.aiHistoryTitle}
-        </summary>
-
-        {turns !== null && turns.length === 0 ? (
-          <p className="small" style={{ marginTop: 8 }}>{words.aiHistoryEmpty}</p>
-        ) : null}
-
-        {turns?.map((turn, at) => (
-          <div key={at} style={{ marginTop: 10 }}>
-            <p style={{ margin: 0, fontWeight: 500 }}>{turn.request}</p>
-            <p className="small" style={{ margin: "2px 0 0 0" }}>{turn.reply}</p>
-          </div>
-        ))}
-
-        {turns !== null && turns.length > 0 ? (
-          <button
-            type="button"
-            className="compact"
-            style={{ marginTop: 12 }}
-            disabled={busy}
-            onClick={() =>
-              startTransition(async () => {
-                await clearAction(noteId);
-                setTurns([]);
-              })
-            }
-          >
-            {words.aiForgetHistory}
-          </button>
-        ) : null}
-      </details>
-    </section>
+    </details>
   );
 }

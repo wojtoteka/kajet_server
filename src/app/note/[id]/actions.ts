@@ -981,6 +981,14 @@ export async function undoAssistant(
   if (saved.status === "error") return { status: "blad", message: saved.message };
   if (saved.status === "conflict") return { status: "konflikt" };
 
+  // „Bez zmian" znaczy, że treść do cofnięcia była identyczna z tą, która
+  // w notatce już stoi - czyli nic się nie cofnęło. Meldowanie sukcesu w tym
+  // miejscu było jedynym powodem, dla którego zepsute cofanie wyglądało na
+  // działające.
+  if (saved.status === "unchanged") {
+    return { status: "blad", message: words.aiUndoFailed };
+  }
+
   revalidatePath(`/note/${noteId}`);
   return {
     status: "zmieniono",

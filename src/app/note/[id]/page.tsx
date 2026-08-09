@@ -16,7 +16,7 @@ import { TextNoteEditor } from "@/components/TextNoteEditor";
 import { MindMapEditor } from "@/components/MindMapEditor";
 import { HandwritingEditor } from "@/components/HandwritingEditor";
 import { CodeNotePanel } from "@/components/CodeNotePanel";
-import { AiPanel } from "@/components/AiPanel";
+import { NoteLive } from "@/components/NoteLive";
 import { aiVisibleFor } from "@/lib/ai/access";
 import { aiHandles } from "@/lib/ai/tools";
 import { AttachmentsPanel } from "@/components/AttachmentsPanel";
@@ -144,122 +144,130 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
         </div>
       </div>
 
-      {/*
-        Asystent stoi NAD edytorami, wspólny dla trzech rodzajów notatki.
-        Przy odręcznej nie ma go wcale - nie ma tam czego czytać.
-      */}
-      {assistantHere ? (
-        <div style={{ marginBottom: 20 }}>
-          <AiPanel
-            noteId={note.id}
-            version={note.version}
-            contentBefore={note.content}
-            consented={owner?.aiConsentAt != null}
-            askAction={askAssistant}
-            undoAction={undoAssistant}
-            historyAction={readAiConversation}
-            clearAction={clearAiConversation}
-          />
-        </div>
-      ) : null}
-
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 24 }}>
-        {note.kind === "TEXT" ? (
-          <section>
-            <p className="eyebrow" style={{ marginBottom: 10 }}>
-              {words.editing}
-            </p>
-            <TextNoteEditor
-              action={saveTextNote}
-              uploadAction={uploadAttachment}
-              noteId={note.id}
-              version={note.version}
-              title={note.title}
-              markdown={textMarkdownFromContent(note.content)}
-              appearance={textAppearanceFromContent(note.content)}
-              autoSave={writing.autoSave}
-              bold={writing.bold}
-              submitLabel={words.save}
-            />
-          </section>
-        ) : null}
+        {/*
+          Asystent stoi POD edytorem, zwinięty, wspólny dla trzech rodzajów
+          notatki. Przy odręcznej nie ma go wcale - nie ma tam czego czytać.
 
-        {note.kind === "MINDMAP" && mindMapBody ? (
-          <section>
-            <p className="eyebrow" style={{ marginBottom: 10 }}>
-              {words.editingMindMap}
-            </p>
-            <MindMapEditor
-              action={saveMindMapNote}
-              noteId={note.id}
-              version={note.version}
-              title={note.title}
-              initial={mindMapBody}
-              autoSave={writing.autoSave}
-              submitLabel={words.save}
-            />
-          </section>
-        ) : null}
-
-        {note.kind === "HANDWRITTEN" ? (
-          handwritingBody ? (
+          NoteLive owija sam edytor, nie całą stronę: to on przerysowuje pole do
+          pisania, kiedy asystent zmieni treść. Poza opakowaniem zostają pliki
+          przy notatce i udostępnianie - one dostają świeże dane bez niczyjej
+          pomocy, bo są serwerowe i bezstanowe.
+        */}
+        <NoteLive
+          version={note.version}
+          ai={
+            assistantHere
+              ? {
+                  noteId: note.id,
+                  version: note.version,
+                  contentBefore: note.content,
+                  consented: owner?.aiConsentAt != null,
+                  askAction: askAssistant,
+                  undoAction: undoAssistant,
+                  historyAction: readAiConversation,
+                  clearAction: clearAiConversation,
+                }
+              : null
+          }
+        >
+          {note.kind === "TEXT" ? (
             <section>
               <p className="eyebrow" style={{ marginBottom: 10 }}>
-                {words.editingHandwriting}
+                {words.editing}
               </p>
-              <HandwritingEditor
-                action={saveHandwritingNote}
+              <TextNoteEditor
+                action={saveTextNote}
                 uploadAction={uploadAttachment}
                 noteId={note.id}
                 version={note.version}
                 title={note.title}
-                initial={handwritingBody}
+                markdown={textMarkdownFromContent(note.content)}
+                appearance={textAppearanceFromContent(note.content)}
                 autoSave={writing.autoSave}
+                bold={writing.bold}
                 submitLabel={words.save}
-                attachments={attachments}
               />
             </section>
-          ) : (
+          ) : null}
+
+          {note.kind === "MINDMAP" && mindMapBody ? (
             <section>
-              <p className="error">
-                {words.handwritingUnreadable}
+              <p className="eyebrow" style={{ marginBottom: 10 }}>
+                {words.editingMindMap}
               </p>
+              <MindMapEditor
+                action={saveMindMapNote}
+                noteId={note.id}
+                version={note.version}
+                title={note.title}
+                initial={mindMapBody}
+                autoSave={writing.autoSave}
+                submitLabel={words.save}
+              />
             </section>
-          )
-        ) : null}
+          ) : null}
 
-        {note.kind === "CODE" ? (
-          <section>
-            <CodeNotePanel
-              saveAction={saveCodeNote}
-              runAction={runCodeAction}
-              noteId={note.id}
-              version={note.version}
-              title={note.title}
-              language={codeBody?.language ?? "python"}
-              source={codeBody?.source ?? ""}
-              languages={languageOptions()}
-              canRun={canRun}
-              runnerHint={runnerHint}
-              autoSave={writing.autoSave}
-              submitLabel={words.save}
-            />
-            {!codeBody ? (
-              <p className="error" style={{ marginTop: 12 }}>
-                {words.codeUnreadable}
-              </p>
-            ) : null}
-          </section>
-        ) : null}
+          {note.kind === "HANDWRITTEN" ? (
+            handwritingBody ? (
+              <section>
+                <p className="eyebrow" style={{ marginBottom: 10 }}>
+                  {words.editingHandwriting}
+                </p>
+                <HandwritingEditor
+                  action={saveHandwritingNote}
+                  uploadAction={uploadAttachment}
+                  noteId={note.id}
+                  version={note.version}
+                  title={note.title}
+                  initial={handwritingBody}
+                  autoSave={writing.autoSave}
+                  submitLabel={words.save}
+                  attachments={attachments}
+                />
+              </section>
+            ) : (
+              <section>
+                <p className="error">
+                  {words.handwritingUnreadable}
+                </p>
+              </section>
+            )
+          ) : null}
 
-        {note.kind !== "TEXT" &&
-        note.kind !== "CODE" &&
-        note.kind !== "HANDWRITTEN" &&
-        note.kind !== "MINDMAP" ? (
-          <section>
-            <NotePreview content={note.content} noteId={note.id} />
-          </section>
-        ) : null}
+          {note.kind === "CODE" ? (
+            <section>
+              <CodeNotePanel
+                saveAction={saveCodeNote}
+                runAction={runCodeAction}
+                noteId={note.id}
+                version={note.version}
+                title={note.title}
+                language={codeBody?.language ?? "python"}
+                source={codeBody?.source ?? ""}
+                languages={languageOptions()}
+                canRun={canRun}
+                runnerHint={runnerHint}
+                autoSave={writing.autoSave}
+                submitLabel={words.save}
+              />
+              {!codeBody ? (
+                <p className="error" style={{ marginTop: 12 }}>
+                  {words.codeUnreadable}
+                </p>
+              ) : null}
+            </section>
+          ) : null}
+
+          {note.kind !== "TEXT" &&
+          note.kind !== "CODE" &&
+          note.kind !== "HANDWRITTEN" &&
+          note.kind !== "MINDMAP" ? (
+            <section>
+              <NotePreview content={note.content} noteId={note.id} />
+            </section>
+          ) : null}
+        </NoteLive>
 
         <AttachmentsPanel
           noteId={note.id}

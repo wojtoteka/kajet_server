@@ -920,6 +920,7 @@ export type Words = {
   aiWorking: string;
   aiUndo: string;
   aiUndone: string;
+  aiUndoFailed: string;
   aiQuestionLabel: string;
   aiHistoryTitle: string;
   aiHistoryEmpty: string;
@@ -2129,6 +2130,9 @@ const pl: Words = {
   aiWorking: "Asystent pracuje nad notatką…",
   aiUndo: "Cofnij zmianę",
   aiUndone: "Zmiana cofnięta.",
+  // Napis przepisany znak w znak z aplikacji (Words.kt), żeby obie strony
+  // mówiły w tej sprawie jednym zdaniem.
+  aiUndoFailed: "Nie udało się cofnąć zmiany. Notatka została taka, jak ją zmienił asystent.",
   aiQuestionLabel: "Asystent pyta",
   aiHistoryTitle: "Wcześniejsze polecenia",
   aiHistoryEmpty: "Przy tej notatce jeszcze o nic nie proszono.",
@@ -3366,6 +3370,7 @@ const en: Words = {
   aiWorking: "The assistant is working on the note...",
   aiUndo: "Undo the change",
   aiUndone: "Change undone.",
+  aiUndoFailed: "The change could not be undone. The note stayed as the assistant left it.",
   aiQuestionLabel: "The assistant asks",
   aiHistoryTitle: "Earlier instructions",
   aiHistoryEmpty: "Nothing has been asked about this note yet.",
