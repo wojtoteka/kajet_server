@@ -18,6 +18,17 @@
   --rule: #d3ccbc;
   --warning: #a6392e;
 
+  /* Ink colours for handwriting. Each has a light and a dark variant (the same
+     pairs as in the tablet app), so a note stays readable in both themes. */
+  --ink: #23211d;
+  --ink-sea: #0f6b5c;
+  --ink-red: #a6392e;
+  --ink-blue: #2850a0;
+
+  /* Znaczek listy rozwijanej - rysowany, nie systemowy. Barwa siedzi
+     w zmiennej, bo w ciemnym motywie musi się zmienić razem z pismem. */
+  --caret: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1.4 1.6 6 6.2 10.6 1.6' fill='none' stroke='%2367635a' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+
   --radius: 3px;
   --hairline: 1px;
   --reading-width: 720px;
@@ -54,6 +65,18 @@
     --accent-haze: rgba(79, 179, 156, 0.18);
     --rule: #35332c;
     --warning: #e2857a;
+
+    --ink: #e8e4da;
+    --ink-sea: #4fb39c;
+    --ink-red: #e2857a;
+    --ink-blue: #8fb4e8;
+
+    --caret: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1.4 1.6 6 6.2 10.6 1.6' fill='none' stroke='%239a948a' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  }
+
+  /* On a dark sheet a highlighter has to lighten, not darken. */
+  :root:not([data-theme="light"]) .stroke-highlighter {
+    mix-blend-mode: screen;
   }
 }
 
@@ -67,12 +90,66 @@
   --accent-haze: rgba(79, 179, 156, 0.18);
   --rule: #35332c;
   --warning: #e2857a;
+
+  --ink: #e8e4da;
+  --ink-sea: #4fb39c;
+  --ink-red: #e2857a;
+  --ink-blue: #8fb4e8;
+
+  --caret: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1.4 1.6 6 6.2 10.6 1.6' fill='none' stroke='%239a948a' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+:root[data-theme="dark"] .stroke-highlighter {
+  mix-blend-mode: screen;
+}
+
+/* A highlighter goes under the writing: it darkens what lies beneath instead
+   of covering it. The dark theme flips this to lightening (blocks above). */
+.stroke-highlighter {
+  mix-blend-mode: multiply;
 }
 
 *,
 *::before,
 *::after {
   box-sizing: border-box;
+}
+
+/* Paski przewijania w barwach motywu - systemowy jasny pasek świecił
+   w ciemnym motywie jak neon. Firefox bierze scrollbar-color, Chromium
+   i Safari reguły ::-webkit-scrollbar (tam scrollbar-color je wyłącza,
+   więc zostaje tylko dla przeglądarek bez webkitowych pseudoelementów). */
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--rule) transparent;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--rule);
+  border-radius: 999px;
+  /* Przezroczysta ramka odsuwa uchwyt od krawędzi, jakby miał własny tor. */
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 html,
@@ -89,12 +166,28 @@ body {
   line-height: 1.62;
   -webkit-font-smoothing: antialiased;
   text-align: left;
+
+  /* Stopka ma stać na samym dole serwisu: na krótkiej stronie dopchnięta do
+     dołu okna, na długiej pod treścią. Stąd kolumna na wysokość okna i treść,
+     która zajmuje całą wolną resztę. dvh, bo na telefonie pasek przeglądarki
+     chowa się i wraca, a 100vh liczy się wtedy do wysokości bez paska. */
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
 }
 
+.site-main {
+  flex: 1 0 auto;
+}
+
+/* Nagłówki piszą tym samym krojem co strona tytułowa. Drobne napisy
+   (nadpisy, nagłówki tabel, znaczniki) zostają w Archivo, bo Bricolage
+   w małych stopniach robi się dziwaczny. Treść notatek (.rich-text) też
+   zostaje przy swoim - to dokument człowieka, nie nasz interfejs. */
 h1,
 h2,
 h3 {
-  font-family: var(--font-heading);
+  font-family: "Bricolage Grotesque", var(--font-heading);
   font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1.25;
@@ -169,6 +262,26 @@ a:hover {
   flex-wrap: wrap;
 }
 
+/* --- Telefon: menu i nagłówek mają mieścić się na wąskim ekranie --- */
+@media (max-width: 600px) {
+  .page {
+    padding: var(--space-4) var(--space-3);
+  }
+
+  /* Rzędy przycisków zawijają się, zamiast rozpychać stronę na boki. */
+  .row {
+    flex-wrap: wrap;
+    row-gap: var(--space-2);
+  }
+
+  /* Ciaśniejsze przyciski menu: mniej rzędów po zawinięciu. */
+  button.compact,
+  .button.compact {
+    min-height: 34px;
+    padding: 0 10px;
+  }
+}
+
 .column {
   display: flex;
   flex-direction: column;
@@ -212,6 +325,19 @@ a:hover {
   background: var(--sheet);
 }
 
+/*
+  Spokojna informacja: coś jest wyłączone albo niedostępne, ale nic się nie
+  zepsuło. Osobno od `.error`, bo czerwień znaczy „awaria" i mówienie nią
+  o wyłączonej możliwości niepotrzebnie straszy.
+*/
+.notice {
+  color: var(--text-muted);
+  border-left: 2px solid var(--rule);
+  padding: var(--space-2) var(--space-3);
+  margin: 0 0 var(--space-4) 0;
+  background: var(--desk);
+}
+
 .success {
   color: var(--accent);
   border-left: 2px solid var(--accent);
@@ -235,6 +361,7 @@ input[type="password"],
 input[type="number"],
 input[type="search"],
 input[type="datetime-local"],
+input[type="url"],
 select,
 textarea {
   width: 100%;
@@ -259,6 +386,23 @@ input[type="search"] {
   appearance: none;
 }
 
+/*
+  Lista rozwijana z własnym znaczkiem. Systemowy stał wciśnięty w samą krawędź
+  pola, a w ciemnym motywie świecił obco - ten siedzi kawałek od brzegu i ma
+  barwę pisma. Pole zostaje tej samej szerokości; zmienia się tylko miejsce
+  znaczka i zapas z prawej, żeby nie wchodził na napis.
+*/
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 34px;
+  background-image: var(--caret);
+  background-repeat: no-repeat;
+  background-position: right 13px center;
+  background-size: 12px 8px;
+  cursor: pointer;
+}
+
 input[type="checkbox"] {
   width: 18px;
   height: 18px;
@@ -272,6 +416,46 @@ input[type="checkbox"] {
   margin-bottom: var(--space-4);
 }
 
+/* Pole wyboru pliku - z ramką i przyciskiem w duchu reszty formularzy,
+   zamiast surowej kontrolki przeglądarki. */
+input[type="file"] {
+  width: 100%;
+  padding: 8px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text-muted);
+  background: var(--desk);
+  border: var(--hairline) dashed var(--rule);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+input[type="file"]::file-selector-button {
+  margin-right: 12px;
+  padding: 8px 14px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--sheet);
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+input[type="file"]:hover {
+  border-color: var(--accent);
+}
+
+input[type="file"]:hover::file-selector-button {
+  border-color: var(--accent);
+}
+
+input[type="file"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .field > label {
   color: var(--text-muted);
   font-size: 12px;
@@ -279,7 +463,7 @@ input[type="checkbox"] {
   letter-spacing: 0.02em;
 }
 
-/* Library filter bar — one polished row that wraps cleanly on narrow screens */
+/* Library filter bar - one polished row that wraps cleanly on narrow screens */
 .library-filters {
   display: flex;
   flex-wrap: wrap;
@@ -304,20 +488,6 @@ input[type="checkbox"] {
 .library-filters .field-kind {
   flex: 0 1 150px;
   min-width: 130px;
-}
-
-.library-filters .filter-check {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  margin: 0;
-  padding: 0 2px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text);
-  cursor: pointer;
-  white-space: nowrap;
 }
 
 .library-filters .filter-actions {
@@ -486,6 +656,82 @@ button.compact,
   font-size: 12px;
 }
 
+/* --- Icons (Material Symbols, fonts.google.com/icons) --- */
+
+.ms {
+  font-family: "Material Symbols Rounded";
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  flex-shrink: 0;
+  font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+}
+
+/* Ikona jako całe działanie: kwadratowy przycisk bez podpisu. */
+button.icon-only,
+.button.icon-only {
+  padding: 0;
+  width: 36px;
+  min-width: 36px;
+  min-height: 36px;
+}
+
+button.icon-only.roomy,
+.button.icon-only.roomy {
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* Przycisk w stanie włączonym - na przykład gwiazdka na ulubionej notatce. */
+button.on,
+.button.on {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-haze);
+}
+
+/* Wybór motywu w nagłówku - trzy przyciski w jednej ramce. Wybrany świeci
+   akcentem, pozostałe są przygaszone, żeby nagłówek nie robił się jarmarczny. */
+.theme-switch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+}
+
+.theme-switch button {
+  width: 34px;
+  min-width: 34px;
+  min-height: 32px;
+  padding: 0;
+  border-color: transparent;
+  color: var(--text-muted);
+}
+
+.theme-switch button:hover {
+  border-color: var(--rule);
+  color: var(--text);
+}
+
+.theme-switch button.on {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-haze);
+}
+
 /* --- Note editors --- */
 
 .editor-toolbar {
@@ -497,6 +743,27 @@ button.compact,
   background: var(--desk);
   border: var(--hairline) solid var(--rule);
   border-radius: var(--radius);
+}
+
+/* Pole w pasku narzędzi (krój, rozmiar) - zamiast podpisu ma ikonę, więc
+   przygasza się sama ikona, a nie wpisana wartość. */
+.toolbar-field {
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.toolbar-field select,
+.toolbar-field input {
+  color: var(--text);
+}
+
+/* Lista rozwijana w pasku narzędzi - węższa i drobniejsza niż pola
+   formularzy, żeby pasek nie rósł od jednej kontrolki. */
+select.toolbar-select {
+  width: auto;
+  min-width: 140px;
+  padding: 6px 30px 6px 8px;
+  font-size: 12px;
 }
 
 .toolbar-sep {
@@ -524,11 +791,32 @@ button.compact,
   border-color: var(--text-muted);
 }
 
+/* Kółko z plusem - dokłada slot na własny kolor. Puste, więc bez wypełnienia. */
+.ink-swatch.blank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border-style: dashed;
+  box-shadow: none;
+  color: var(--text-muted);
+}
+
+.ink-swatch.blank:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.ink-swatch.blank:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/*
+  Zaznaczona barwa dostaje obrączkę, ale NIE rośnie. Powiększanie kółka
+  rozpychało wiersz palety: sąsiedzi zjeżdżali w dół i cała siatka wyglądała
+  na przekrzywioną, zależnie od tego, którą barwę się właśnie wybrało.
+*/
 .ink-swatch.active {
-  width: 34px;
-  height: 34px;
-  min-height: 34px;
-  min-width: 34px;
   border-color: var(--accent);
   box-shadow:
     0 0 0 2px var(--sheet),
@@ -546,6 +834,218 @@ button.compact,
   .editor-split {
     grid-template-columns: 1fr;
   }
+}
+
+/* Pole pisane pismem maszynowym - kod i jego standardowe wejście. */
+textarea.mono-field {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* Tytuł i język notatki CODE: obok siebie, na telefonie jedno pod drugim. */
+.code-note-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px;
+  gap: 14px;
+}
+
+@media (max-width: 600px) {
+  .code-note-head {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Notatka tekstowa w kawałkach - jak w aplikacji. Zdjęcie stoi w treści jako
+   zdjęcie, a kawałki do pisania mają wyglądać na dalszy ciąg tej samej
+   kartki, więc same w sobie są niewidoczne: ramkę ma tylko całość. */
+.note-blocks {
+  padding: 10px 12px;
+  background: var(--desk);
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+}
+
+.note-blocks:focus-within {
+  border-color: var(--accent);
+}
+
+/* Pole do pisania z gotowym wyglądem (RichText.tsx). Wygląd znaczników jest
+   ten sam co w podglądzie notatki - to, co widać w trakcie pisania, ma być
+   tym, co zobaczy druga osoba. */
+.rich-text {
+  display: block;
+  position: relative;
+  padding: 2px 0;
+  outline: none;
+  overflow-wrap: anywhere;
+}
+
+.rich-text.empty::before {
+  content: attr(data-placeholder);
+  position: absolute;
+  inset-inline-start: 0;
+  top: 2px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.rich-text p {
+  margin: 0 0 0.65em 0;
+}
+
+.rich-text > :last-child {
+  margin-bottom: 0;
+}
+
+.rich-text h1,
+.rich-text h2,
+.rich-text h3 {
+  font-family: var(--font-heading);
+  line-height: 1.25;
+  margin: 0.9em 0 0.35em 0;
+}
+
+.rich-text h1 {
+  font-size: 1.55em;
+}
+
+.rich-text h2 {
+  font-size: 1.3em;
+}
+
+.rich-text h3 {
+  font-size: 1.12em;
+}
+
+.rich-text ul,
+.rich-text ol {
+  margin: 0.4em 0;
+  padding-inline-start: 1.4em;
+}
+
+.rich-text li {
+  margin: 0.15em 0;
+}
+
+/* Lista zadań: kwadracik rysuje arkusz, więc treść pozycji zostaje zwykłym
+   tekstem do pisania. Klik w kwadracik odhacza (patrz toggleTaskAt). */
+.rich-text ul[data-kind="task"] {
+  list-style: none;
+  padding-inline-start: 0;
+}
+
+.rich-text ul[data-kind="task"] > li::before {
+  content: "☐";
+  display: inline-block;
+  width: 22px;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.rich-text ul[data-kind="task"] > li[data-done="true"]::before {
+  content: "☑";
+  color: var(--accent);
+}
+
+.rich-text ul[data-kind="task"] > li[data-done="true"] {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.rich-text blockquote {
+  margin: 0.6em 0;
+  padding: 2px 0 2px 14px;
+  border-inline-start: 2px solid var(--accent);
+  color: var(--text-muted);
+}
+
+.rich-text pre {
+  margin: 0.6em 0;
+  padding: 12px 14px;
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  white-space: pre-wrap;
+  background: var(--sheet);
+  border-radius: var(--radius);
+  border-inline-start: 2px solid var(--rule);
+}
+
+.rich-text pre[data-kind="math"] {
+  text-align: center;
+  font-style: italic;
+  border-inline-start-color: var(--accent);
+}
+
+.rich-text code {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  padding: 0 4px;
+  background: var(--sheet);
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+}
+
+.rich-text mark {
+  background: var(--accent-haze);
+  color: inherit;
+  padding: 0 2px;
+}
+
+.rich-text a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.rich-text hr {
+  height: 1px;
+  border: none;
+  background: var(--rule);
+  margin: 1em 0;
+}
+
+.rich-text img {
+  max-width: 100%;
+  height: auto;
+}
+
+.rich-text table {
+  width: auto;
+  min-width: 60%;
+  margin: 0.6em 0;
+  font-size: inherit;
+}
+
+.rich-text th,
+.rich-text td {
+  padding: 6px 10px;
+  border: var(--hairline) solid var(--rule);
+}
+
+.note-block-image {
+  margin: 10px 0;
+}
+
+.note-block-image img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--sheet);
+}
+
+.note-block-image figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.note-block-image figcaption .small {
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .visually-hidden {
@@ -586,11 +1086,37 @@ th {
 }
 
 /* A wide table scrolls inside its own box, not the whole page. */
+/*
+  Tabela biblioteki ma pięć kolumn i na telefonie nie ma prawa się w nich
+  zmieścić. Bez dolnej granicy szerokości przeglądarka ściskała je do kilku
+  liter na kolumnę i tytuł notatki stawał się nieczytelnym słupkiem. Lepiej
+  przewinąć tabelę w bok - i to przewinąć TĘ TABELĘ, a nie całą stronę.
+*/
 .table-scroll {
   overflow-x: auto;
+  /* Bez tego pasek przewijania kradłby ostatni wiersz spod palca. */
+  overscroll-behavior-x: contain;
 }
 
-/* Numer wersji stoi pod datą - własny wiersz w kolumnie „Zmiana". */
+.table-scroll table {
+  min-width: 640px;
+}
+
+tbody tr:hover {
+  background: var(--desk);
+}
+
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* Działania trzymają się prawej krawędzi, żeby stały w równej kolumnie. */
+.cell-actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Numer wersji stoi pod datą - własny wiersz w kolumnie „Zmieniona". */
 .note-version {
   display: block;
 }
@@ -602,17 +1128,25 @@ th {
   w swojej ramce: tytuł notatki - jedyne, po czym się ją poznaje - ściskał
   się do dwóch słów na wiersz, a rozmiar, data i działania stały poza
   ekranem. Karta układa to jedno pod drugim: tytuł, drobna linia z rodzajem,
-  rozmiarem i datą, folder, działania. Znaczniki zostają te same - to wciąż
-  tabela, tylko inaczej ułożona - więc widok szeroki nie zmienia się wcale,
-  a czytnik ekranu dalej dostaje nagłówki kolumn.
+  rozmiarem i datą, wybór folderu, działania. Znaczniki zostają te same -
+  to wciąż tabela, tylko inaczej ułożona - więc widok szeroki nie zmienia
+  się wcale, a czytnik ekranu dalej dostaje nagłówki kolumn.
+
+  Kosz (.trash-table) dostaje ten sam układ, ale własną kolejność kolumn:
+  ma ich pięć i znaczą co innego niż w spisie, a reguły kolejności idą po
+  numerze kolumny. Sama klasa .notes-table nie wystarczyłaby - kosz łapał
+  wtedy dolną granicę 640 px bez układu kartowego i tytuł ściskał się do
+  jednego słowa w linii.
 */
 @media (max-width: 700px) {
-  .table-scroll .notes-table {
+  .table-scroll .notes-table,
+  .table-scroll .trash-table {
     min-width: 0;
   }
 
   /* Nie display:none - czytnik ekranu ma dalej wiedzieć, co jest czym. */
-  .notes-table thead {
+  .notes-table thead,
+  .trash-table thead {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -622,11 +1156,14 @@ th {
   }
 
   .notes-table,
-  .notes-table tbody {
+  .notes-table tbody,
+  .trash-table,
+  .trash-table tbody {
     display: block;
   }
 
-  .notes-table tr {
+  .notes-table tr,
+  .trash-table tr {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -635,18 +1172,21 @@ th {
     border-bottom: var(--hairline) solid var(--rule);
   }
 
-  .notes-table tr:last-child {
+  .notes-table tr:last-child,
+  .trash-table tr:last-child {
     border-bottom: 0;
   }
 
-  .notes-table td {
+  .notes-table td,
+  .trash-table td {
     display: block;
     padding: 0;
     border: 0;
   }
 
   /* Tytuł na całą szerokość, pod nim jedna drobna linia z resztą. */
-  .notes-table td:nth-child(1) {
+  .notes-table td:nth-child(1),
+  .trash-table td:nth-child(1) {
     flex: 1 0 100%;
     order: 1;
     font-size: 15px;
@@ -706,6 +1246,719 @@ th {
     flex: 1 0 100%;
     order: 6;
   }
+
+  /*
+    Kosz: tytuł, drobna linia „rodzaj · rozmiar · wyrzucona · zniknie za",
+    a pod nią przyciski. Odliczanie do samoczynnego opróżnienia dołącza do
+    daty zamiast stawać w swoim wierszu - jak numer wersji w spisie.
+  */
+  .trash-table td:nth-child(2) {
+    order: 2;
+  }
+
+  .trash-table td:nth-child(3) {
+    order: 3;
+  }
+
+  .trash-table td:nth-child(4) {
+    order: 4;
+  }
+
+  .trash-table td:nth-child(2)::after,
+  .trash-table td:nth-child(3)::after {
+    content: "·";
+    margin-left: 10px;
+    color: var(--text-muted);
+  }
+
+  .trash-table td:nth-child(4) > div {
+    display: inline;
+  }
+
+  .trash-table td:nth-child(4) > div::before {
+    content: "· ";
+    margin-left: 6px;
+    color: var(--text-muted);
+  }
+
+  /* Przywróć i Na stałe na całą szerokość karty - w kolumnie tabeli musiały
+     stać ciasno obok siebie, tu nie ma po co ich zwężać. */
+  .trash-table td:nth-child(5) {
+    flex: 1 0 100%;
+    order: 5;
+    margin-top: 6px;
+  }
+}
+
+/*
+  Kolumna z działaniami przy notatce. Przyciski stoją w jednym rzędzie i nie
+  zawijają się pod siebie, a odpowiedź serwera („Do kosza.") pokazuje się pod
+  nimi drobnym pismem, zamiast rozpychać cały wiersz ramką na pół tabeli.
+  Gwiazdka nie odpowiada nic - widać po niej samej, czy jest włączona.
+*/
+.row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+/*
+  Kosz w spisie stoi obok ołówka i gwiazdki, więc na spokojnie wygląda jak one -
+  czerwienieje dopiero pod kursorem. Czerwona ramka przy każdym wierszu robiła
+  z tabeli pas ostrzegawczy.
+*/
+.row-actions button.danger {
+  color: var(--text-muted);
+  border-color: var(--rule);
+}
+
+.row-actions button.danger:hover:not(:disabled) {
+  color: var(--warning);
+  border-color: var(--warning);
+}
+
+/*
+  Formularz w cichym trybie: przycisk zachowuje się jak zwykły element w rzędzie,
+  a odpowiedź serwera wisi pod nim i nie bierze udziału w układzie.
+*/
+.quiet-action {
+  position: relative;
+  display: flex;
+}
+
+.row-actions form {
+  position: relative;
+  display: flex;
+}
+
+/*
+  Odpowiedź serwera wisi pod przyciskiem zamiast stać w układzie. Dzięki temu
+  kliknięcie gwiazdki nie rozpycha wiersza tabeli ani nie przesuwa sąsiednich
+  przycisków spod kursora.
+*/
+.action-note {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 3;
+  width: max-content;
+  max-width: 220px;
+  padding: 4px 8px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--text-muted);
+  background: var(--sheet);
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 0.16);
+  pointer-events: none;
+}
+
+.action-note.bad {
+  color: var(--warning);
+  border-color: var(--warning);
+}
+
+/* Przy prawej krawędzi tabeli odpowiedź wiesza się od prawej, żeby nie uciekła
+   poza kartkę. */
+.cell-actions .action-note,
+.device-row .row-actions .action-note {
+  left: auto;
+  right: 0;
+  text-align: left;
+}
+
+/* --- Device tokens --- */
+
+/*
+  Spis tokenów nie jest tabelą. Kolumny są trzy, a jedna z nich to pole do
+  wpisania nazwy - tabela z wymuszoną szerokością 640px ledwo mieściła się na
+  kartce konta i pod spisem wisiał pasek przewijania, który nie przewijał
+  niczego sensownego. Wiersz listy zawija się sam, a na telefonie nazwa,
+  data i przycisk stają jedno pod drugim.
+*/
+.device-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/*
+  Wiersz równa się do GÓRY, nie do środka. Do środka „Unieważnij" ustawiał się
+  względem całej kolumny - a ta jest wyższa o linijkę z datą - i przez to
+  wisiał kilka pikseli niżej niż pole z nazwą obok. Przy równaniu do góry
+  przycisk i pole (oba 36 px) stoją w jednej linii.
+*/
+.device-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3) 0;
+  border-top: var(--hairline) solid var(--rule);
+}
+
+.device-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.device-row:last-child {
+  padding-bottom: 0;
+}
+
+.device-main {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+/* Pole z nazwą i znaczek zapisu stoją w jednym rzędzie: pole rośnie do końca
+   wiersza, przycisk zostaje przy nim. */
+.device-main .quiet-action {
+  align-items: center;
+  gap: 6px;
+}
+
+/*
+  Nazwa jest polem, ale w spisie ma czytać się jak nagłówek wiersza, a nie jak
+  formularz. Ramka zostaje (bez niej nikt by nie zgadł, że nazwę można poprawić),
+  ale tło jest kartkowe - ciemna wanna na całą szerokość przy każdym wierszu
+  robiła ze spisu cztery formularze jeden pod drugim. Tło wraca przy pisaniu.
+*/
+.device-main input[type="text"] {
+  flex: 1 1 auto;
+  min-width: 0;
+  /* Równo z kwadratowym przyciskiem zapisu obok. */
+  min-height: 36px;
+  padding: 5px 10px;
+  font-size: 14px;
+  font-weight: 600;
+  background: transparent;
+}
+
+.device-main input[type="text"]:focus {
+  background: var(--desk);
+}
+
+.device-when {
+  margin: 4px 0 0 0;
+}
+
+/* --- Folders --- */
+
+.folder-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px 0;
+}
+
+.folder-line {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.folder-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 7px 8px;
+  border-radius: var(--radius);
+  color: inherit;
+  text-decoration: none;
+  border: var(--hairline) solid transparent;
+}
+
+.folder-row:hover {
+  background: var(--desk);
+  text-decoration: none;
+}
+
+/* Folder, po którym właśnie filtrujemy. */
+.folder-row.here {
+  border-color: var(--rule);
+  background: var(--desk);
+  font-weight: 600;
+}
+
+.folder-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.folder-count {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/*
+  Znaczek folderu. Barwa idzie z bazy (colorId) i jest ta sama, którą pokazuje
+  aplikacja - dlatego ma osobną wartość na ciemną kartkę.
+*/
+.folder-mark {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  color: var(--text-muted);
+}
+
+.folder-mark.tinted {
+  color: var(--tint);
+}
+
+@media (prefers-color-scheme: dark) {
+  .folder-mark.tinted {
+    color: var(--tint-dark);
+  }
+}
+
+:root[data-theme="dark"] .folder-mark.tinted {
+  color: var(--tint-dark);
+}
+
+:root[data-theme="light"] .folder-mark.tinted {
+  color: var(--tint);
+}
+
+/* Gwiazdka Ulubionych - jedyny znaczek w spisie, który nie ma barwy z bazy. */
+.folder-mark.star {
+  color: var(--accent);
+}
+
+/* Mniejszy znaczek - do wiersza tabeli, gdzie 26 px byłoby za dużo. */
+.folder-mark.small {
+  width: 18px;
+  height: 18px;
+}
+
+/*
+  Folder notatki w spisie. Na oko to zwykły napis z barwnym znaczkiem; ramka
+  i strzałka pokazują się dopiero pod kursorem, żeby tabela nie wyglądała jak
+  formularz w kratkę.
+*/
+.folder-pick {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.folder-pick-shell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.folder-pick select {
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 28px;
+  height: 28px;
+  width: auto;
+  max-width: 120px;
+  padding: 0 20px 0 6px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: inherit;
+  background: transparent;
+  border: var(--hairline) solid transparent;
+  border-radius: var(--radius);
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.folder-pick:hover select,
+.folder-pick select:focus-visible {
+  border-color: var(--rule);
+  background: var(--sheet);
+}
+
+.folder-pick select:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Strzałka jest tylko ozdobą - kliknięcie ma trafić w listę pod spodem. */
+.folder-pick-caret {
+  position: absolute;
+  right: 4px;
+  color: var(--text-muted);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.folder-pick:hover .folder-pick-caret,
+.folder-pick:focus-within .folder-pick-caret {
+  opacity: 1;
+}
+
+/*
+  Panel nowego folderu i ustawień folderu. Wszystko w środku trzyma jedną
+  szerokość i jedną wysokość: pole nazwy, paleta, wybór znaczka i przyciski
+  kończą się na tej samej pionowej linii. Wcześniej pole nazwy było o dziesięć
+  pikseli wyższe od reszty, paleta urywała się kawałek przed krawędzią, a
+  „Utwórz folder" miał szerokość swojego napisu - trzy różne prawe krawędzie
+  jedna pod drugą i cały panel wyglądał krzywo.
+*/
+.folder-editor {
+  margin: 6px 0 10px 0;
+  padding: 12px;
+  background: var(--desk);
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.folder-editor form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Odstępy daje odstęp kolumny, więc pola nie dokładają własnych. */
+.folder-editor .field {
+  margin-bottom: 0;
+}
+
+.folder-editor input[type="text"] {
+  min-height: 36px;
+  padding: 5px 10px;
+  font-size: 14px;
+}
+
+/* Przyciski panelu stoją w jednej kolumnie, równo z polem nazwy nad nimi. */
+.folder-editor form > button[type="submit"],
+.folder-add {
+  width: 100%;
+}
+
+/*
+  Barwy folderu w równej siatce, a nie w zawijanym rzędzie. Kółka mają stały
+  rozmiar, więc każdy wiersz stoi w tym samym miejscu i przy dwunastu barwach
+  paleta wygląda tak samo jak w aplikacji. Odstęp rozkłada się tak, żeby
+  pierwsze kółko stało przy lewej krawędzi panelu, a ostatnie przy prawej -
+  inaczej paleta wisiała w powietrzu obok pola nazwy. Odstęp mieści obrączkę
+  zaznaczenia.
+*/
+.folder-swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 30px);
+  justify-content: space-between;
+  gap: 10px;
+}
+
+/* Wybór znaczka: podgląd w ramce równej wysokości co lista obok niego. */
+.folder-look {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.folder-mark.folder-look-preview {
+  width: 36px;
+  height: 36px;
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+}
+
+.folder-look select {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 36px;
+  padding: 4px 30px 4px 8px;
+  font-size: 13px;
+}
+
+/* Na ciemnej kartce barwa folderu jest jaśniejsza - tak samo jak w aplikacji. */
+.folder-swatches .ink-swatch {
+  background: var(--tint);
+}
+
+@media (prefers-color-scheme: dark) {
+  .folder-swatches .ink-swatch {
+    background: var(--tint-dark);
+  }
+}
+
+:root[data-theme="dark"] .folder-swatches .ink-swatch {
+  background: var(--tint-dark);
+}
+
+:root[data-theme="light"] .folder-swatches .ink-swatch {
+  background: var(--tint);
+}
+
+/* --- Attachments: thumbnail and preview --- */
+
+.thumb-button {
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
+  min-height: 48px;
+  padding: 0;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--desk);
+  cursor: pointer;
+}
+
+.thumb-button img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.thumb-button.empty {
+  color: var(--text-muted);
+  cursor: default;
+}
+
+/* Nazwa pliku wygląda jak odnośnik, ale otwiera podgląd zamiast wychodzić. */
+.link-button {
+  min-height: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-size: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.link-button:hover {
+  text-decoration: underline;
+  border-color: transparent;
+}
+
+.preview-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgb(0 0 0 / 0.72);
+}
+
+.preview-box {
+  max-width: min(1000px, 100%);
+  max-height: 100%;
+  overflow: auto;
+  padding: 16px 18px;
+  background: var(--sheet);
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+  box-shadow: 0 18px 50px rgb(0 0 0 / 0.45);
+}
+
+.preview-box img {
+  max-width: 100%;
+  max-height: 70vh;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  background: var(--desk);
+  border-radius: var(--radius);
+}
+
+/*
+  Odpowiedź serwera jako dymek przy dolnej krawędzi ekranu. Leży poza układem
+  strony, więc nie rozpycha formularzy - kolumny ustawień w panelu
+  administratora stoją w miejscu niezależnie od tego, co odpowie serwer.
+*/
+.action-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: min(560px, calc(100vw - 32px));
+  padding: 12px 16px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--accent);
+  background: var(--sheet);
+  border: var(--hairline) solid var(--accent);
+  border-left-width: 3px;
+  border-radius: var(--radius);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.25);
+}
+
+.action-toast.bad {
+  color: var(--warning);
+  border-color: var(--warning);
+}
+
+.action-toast .toast-close {
+  width: auto;
+  min-height: 0;
+  padding: 0 2px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.action-toast .toast-close:hover {
+  color: var(--text);
+  border: none;
+}
+
+/* --- Okno potwierdzenia --- */
+
+.confirm-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgb(0 0 0 / 0.5);
+}
+
+.confirm-box {
+  width: min(440px, 100%);
+  padding: 20px 22px;
+  background: var(--sheet);
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+  box-shadow: 0 18px 50px rgb(0 0 0 / 0.35);
+}
+
+.confirm-question {
+  margin: 0 0 18px 0;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Przyciski okna nie dziedziczą pełnej szerokości z kolumn, w których stoi
+   formularz - mają być zwykłej, swojej wielkości. */
+.confirm-box .confirm-actions button {
+  width: auto;
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: 13px;
+}
+
+/* --- Admin: nawigacja panelu --- */
+
+/*
+  Rząd przycisków do podstron panelu. Na szerokim ekranie zwykły rząd,
+  a „Moje notatki" trzyma się prawej krawędzi jako wyjście z panelu.
+*/
+.admin-nav {
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.admin-nav .admin-nav-out {
+  margin-left: auto;
+}
+
+@media (max-width: 600px) {
+  /*
+    Na telefonie rząd zawijał się krzywo: każdy przycisk miał szerokość
+    swojego napisu, a odsunięte „Moje notatki" lądowało samotnie przy prawej
+    krawędzi w środku układanki. Siatka daje trzy równe kolumny, więc
+    przyciski stoją w równych rzędach, a wyjście do notatek dostaje własny,
+    pełny wiersz na dole.
+  */
+  .admin-nav {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .admin-nav .admin-nav-out {
+    margin-left: 0;
+    grid-column: 1 / -1;
+  }
+}
+
+/* --- Admin: karta konta --- */
+
+/*
+  Kolumny działań przy koncie. Wspólna siatka trzyma równe odstępy, a przyciski
+  rozciągnięte na całą szerokość kolumny stoją w równych pionach - bez tego
+  każdy miał inną szerokość i całość wyglądała krzywo.
+*/
+.account-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 22px 28px;
+  border-top: var(--hairline) solid var(--rule);
+  padding-top: 18px;
+}
+
+.account-columns > div {
+  min-width: 0;
+}
+
+.account-columns .eyebrow {
+  margin-bottom: 10px;
+}
+
+.account-columns button {
+  width: 100%;
+}
+
+.account-columns input:not([type="checkbox"]),
+.account-columns select {
+  margin-bottom: 8px;
+}
+
+/* Rząd „limit MB na tyle dni": pola dzielą szerokość, podpisy siedzą przy nich. */
+.quota-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.account-columns .quota-row input {
+  margin-bottom: 0;
+}
+
+/* Przyciski jednej kolumny stoją w pionie z równym odstępem. */
+.account-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 /* --- State tags --- */
@@ -767,12 +2020,284 @@ code,
   display: grid;
   grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
   gap: 16px;
-  align-items: start;
+  /* Both columns run to the same height, so the folder box does not end
+     mid-air next to the list of notes. */
+  align-items: stretch;
 }
 
+/*
+  Na telefonie foldery i spis stają jedno pod drugim. minmax(0, 1fr), nie samo
+  1fr: goła 1fr nie schodzi poniżej szerokości treści, a w kolumnie stoi tabela
+  z wymuszonymi 640 px - kolumna rosła do 640 px, rozciągała też kartkę
+  folderów i cała strona przewijała się w bok. Z zerem w minmax tabela
+  przewija się w swojej ramce (.table-scroll), tak jak w koszu.
+*/
 @media (max-width: 800px) {
   .library-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Przechodzenie między stronami spisu: strzałki po bokach, numer w środku. */
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+/* Stan autozapisu obok przycisku „Zapisz". Drobny napis, bez ramki - ma
+   informować kątem oka, a nie przykuwać wzrok jak błąd. */
+.save-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--text-muted);
+}
+
+.save-state::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.55;
+}
+
+.save-state.done {
+  color: var(--accent);
+}
+
+.save-state.waiting,
+.save-state.working {
+  color: var(--text-muted);
+}
+
+.save-state.failed {
+  color: var(--warning);
+}
+
+.save-state.working::before {
+  animation: save-blink 1.1s ease-in-out infinite;
+}
+
+@keyframes save-blink {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Wiersz z przyciskiem zapisu i stanem - stan schodzi pod przycisk dopiero
+   wtedy, gdy naprawdę nie ma miejsca. */
+.save-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+/*
+  Stopka.
+
+  Trzy rzeczy w rzędzie: znak, dokumenty, rok. Bez kreski nad sobą - od
+  treści oddziela ją sam odstęp, tak jak sekcje na stronie tytułowej.
+  Oś ta sama co na stronie tytułowej (1120 px), więc na niej stopka trafia
+  w lewą krawędź treści; na szerokich stronach panelu stoi odrobinę węziej
+  i to jest w porządku. Na wąskim ekranie rząd łamie się sam.
+*/
+.site-footer {
+  margin-top: var(--space-7);
+  flex-shrink: 0;
+}
+
+.site-footer-inner {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: var(--space-4) 22px 28px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2) 28px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.site-footer-mark {
+  font-family: "Bricolage Grotesque", var(--font-heading);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.site-footer-links {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+/*
+  Regulamin i polityka prywatności.
+
+  Dokument prawny to kilkadziesiąt ekranów paragrafów, ustępów i tabel - rzeczy,
+  których w reszcie serwisu nigdzie nie ma, więc trzymają swoje reguły tutaj,
+  pod jedną klasą `legal`. Wszystko poza nimi - arkusze, tabele, wielkości pisma
+  - jest wspólne z resztą stron.
+*/
+
+.legal h2 {
+  margin: var(--space-6) 0 var(--space-3) 0;
+  /* Żeby po skoku ze spisu treści nagłówek nie kleił się do krawędzi okna. */
+  scroll-margin-top: var(--space-3);
+}
+
+.legal h3 {
+  margin: var(--space-4) 0 var(--space-2) 0;
+}
+
+.legal-sheet {
+  background: var(--sheet);
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+  padding: var(--space-5);
+  margin-bottom: var(--space-4);
+}
+
+.legal-accent {
+  border-left: 2px solid var(--accent);
+}
+
+.legal-toc ol {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.legal-toc li {
+  margin-bottom: 4px;
+}
+
+.legal ul {
+  margin: 0 0 var(--space-3) 0;
+  padding-left: 22px;
+}
+
+.legal li {
+  margin-bottom: 6px;
+}
+
+/* Numeracja ustępów: 1., 2., 3. w obrębie paragrafu. */
+.legal-items {
+  margin: 0 0 var(--space-3) 0;
+  padding-left: 26px;
+}
+
+.legal-items > li {
+  margin-bottom: 10px;
+  padding-left: 4px;
+}
+
+.legal-items ul {
+  margin-top: var(--space-2);
+  margin-bottom: 0;
+}
+
+/* Wtrącenie na boku głównego wywodu: wyjaśnienie albo ostrzeżenie. */
+.legal-note {
+  border-left: 2px solid var(--accent);
+  background: var(--sheet);
+  padding: 10px 14px;
+  margin: 0 0 var(--space-4) 0;
+}
+
+.legal-note-warning {
+  border-left-color: var(--warning);
+}
+
+.legal-note p:last-child,
+.legal ul:last-child,
+.legal ol:last-child {
+  margin-bottom: 0;
+}
+
+.legal-backlink {
+  display: inline-block;
+  margin-top: var(--space-2);
+}
+
+/*
+  --- Telefon ---
+
+  Reguły dla wąskiego ekranu zebrane na końcu arkusza: przy tej samej
+  specyficzności wygrywa reguła późniejsza, więc stąd przebijają też
+  ciasne pola z tabel i paska narzędzi.
+*/
+@media (max-width: 600px) {
+  /*
+    iOS przybliża całą stronę po wejściu w pole, które pisze drobniej niż
+    16 px - i po wyjściu z pola strona zostaje przybliżona. Na telefonie
+    wszystkie pola piszą więc 16 px, także te ciasne w spisach; miejsca
+    jest dość, bo napisy i tak kończą się wielokropkiem.
+  */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  input[type="datetime-local"],
+  input[type="url"],
+  select,
+  textarea,
+  select.toolbar-select,
+  textarea.mono-field,
+  .device-main input[type="text"],
+  .folder-editor input[type="text"],
+  .folder-look select,
+  .folder-pick select {
+    font-size: 16px;
+  }
+
+  /* Długi tytuł notatki - albo jedno długie słowo bez spacji - łamie się,
+     zamiast wypychać stronę w bok. */
+  h1,
+  h2 {
+    overflow-wrap: anywhere;
+  }
+
+  h1 {
+    font-size: 26px;
+  }
+
+  /* Kartki odrobinę ciaśniej: 24 px marginesu z każdej strony to na
+     ekranie 360 px jedna ósma szerokości w samych odstępach. */
+  .sheet-ruled {
+    padding: var(--space-4);
+  }
+
+  /* Podgląd załącznika na prawie cały ekran, nie w ramce z szerokim tłem. */
+  .preview-veil {
+    padding: 10px;
+  }
+
+  .preview-box {
+    padding: 12px;
+  }
+
+  /* Tabela wpisana w treść notatki przewija się w bok sama, zamiast
+     poszerzać całą stronę - jak .table-scroll przy spisach. */
+  .rich-text table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
   }
 }
 
