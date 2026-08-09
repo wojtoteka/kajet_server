@@ -192,6 +192,16 @@ h3 {
   letter-spacing: -0.01em;
   line-height: 1.25;
   margin: 0;
+  /*
+    Tytuł notatki bywa jednym ciągiem bez spacji - a notatka nazywa się tak,
+    jak nazwał ją człowiek. Bez łamania w dowolnym miejscu taki tytuł
+    rozpychał całą stronę w bok: kolumna zostawała szeroka na 1180 px, a
+    dokument na 2300, więc wszystko wyglądało na przesunięte.
+
+    Reguła stała dotąd WYŁĄCZNIE w bloku telefonowym, choć na szerokim ekranie
+    psuje tak samo - tam po prostu trzeba więcej znaków, żeby to zobaczyć.
+  */
+  overflow-wrap: anywhere;
 }
 
 h1 {
@@ -753,6 +763,15 @@ button.on,
   padding: var(--space-3) var(--space-4);
   cursor: pointer;
   list-style: none;
+}
+
+/*
+  Nadpis ma domyślnie odstęp pod spodem (--space-2), bo prawie wszędzie stoi
+  NAD czymś. Tutaj stoi w rzędzie, więc ten odstęp podnosił napis o cztery
+  piksele ponad środek paska i pasek wyglądał na krzywy.
+*/
+.ai-fold > summary .eyebrow {
+  margin: 0;
 }
 
 .ai-fold > summary::-webkit-details-marker {
