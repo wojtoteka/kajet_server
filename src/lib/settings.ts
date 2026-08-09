@@ -147,6 +147,24 @@ maxConcurrent: number("CODE_MAX_CONCURRENT", 3),
     model: process.env.GEMINI_MODEL || "gemini-3.6-flash",
 
     /**
+     * Modele zapasowe, po kolei, gdy główny odmówi obsługi.
+     *
+     * Bierze się je pod uwagę tylko przy awarii po stronie Google - wyczerpanym
+     * limicie zapytań albo błędzie serwera - i tylko wtedy, gdy odpowiedź
+     * przyszła od razu. Zły klucz i przekroczony czas oczekiwania fałszywkę
+     * pomijają: klucz jest wspólny dla wszystkich modeli, a po minucie
+     * czekania nikt nie chce czekać drugiej.
+     *
+     * Człowiek nie ma prawa tego zauważyć - dostaje zmienioną notatkę i tyle.
+     * Ślad zostaje w logu serwera i w kolumnie „model" w rozliczeniach, żeby
+     * dało się zobaczyć, że główny model przestał odpowiadać.
+     */
+    fallbackModels: (process.env.GEMINI_FALLBACK_MODELS ?? "gemini-3.1-flash-lite,gemini-2.5-flash")
+      .split(",")
+      .map((name) => name.trim())
+      .filter(Boolean),
+
+    /**
      * Ile modelowi wolno myśleć: minimal, low, medium albo high. Myślenie
      * liczy się do tokenów wyjściowych, a zadanie jest odtwórcze - przepisz
      * ten akapit krócej - więc niski poziom wystarcza.

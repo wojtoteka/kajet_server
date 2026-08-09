@@ -22,6 +22,12 @@ export async function recordAiCall(input: {
   kind: AiKind;
   usage: TokenUse;
   tookMs: number;
+  /**
+   * Model, który naprawdę odpowiedział. Przy awarii głównego asystent po cichu
+   * przechodzi na zapasowy, więc branie tego z ustawień zapisywałoby nieprawdę
+   * - a to jedyne miejsce, po którym widać, że główny model przestał działać.
+   */
+  model?: string;
   /** Puste, gdy się udało. Krótkie słowo, nie zdanie. */
   failure?: string;
 }): Promise<void> {
@@ -30,7 +36,7 @@ export async function recordAiCall(input: {
       data: {
         userId: input.userId,
         kind: input.kind,
-        model: settings.ai.model,
+        model: input.model ?? settings.ai.model,
         inputTokens: input.usage.input,
         outputTokens: input.usage.output,
         tookMs: input.tookMs,

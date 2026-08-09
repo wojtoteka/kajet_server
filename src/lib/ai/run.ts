@@ -131,6 +131,7 @@ export async function runAiEdit(input: {
     kind: note.kind,
     usage: answer.usage,
     tookMs: answer.tookMs,
+    model: answer.model,
     failure: answer.ok ? undefined : answer.failure,
   });
 
