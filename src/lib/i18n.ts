@@ -1117,13 +1117,13 @@ const pl: Words = {
   language: "Język",
 
   saved: "Zapisane",
-  saving: "Zapisuję...",
-  unsavedWillSave: "Zmiany niezapisane – zapiszą się za chwilę",
-  unsavedPressSave: "Zmiany niezapisane – zapisz przyciskiem albo skrótem Ctrl+S",
+  saving: "Zapisuję…",
+  unsavedWillSave: "Zapiszę za chwilę",
+  unsavedPressSave: "Niezapisane – kliknij Zapisz (Ctrl+S)",
   autosaveOn: "Autozapis włączony",
-  autosaveOff: "Autozapis wyłączony w ustawieniach konta",
-  saveFailed: "Niezapisane – przeczytaj komunikat powyżej",
-  willSaveWhenYouType: "Zapisze się samo, gdy zaczniesz pisać",
+  autosaveOff: "Autozapis wyłączony",
+  saveFailed: "Nie udało się zapisać",
+  willSaveWhenYouType: "Zapisze się samo",
 
   library: "Biblioteka",
   folders: "Foldery",
@@ -1136,11 +1136,11 @@ const pl: Words = {
   trash: "Kosz",
   moveNoteToFolder: "Przenieś notatkę do folderu",
   emptyLibrary: "Jeszcze pusto",
-  emptyLibraryHint: "Napisz pierwszą notatkę albo zsynchronizuj aplikację.",
+  emptyLibraryHint: "Napisz pierwszą notatkę albo zaloguj się w aplikacji tym samym kontem.",
 
   noteTitle: "Tytuł",
   noteContent: "Treść notatki",
-  writeHere: "Pisz tutaj...",
+  writeHere: "Pisz tutaj…",
   bold: "Pogrubienie",
   italic: "Kursywa",
   strike: "Przekreślenie",
@@ -1153,14 +1153,12 @@ const pl: Words = {
   collapse: "Zwiń",
 
   codeRun: "Uruchom",
-  codeRunning: "Uruchamiam...",
+  codeRunning: "Uruchamiam…",
   codeLanguage: "Język",
   codeTitle: "Tytuł / nazwa pliku",
   codePreview: "Tak wygląda ta strona",
-  codePreviewAbout:
-    "Podgląd odświeża się w trakcie pisania. Strona działa w osobnej ramce, oddzielonej " +
-    "od reszty Kajetu.",
-  codeRunDisabled: "Uruchamianie kodu jest na tym serwerze wyłączone.",
+  codePreviewAbout: "Podgląd odświeża się w trakcie pisania.",
+  codeRunDisabled: "Uruchamianie kodu jest tu wyłączone.",
 
   locale: "pl-PL",
 
@@ -1189,13 +1187,12 @@ const pl: Words = {
   filterButton: "Filtruj",
   filtersLabel: "Filtry",
   emptyPageTitle: "Pusta strona",
-  emptyPageHeading: "Tu już nic nie ma",
+  emptyPageHeading: "Dalej już nic nie ma",
   backToStart: "Wróć na początek",
   favoritesEmptyHeading: "Nie masz jeszcze ulubionych notatek",
   favoritesEmptyAbout:
-    "Naciśnij gwiazdkę przy notatce: na komputerze w spisie albo na pasku otwartej " +
-    "notatki, w telefonie w edytorze. Notatka zostaje w swoim folderze, a tutaj pojawia " +
-    "się skrót do niej.",
+    "Naciśnij gwiazdkę przy dowolnej notatce, a jej skrót pojawi się tutaj. Sama notatka " +
+    "zostaje tam, gdzie leżała.",
   emptyEyebrow: "Pusto",
   emptyHeading: "Jeszcze nic tu nie ma",
   emptyAbout:
@@ -1232,7 +1229,7 @@ const pl: Words = {
   emptyTrashButton: "Opróżnij kosz",
   confirmEmptyTrash: "Skasować na stałe wszystkie notatki z kosza?",
   trashEmptyHeading: "Kosz jest pusty",
-  trashEmptyAbout: "Nic tu nie leży. Wyrzucone notatki pojawią się w tym miejscu.",
+  trashEmptyAbout: "Wyrzucone notatki wylądują tutaj.",
   columnTrashed: "Wyrzucona",
   restore: "Przywróć",
   forGood: "Na stałe",
@@ -1247,21 +1244,15 @@ const pl: Words = {
 
   newNoteEyebrow: "Nowa notatka",
   newTextNoteTitle: "Notatka tekstowa",
-  newTextNoteAbout:
-    "Po zapisaniu notatka będzie dostępna na wszystkich urządzeniach przy następnej " +
-    "synchronizacji.",
+  newTextNoteAbout: "Zapisana notatka pojawi się też na telefonie i tablecie.",
   newCodeNoteTitle: "Plik z kodem",
   newCodeNoteAbout:
-    "Plik z kodem zapisuje się na serwerze, więc otworzysz go i tutaj, i w aplikacji. " +
-    "Kod uruchamia się na serwerze – w obu miejscach tak samo.",
+    "Plik otworzysz i tutaj, i w aplikacji. Kod uruchomisz jednym przyciskiem.",
   newMindMapTitle: "Mapa myśli",
-  newMindMapAbout:
-    "Węzły i połączenia zapisują się w tym samym formacie co w aplikacji, więc po " +
-    "synchronizacji otworzysz mapę na telefonie i tablecie.",
+  newMindMapAbout: "Zapisaną mapę otworzysz na telefonie i tablecie.",
   newHandwritingTitle: "Notatka odręczna",
   newHandwritingAbout:
-    "Pisz myszą albo rysikiem. Kreski zapisują się tak samo jak w aplikacji, więc po " +
-    "synchronizacji zobaczysz je na telefonie i tablecie.",
+    "Pisz myszą albo rysikiem. Zapisaną notatkę zobaczysz na telefonie i tablecie.",
   createNoteButton: "Utwórz notatkę",
   createFileButton: "Utwórz plik",
   createMapButton: "Utwórz mapę",
@@ -1269,8 +1260,7 @@ const pl: Words = {
   metaNewCode: "Nowy plik z kodem – Kajet",
   metaNewMindMap: "Nowa mapa myśli – Kajet",
   metaNewHandwriting: "Nowa notatka odręczna – Kajet",
-  codeDisabledHere:
-    "Uruchamianie kodu jest na tym serwerze wyłączone. Notatkę zapiszesz normalnie.",
+  codeDisabledHere: "Uruchamianie kodu jest tu wyłączone. Zapisywanie działa jak zwykle.",
   codeDisabledForAccount: "Administrator wyłączył uruchamianie kodu na Twoim koncie.",
 
   metaNoteNotFound: "Nie ma takiej notatki – Kajet",
@@ -1278,9 +1268,8 @@ const pl: Words = {
   error404: "Błąd 404",
   noteNotFoundHeading: "Nie ma takiej notatki",
   noteNotFoundAbout:
-    "Notatki spod tego adresu nie ma. Powody bywają trzy: została skasowana na stałe, " +
-    "należy do kogoś innego albo wygasł odnośnik, który tu prowadził. Jeśli notatka jest " +
-    "tylko w koszu, nic jej nie brakuje – kosz trzyma notatki, dopóki go nie opróżnisz.",
+    "Notatki spod tego adresu nie ma. Może była cudza, może wygasł odnośnik, a może po " +
+    "prostu leży w koszu.",
   lookInTrash: "Zajrzyj do kosza",
   pageNotFoundHeading: "Nie ma takiej strony",
   pageNotFoundLead:
@@ -1291,8 +1280,8 @@ const pl: Words = {
   pageNotFoundWriteLink: "napisz do nas",
   homePage: "Strona główna",
   sharedLinkNote:
-    "Jeśli prowadził tu odnośnik do udostępnionej notatki, poproś o nowy. Stare odnośniki " +
-    "można cofnąć i mają swój termin ważności.",
+    "Jeśli prowadził tu odnośnik do udostępnionej notatki, poproś o nowy – stare " +
+    "przestają działać.",
 
   noteHandwritten: "Notatka odręczna",
   noteTextKind: "Notatka tekstowa",
@@ -1303,16 +1292,16 @@ const pl: Words = {
   editingMindMap: "Edycja mapy myśli",
   editingHandwriting: "Edycja odręczna",
   handwritingUnreadable:
-    "Nie udało się odczytać notatki odręcznej. Podglądu nie ma – nie zapisuj jej, żeby " +
-    "nie stracić tego, co jest w środku.",
+    "Nie udało się otworzyć tej notatki. Nie zapisuj jej – inaczej stracisz to, co jest " +
+    "w środku.",
   codeUnreadable: "Nie udało się odczytać treści pliku z kodem.",
   sharingEyebrow: "Udostępnianie",
   shareThisNote: "Udostępnij tę notatkę",
   shareAbout:
     "Odnośnik działa dla każdego, kto go dostanie, także bez konta. Udostępnienie na adres " +
-    "e-mail wymaga zalogowania.",
+    "e-mail otworzy tylko osoba zalogowana tym adresem.",
   shareButton: "Udostępnij",
-  sharePreparing: "Przygotowuję...",
+  sharePreparing: "Przygotowuję…",
   whatTheyMayDo: "Co wolno drugiej osobie",
   readOnly: "Tylko czytać",
   readAndEdit: "Czytać i poprawiać",
@@ -1346,7 +1335,7 @@ const pl: Words = {
   copiedWord: "Skopiowane",
   copyLink: "Kopiuj odnośnik",
   linkCopied: "Skopiowany",
-  justAMoment: "Chwileczkę...",
+  justAMoment: "Chwileczkę…",
   confirmationLabel: "Potwierdzenie",
   areYouSure: "Na pewno?",
   emptyNoteText: "Ta notatka jest pusta.",
@@ -1358,7 +1347,7 @@ const pl: Words = {
   attachmentsEyebrow: "Załączniki",
   filesWithNote: "Pliki przy notatce",
   sendFile: "Wyślij plik",
-  sendingFile: "Wysyłam...",
+  sendingFile: "Wysyłam…",
   fileLabel: "Plik",
   nameInNote: "Nazwa w notatce (opcjonalnie)",
   namePlaceholder: "np. zdjecie-1.png",
@@ -1368,18 +1357,19 @@ const pl: Words = {
   removeAttachment: "Usuń załącznik",
   mindMapLabel: "Mapa myśli",
   noteUnreadableHere:
-    "Nie udało się odczytać tej notatki. Być może została zapisana nowszą wersją aplikacji.",
+    "Nie udało się otworzyć tej notatki na stronie. Spróbuj w aplikacji – tam powinna " +
+    "się pokazać.",
 
   codeFileNamePlaceholder: "np. zadanie1.py",
   codeWord: "Kod",
-  savingWord: "Zapisuję...",
+  savingWord: "Zapisuję…",
   previewEyebrow: "Podgląd",
   htmlPreviewFrame: "Podgląd strony HTML",
   runningEyebrow: "Uruchomienie",
   runOnServer: "Uruchom na serwerze",
-  cannotRunHere: "Tego kodu nie uruchomisz na stronie. Notatkę zapiszesz normalnie.",
+  cannotRunHere: "Tego kodu nie uruchomisz na stronie. Zapisywanie działa jak zwykle.",
   standardInput: "Wejście standardowe (opcjonalnie)",
-  stdinPlaceholder: "Dane na stdin…",
+  stdinPlaceholder: "To, co program ma przeczytać…",
   exitCodeWord: "kod wyjścia",
   interruptedByTimeout: "przerwane (limit czasu)",
 
@@ -1401,13 +1391,10 @@ const pl: Words = {
   codeInText: "Kod w tekście",
   codeBlockWord: "Blok kodu",
   linkWord2: "Odnośnik",
-  sendingPhoto: "Wysyłam zdjęcie...",
+  sendingPhoto: "Wysyłam zdjęcie…",
   insertPhotoInNote: "Wstaw zdjęcie w treść notatki",
-  writeSomethingFirst:
-    "Napisz cokolwiek – zdjęcie dodasz dopiero do zapisanej notatki",
-  saveNoteFirst:
-    "Zapisz notatkę przyciskiem poniżej albo skrótem Ctrl+S – zdjęcie dodasz dopiero " +
-    "do zapisanej",
+  writeSomethingFirst: "Najpierw napisz coś – zdjęcie wstawisz do zapisanej notatki.",
+  saveNoteFirst: "Najpierw zapisz notatkę – potem wstawisz zdjęcie.",
   formulaWord: "Wzór",
   wholeNoteFont: "Krój pisma całej notatki",
   wholeNoteSize: "Rozmiar pisma całej notatki",
@@ -1421,11 +1408,8 @@ const pl: Words = {
   shrinkPhoto: "Zmniejsz zdjęcie",
   growPhoto: "Powiększ zdjęcie",
   removePhotoFromNote: "Wyjmij zdjęcie z treści notatki",
-  autosaveHint:
-    "Notatka zapisuje się sama, kiedy przerwiesz pisanie. Przycisk poniżej zapisuje ją od razu.",
-  autosaveOffHint:
-    "Autozapis jest wyłączony w ustawieniach konta, więc notatkę zapiszesz przyciskiem " +
-    "poniżej albo skrótem Ctrl+S.",
+  autosaveHint: "Notatka zapisuje się sama, kiedy przestaniesz pisać.",
+  autosaveOffHint: "Autozapis jest wyłączony. Zapisz przyciskiem albo skrótem Ctrl+S.",
 
   penInk: "Atrament",
   penTeal: "Morski",
@@ -1468,9 +1452,8 @@ const pl: Words = {
   confirmClearPage:
     "Wyczyścić wszystkie kreski na tej stronie? Pola tekstowe i obrazy zostaną.",
   uploadAndPlace: "Wyślij zdjęcie i połóż je na tej stronie",
-  drawSomethingFirst:
-    "Narysuj cokolwiek – zdjęcie dodasz dopiero do zapisanej notatki",
-  uploadingWord: "Wysyłam...",
+  drawSomethingFirst: "Najpierw narysuj coś – zdjęcie wstawisz do zapisanej notatki.",
+  uploadingWord: "Wysyłam…",
   photoWord: "Zdjęcie",
   photoToInsert: "Zdjęcie do wstawienia",
   choosePhoto: "Wybierz zdjęcie…",
@@ -1580,8 +1563,8 @@ const pl: Words = {
   homeStepTwo: "Zgódź się na instalację spoza sklepu Play. Telefon sam o to zapyta.",
   homeStepThree: "Otwórz pobrany plik i gotowe.",
   homeDownloadFacts:
-    "Działa od Androida 8.0 na procesorach 64-bitowych (arm64). Na stronie pobierania " +
-    "znajdziesz opis zmian, sumę kontrolną pliku i starsze wydania.",
+    "Działa od Androida 8.0 wzwyż. Na stronie pobierania znajdziesz opis zmian, sumę " +
+    "kontrolną i starsze wydania.",
   homeDownloadPage: "Otwórz stronę pobierania",
   homeDownloadFile: "Pobierz plik",
   homeInviteTitle: "Konto na zaproszenie",
@@ -1597,8 +1580,7 @@ const pl: Words = {
   readOnlyMark: "tylko do czytania",
   openAsOwner: "Otwórz jako właściciel",
   codeRunOwnerOnly:
-    "Uruchamianie kodu jest dostępne tylko dla właściciela notatki. Zapisywanie zmian " +
-    "działa normalnie.",
+    "Kod uruchamia tylko osoba, do której należy notatka. Zapisywanie działa jak zwykle.",
   thisIsAKajetNote: "To jest notatka z Kajetu.",
   seeWhatItIs: "Zobacz, o co chodzi",
 
@@ -1608,7 +1590,7 @@ const pl: Words = {
   backToRegister: "Wróć do rejestracji",
   noLinkHeading: "Brak odnośnika",
   noLinkBody:
-    "W tym adresie brakuje tokenu. Otwórz odnośnik prosto z wiadomości e-mail.",
+    "Ten adres jest niepełny. Otwórz cały odnośnik prosto z wiadomości e-mail.",
   linkDeadHeading: "Odnośnik już nie działa",
   linkDeadBody:
     "Ten odnośnik został już użyty albo jest nieprawidłowy. Jeśli konto działa, po prostu " +
@@ -1651,20 +1633,20 @@ const pl: Words = {
   haveAccountAlready: "Masz już konto?",
   inviteCode: "Kod zaproszenia",
   inviteCodePlaceholder: "np. KAJET-7QX2-9MB4",
-  codeCameFromLink: "Kod wpisał się sam z odnośnika, który dostałeś.",
+  codeCameFromLink: "Kod wpisał się sam z odnośnika.",
   loginOptional: "Login (możesz zostawić pusty)",
   loginPlaceholder: "utworzymy go z adresu e-mail",
   loginIsVisible: "Login widzą osoby, którym udostępnisz notatkę.",
   atLeastEightChars: "Co najmniej osiem znaków.",
   repeatPassword: "Powtórz hasło",
-  creatingAccount: "Zakładam konto...",
+  creatingAccount: "Zakładam konto…",
   createAccountButton: "Załóż konto",
   preferGoogle: "Wolę konto Google",
   googleAccountEyebrow: "Konto Google",
   googleAccountAbout:
     "Wpisz kod zaproszenia. Sprawdzimy go i przeniesiemy Cię do Google. Konto powstanie " +
     "na tym adresie, którym zalogujesz się u nich – nie musisz go tutaj wpisywać.",
-  checkingCode: "Sprawdzam kod...",
+  checkingCode: "Sprawdzam kod…",
   onWithGoogle: "Dalej przez Google",
 
   metaNewPassword: "Nowe hasło – Kajet",
@@ -1686,7 +1668,7 @@ const pl: Words = {
     "Poczta na tym serwerze nie jest ustawiona, więc wiadomość nie wyjdzie. Poproś " +
     "administratora o pomoc.",
   sendLinkButton: "Wyślij odnośnik",
-  sendingWord: "Wysyłam...",
+  sendingWord: "Wysyłam…",
   backToSignIn: "Wróć do logowania",
 
   metaConnectDevice: "Połącz urządzenie – Kajet",
@@ -1705,12 +1687,12 @@ const pl: Words = {
   openTheApp: "Otwórz aplikację",
   orStayInPanel: "Albo zostań w panelu",
   deviceFallback: "Urządzenie",
-  connecting: "Łączę...",
-  denying: "Odrzucam...",
+  connecting: "Łączę…",
+  denying: "Odrzucam…",
   notMeDeny: "To nie ja – odrzuć",
   afterApprovalAbout:
-    "Po zatwierdzeniu aplikacja odbierze token sama. Możesz też wrócić do Kajetu " +
-    "przyciskiem „Otwórz aplikację”, gdy się pojawi.",
+    "Po zatwierdzeniu aplikacja zaloguje się sama, w ciągu kilku sekund. Możesz też " +
+    "wrócić do niej przyciskiem „Otwórz aplikację”, gdy się pojawi.",
 
   adminPanelLink: "Panel administratora",
   profileEyebrow: "Profil",
@@ -1723,27 +1705,25 @@ const pl: Words = {
   lastSignIn: "Ostatnie logowanie",
   notedNever: "jeszcze nie odnotowane",
   accountSince: "Konto od",
-  noteList: "Lista notatek",
+  noteList: "Spis notatek",
   spaceEyebrow: "Miejsce",
   limitValidUntil: "limit obowiązuje do",
-  spaceRunningOut: "Miejsce się kończy. Skasuj coś albo poproś administratora o większy limit.",
+  spaceRunningOut:
+    "Miejsce się kończy. Opróżnij kosz albo poproś administratora o większy limit.",
   writingEyebrow: "Pisanie",
   howIWriteHere: "Pisanie na stronie",
   writingLead:
     "Te ustawienia zapisują się przy koncie, więc obowiązują w każdej przeglądarce. Krój, " +
-    "rozmiar i wyrównanie ustalają wygląd nowej notatki tekstowej i zapisują się w samej " +
-    "notatce – po synchronizacji zobaczysz je też w aplikacji. Wygląd otwartej notatki " +
-    "zmienisz paskiem nad tekstem.",
+    "rozmiar i wyrównanie dotyczą nowych notatek. Wygląd otwartej notatki zmienisz " +
+    "paskiem nad tekstem.",
   saveSettings: "Zapisz ustawienia",
   autoSaveTitle: "Autozapis",
   autoSaveAbout:
-    "Włączony: notatka zapisuje się sama, kiedy przerwiesz pisanie – tak jak w aplikacji. " +
-    "Wyłączony: zapisujesz przyciskiem „Zapisz” albo skrótem Ctrl+S, a przy wychodzeniu " +
-    "z niezapisanymi zmianami przeglądarka o nie zapyta.",
+    "Włączony: notatka zapisuje się sama, kiedy przestaniesz pisać. Wyłączony: zapisujesz " +
+    "ją przyciskiem „Zapisz” albo skrótem Ctrl+S.",
   boldFontTitle: "Grubsze pismo",
   boldFontAbout:
-    "Pogrubione pismo w polu do pisania – łatwiej je czytać na jasnym ekranie. Dotyczy " +
-    "tylko pisania na stronie i nie zapisuje się w samej notatce.",
+    "Grubsze pismo w polu do pisania – łatwiej je czytać. Sama notatka zostaje bez zmian.",
   fontOfNewNote: "Krój nowej notatki",
   textSizeLabel: "Rozmiar pisma",
   zeroMeansDefault: "Zero oznacza rozmiar domyślny",
@@ -1751,12 +1731,11 @@ const pl: Words = {
   deviceTokensEyebrow: "Tokeny urządzeń",
   tokenSignIn: "Logowanie przez token",
   tokenSignInAbout:
-    "W aplikacji zwykle wystarczy adres e-mail i hasło. Token przydaje się, gdy konto " +
-    "powstało przez Google i nie ma jeszcze hasła, albo gdy wolisz nie wpisywać hasła na " +
-    "cudzym urządzeniu. To nie to samo co logowanie przez Google – token wydajesz tutaj " +
-    "i wklejasz w aplikacji.",
+    "W aplikacji zwykle wystarczy adres e-mail i hasło. Token przydaje się wtedy, gdy " +
+    "konto powstało przez Google i nie ma jeszcze hasła – albo gdy wolisz nie wpisywać " +
+    "hasła na cudzym urządzeniu.",
   issueToken: "Wydaj token",
-  issuingToken: "Wydaję...",
+  issuingToken: "Wydaję…",
   deviceName: "Nazwa urządzenia",
   deviceNamePlaceholder: "np. telefon, tablet, laptop",
   lastUseWord: "ostatnio użyty",
@@ -1810,7 +1789,7 @@ const pl: Words = {
   statNotesNote: "poza koszem",
   statSpace: "Zajęte miejsce",
   statSpaceNote: "razem na wszystkich kontach",
-  statFreeCodes: "Wolne kody",
+  statFreeCodes: "Niewykorzystane kody",
   statFreeCodesNote: "jeszcze ważne",
   lastWeekEyebrow: "Ostatni tydzień",
   statNewAccounts: "Nowe konta",
@@ -1843,19 +1822,19 @@ const pl: Words = {
   accountsLead:
     "Limit zero oznacza miejsce bez ograniczeń. Limit podany na określoną liczbę dni wraca " +
     "po terminie do poprzedniej wartości.",
-  searchAccountPlaceholder: "Nick lub e-mail…",
+  searchAccountPlaceholder: "Login lub e-mail…",
   clearWord: "Wyczyść",
   tagAdministrator: "administrator",
   tagBlocked: "zablokowane",
   tagNoCodeRunning: "bez uruchamiania kodu",
-  tagAiAllowed: "asystent AI",
+  tagAiAllowed: "KajetAI",
   accountSinceShort: "konto z",
   blockReasonLabel: "Powód blokady",
   quotaSection: "Limit miejsca",
   setQuota: "Ustaw limit",
   quotaInMb: "Limit w MB",
   forHowManyDays: "Na ile dni",
-  quotaHint: "Zero MB to brak limitu. Zero dni to na stałe.",
+  quotaHint: "Zero megabajtów oznacza miejsce bez ograniczeń, zero dni – limit na stałe.",
   changeLogin: "Zmień login",
   newLogin: "Nowy login",
   changeEmail: "Zmień e-mail",
@@ -1871,13 +1850,13 @@ const pl: Words = {
   makeAdmin: "Zrób administratorem",
   takeCodeRunning: "Zabierz uruchamianie kodu",
   allowCodeRunning: "Pozwól uruchamiać kod",
-  takeAiAccess: "Zabierz asystenta AI",
-  allowAiAccess: "Pozwól korzystać z asystenta AI",
-  aiSection: "Asystent AI",
+  takeAiAccess: "Zabierz KajetAI",
+  allowAiAccess: "Pozwól korzystać z KajetAI",
+  aiSection: "KajetAI",
   aiDailyLimitLabel: "Wywołań na dobę",
   setAiLimit: "Ustaw limit",
   aiLimitHint: "Zero oznacza limit domyślny.",
-  aiNoUsageYet: "Jeszcze z niego nie korzystał.",
+  aiNoUsageYet: "To konto jeszcze o nic nie prosiło.",
   recomputeStorage: "Przelicz miejsce",
   deleteAccount: "Skasuj konto",
 
@@ -1887,14 +1866,17 @@ const pl: Words = {
     "Kod na jedno miejsce to zwykłe zaproszenie dla jednej osoby. Większa liczba miejsc " +
     "przydaje się, gdy zapraszasz całą klasę jednym kodem.",
   issueCode: "Wydaj kod",
-  issuingCode: "Wydaję...",
+  issuingCode: "Wydaję…",
   howManyAccounts: "Na ile kont",
   quotaMbLabel: "Limit miejsca w MB",
-  codeGrantsAi: "Z asystentem AI",
-  codeGrantsAiHint: "Konto założone tym kodem od razu będzie mogło prosić asystenta o zmiany.",
+  codeGrantsAi: "Z KajetAI",
+  codeGrantsAiHint:
+    "Konto założone tym kodem od razu będzie mogło prosić KajetAI o zmiany w notatkach. " +
+    "Model jest darmowy, więc Google może wykorzystać wysłaną treść do uczenia swoich modeli.",
   validForDaysLabel: "Ważny przez (dni)",
   mailNotSetCodes:
-    "Poczta nie jest ustawiona, więc wiadomość nie wyjdzie. Odnośnik skopiujesz z listy poniżej.",
+    "Poczta nie jest ustawiona, więc wiadomość nie wyjdzie. Odnośnik skopiujesz ze spisu " +
+    "poniżej.",
   descriptionForYou: "Opis (dla Ciebie)",
   descriptionPlaceholder: "np. klasa 2B, wrzesień",
   issuedCodes: "Wydane kody",
@@ -1907,11 +1889,11 @@ const pl: Words = {
   copyCode: "Kopiuj kod",
   tagSpent: "wykorzystany",
   tagExpired: "przeterminowany",
-  tagFree: "wolny",
+  tagFree: "niewykorzystany",
   usedByWord: "wykorzystany przez",
   defaultWord: "domyślny",
   confirmDeleteCode:
-    "Skasować ten kod? Nikt, kto go jeszcze nie wykorzystał, nie założy już na niego konta.",
+    "Skasować ten kod? Kto go jeszcze nie wykorzystał, nie założy już konta.",
 
   logLead: "Ostatnie dwieście czynności administratorów.",
   logEmpty: "Dziennik jest pusty. Wpisy pojawią się po pierwszej czynności w panelu.",
@@ -1924,8 +1906,8 @@ const pl: Words = {
   adminCrashes: "Awarie",
   metaAdminCrashes: "Awarie aplikacji – Kajet",
   crashesLead:
-    "Raporty przysłane przez aplikację na Androida. Ta sama awaria zgłoszona wiele razy " +
-    "stoi w jednym wierszu, z liczbą powtórzeń. Wysyłka nie wymaga zalogowania.",
+    "Raporty z aplikacji na Androida. Ta sama awaria zgłoszona wiele razy stoi w jednym " +
+    "wierszu.",
   crashesEmpty: "Nie przyszedł jeszcze żaden raport o awarii.",
   columnHowMany: "Ile razy",
   columnDevice: "Urządzenie",
@@ -1958,13 +1940,13 @@ const pl: Words = {
   versionHint: "Numer widoczny dla użytkownika – to samo, co versionName w aplikacji.",
   releaseNumberLabel: "Numer wydania",
   releaseNumberHint:
-    "versionCode z pliku. Po nim aplikacja poznaje, że jest starsza – dlatego serwer " +
-    "odczytuje go sam i nie da się go tu podmienić.",
+    "Numer odczytany z pliku. Po nim aplikacja poznaje, że jest starsza, więc nie da się " +
+    "go tu podmienić.",
   readFromFile: "odczytane z pliku",
   couldNotReadRelease:
     "Nie udało się odczytać wersji z tego pliku. Wpisz numer wydania i wersję ręcznie, " +
-    "dokładnie tak, jak stoją w build.gradle.kts – od zgodności numeru zależy " +
-    "powiadamianie o aktualizacji.",
+    "dokładnie takie same jak w aplikacji – inaczej nikt nie dostanie powiadomienia " +
+    "o aktualizacji.",
   whatChangedLabel: "Co się zmieniło",
   releaseNotesPlaceholder: "Możesz zostawić puste. Ten opis widzą pobierający.",
   replacePreviousHint:
@@ -1975,8 +1957,8 @@ const pl: Words = {
   connectionDropped2: "Połączenie urwało się w trakcie wysyłania.",
   uploadAborted: "Wysyłanie przerwane.",
   pickApkFile: "Wskaż plik APK z aplikacją.",
-  sendingFileStage: "Wysyłam plik...",
-  savingReleaseStage: "Zapisuję wydanie...",
+  sendingFileStage: "Wysyłam plik…",
+  savingReleaseStage: "Zapisuję wydanie…",
   uploadFailed: "Nie udało się wysłać.",
 
   metaSignIn: "Zaloguj się – Kajet",
@@ -1985,9 +1967,7 @@ const pl: Words = {
     "Po zalogowaniu zobaczysz swoje notatki – tutaj je przeczytasz i poprawisz.",
   signInWithGoogleButton: "Zaloguj się przez Google",
   googleInAppHint:
-    "W aplikacji mobilnej Kajet możesz zalogować się przez Google przyciskiem „Zaloguj " +
-    "przez Google” (otwiera tę stronę w przeglądarce w aplikacji), hasłem albo tokenem ze " +
-    "strony konta.",
+    "W aplikacji zalogujesz się przez Google, hasłem albo tokenem ze strony konta.",
   noAccountAsk: "Nie masz konta?",
   registerOnCode: "Załóż je na kod zaproszenia",
   signInBlocked: "To konto zostało zablokowane. Napisz do administratora.",
@@ -1999,14 +1979,13 @@ const pl: Words = {
     "Ten adres jest już używany przy logowaniu hasłem. Zaloguj się hasłem, a potem możesz " +
     "powiązać Google.",
   signInConfiguration:
-    "Logowanie przez Google nie jest poprawnie ustawione na serwerze (klucze, adres " +
-    "powrotu albo AUTH_URL). Napisz do administratora albo zaloguj się hasłem.",
+    "Logowanie przez Google nie działa na tym serwerze. Zaloguj się hasłem albo napisz " +
+    "do administratora.",
   signInAccessDenied: "Google nie pozwoliło na logowanie, albo to konto nie ma dostępu.",
   signInOAuthStart: "Nie udało się rozpocząć logowania przez Google. Spróbuj jeszcze raz.",
   signInOAuthCallback:
-    "Google nie dokończyło logowania. Sprawdź, czy wracasz na ten sam adres strony (https), " +
-    "albo spróbuj jeszcze raz. Jeśli błąd wraca, zwykle chodzi o zły adres powrotu " +
-    "w konsoli Google albo o brak AUTH_URL.",
+    "Google nie dokończyło logowania. Spróbuj jeszcze raz. Jeśli błąd wraca, napisz do " +
+    "administratora – to ustawienie po stronie serwera.",
   signInOAuthCreate:
     "Nie udało się założyć konta przez Google. Spróbuj jeszcze raz albo załóż konto hasłem " +
     "na kodzie zaproszenia.",
@@ -2022,21 +2001,21 @@ const pl: Words = {
   byePasswordSet:
     "Hasło ustawione. Zaloguj się nim teraz; tego samego hasła użyjesz w aplikacji na telefonie.",
   siteDescription:
-    "Notatnik na komputer i urządzenia mobilne. Pismo odręczne, notatki tekstowe, mapy " +
-    "myśli i kod – w jednym miejscu.",
+    "Notatnik na telefon, tablet i przeglądarkę. Pismo odręczne, tekst, mapy myśli i kod " +
+    "– w jednym miejscu.",
   sendStraightTo: "Wyślij od razu na adres",
   searchAccountLabel: "Szukaj konta",
   deleteOlderReleases: "Skasuj starsze wydania – z bazy i z dysku",
 
   apiDbBehind:
-    "Baza danych serwera nie jest gotowa – napisz do administratora. Notatki na urządzeniu " +
-    "są bezpieczne.",
+    "Serwer jest w trakcie aktualizacji i na razie nie przyjmuje notatek. Twoje notatki " +
+    "na urządzeniu są bezpieczne. Jeśli to potrwa, napisz do administratora.",
   apiNoDatabase: "Serwer nie ma połączenia ze swoją bazą danych. Spróbuj za chwilę.",
   apiUnexpected: "Nieoczekiwany błąd serwera.",
-  apiCrashTooOften: "Z tego miejsca przyszło już dość raportów o awariach. Spróbuj później.",
+  apiCrashTooOften: "Za dużo raportów o awariach naraz. Spróbuj za kilka minut.",
   apiCrashTooBig: "Raport o awarii jest za duży.",
   apiCrashUnreadable: "Nie da się odczytać raportu o awarii.",
-  apiVersionTooOften: "Z tego miejsca przyszło już dość pytań o wersję. Spróbuj później.",
+  apiVersionTooOften: "Za dużo pytań o aktualizację naraz. Spróbuj za kilka minut.",
   apiNotSignedIn: "Nie jesteś zalogowany. Zaloguj się w ustawieniach aplikacji.",
   apiTokenDead: "Ten token już nie działa. Zaloguj się jeszcze raz.",
   apiTokenExpired: "Token wygasł. Zaloguj się jeszcze raz.",
@@ -2071,19 +2050,24 @@ const pl: Words = {
   apiOffInServerSettings: "Wyłączone w ustawieniach serwera.",
   apiRunnerReady: "Gotowe do uruchamiania kodu.",
   apiConflict:
-    "Ta notatka zmieniła się także gdzie indziej. Zapisz swoją wersję obok, żeby nic nie przepadło.",
-  apiNoteWithoutBody: "Notatka przyszła bez treści. Zaktualizuj aplikację.",
+    "Ta notatka zmieniła się w innym miejscu. Twoja zmiana nie została zapisana, żeby nic " +
+    "nie przepadło.",
+  apiNoteWithoutBody:
+    "Serwer nie dostał treści tej notatki. Zaktualizuj aplikację i spróbuj zsynchronizować " +
+    "jeszcze raz.",
   apiTrashFirst: "Najpierw wyrzuć notatkę do kosza, potem możesz ją skasować na stałe.",
   apiGiveAttachmentName: "Podaj nazwę załącznika.",
   apiNoSuchAttachment: "Nie ma takiego załącznika.",
   apiNoSuchAccount: "Nie ma takiego konta.",
-  apiFileGoneFromDisk: "Plik zniknął z dysku serwera.",
-  apiNoSuchCode: "Nie ma takiego kodu. Sprawdź, czy jest przepisany dokładnie.",
+  apiFileGoneFromDisk: "Tego pliku już nie ma. Napisz do administratora.",
+  apiNoSuchCode: "Nie ma takiego kodu. Przepisz go jeszcze raz, co do znaku.",
   apiCodeExpired: "Ten kod już wygasł. Poproś administratora o nowy.",
   apiCodeUsedUp: "Ten kod został już wykorzystany. Poproś administratora o nowy.",
-  apiBadRequest: "Nie udało się odczytać zapytania.",
+  apiBadRequest: "Coś się popsuło po drodze. Spróbuj jeszcze raz.",
   apiGiveDeviceName: "Podaj nazwę urządzenia.",
-  apiSignInDenied: "Logowanie zostało odrzucone na stronie.",
+  apiSignInDenied:
+    "To logowanie zostało odrzucone w przeglądarce. Jeśli chcesz się zalogować, zacznij " +
+    "od nowa.",
   apiCodeExpiredOrUsed:
     "Kod logowania wygasł albo został już użyty. Spróbuj jeszcze raz w aplikacji.",
   apiGiveEmailAndPassword: "Podaj adres e-mail i hasło.",
@@ -2094,9 +2078,14 @@ const pl: Words = {
     "Zawartość pliku nie zgadza się z jego rodzajem. Wyślij zdjęcie albo rysunek.",
   apiFileSaveFailed: "Nie udało się zapisać pliku.",
   apiGiveAttachmentToDelete: "Podaj nazwę załącznika do skasowania.",
-  apiUnknownShape: "Serwer nie rozumie tego zapytania. Zaktualizuj aplikację.",
-  apiNoteUnknownShape: "Serwer nie rozumie zapisu tej notatki. Zaktualizuj aplikację.",
-  apiFolderUnknownShape: "Serwer nie rozumie zapisu tego folderu. Zaktualizuj aplikację.",
+  apiUnknownShape:
+    "Ta wersja aplikacji jest nowsza niż serwer. Poproś administratora o aktualizację serwera.",
+  apiNoteUnknownShape:
+    "Serwer nie umie jeszcze zapisać takiej notatki. Poproś administratora o aktualizację " +
+    "serwera.",
+  apiFolderUnknownShape:
+    "Serwer nie umie jeszcze zapisać takiego folderu. Poproś administratora o aktualizację " +
+    "serwera.",
   apiNoteNotOnServer:
     "Tej notatki nie ma jeszcze na serwerze. Zsynchronizuj ją i spróbuj jeszcze raz.",
   apiCodeRunningOffForAccount: "Administrator wyłączył uruchamianie kodu na tym koncie.",
@@ -2105,58 +2094,58 @@ const pl: Words = {
   apiGiveLanguageAndCode: "Podaj język i kod do uruchomienia.",
   apiNothingToRun: "Nie ma czego uruchomić.",
   apiUnknownAddress:
-    "Serwer nie zna takiego adresu. Sprawdź adres serwera w ustawieniach albo zaktualizuj " +
-    "aplikację – ta wersja prosi o coś, czego serwer jeszcze nie ma.",
+    "Ten serwer nie ma tej funkcji. Zaktualizuj aplikację albo sprawdź adres serwera " +
+    "w ustawieniach.",
   apiAiNoConsent:
-    "Zanim asystent ruszy, trzeba potwierdzić zgodę na wysyłanie treści notatki do Google. " +
-    "Zgoda jest w ustawieniach konta.",
+    "KajetAI wysyła treść notatki do Google i wymaga Twojej zgody. Potwierdzisz ją " +
+    "w ustawieniach konta.",
   apiAiWrongKind:
-    "Asystent pracuje przy notatkach tekstowych, mapach myśli i kodzie. Przy notatce " +
-    "odręcznej nie ma czego czytać.",
-  apiAiNoInstruction: "Napisz, co asystent ma zmienić w notatce.",
+    "KajetAI pracuje przy notatkach tekstowych, mapach myśli i kodzie. Przy odręcznej nie " +
+    "ma czego czytać.",
+  apiAiNoInstruction: "Napisz, co KajetAI ma zmienić w notatce.",
   apiAiTimeout:
-    "Asystent nie odpowiedział na czas. Notatka została nietknięta – spróbuj jeszcze raz.",
+    "KajetAI nie odpowiedział na czas. Notatka została nietknięta – spróbuj jeszcze raz.",
   apiAiBusy:
-    "Model odmówił obsługi – na dziś skończył się limit zapytań. Spróbuj później; " +
-    "notatka została nietknięta.",
-  apiAiBroken:
-    "Nie udało się porozumieć z modelem. Notatka została nietknięta.",
-  apiAiNoAnswer:
-    "Asystent nie zaproponował żadnej zmiany. Spróbuj napisać polecenie inaczej.",
-  apiAiHistoryCleared: "Rozmowa z asystentem przy tej notatce została wyczyszczona.",
-  aiTitle: "Asystent",
+    "Google nie przyjmuje dziś więcej zapytań od KajetAI. Spróbuj później – notatka " +
+    "została nietknięta.",
+  apiAiBroken: "KajetAI nie połączył się z Google. Notatka została nietknięta.",
+  apiAiNoAnswer: "KajetAI nie zaproponował żadnej zmiany. Napisz polecenie inaczej.",
+  apiAiHistoryCleared: "Rozmowa z KajetAI przy tej notatce została wyczyszczona.",
+  // Napisy przepisane znak w znak z aplikacji (Words.kt), żeby obie strony
+  // mówiły w tej sprawie jednym zdaniem.
+  aiTitle: "KajetAI",
   aiHint: "Co zmienić w tej notatce?",
   aiAsk: "Poproś",
-  aiWorking: "Asystent pracuje nad notatką…",
+  aiWorking: "KajetAI pracuje nad notatką…",
   aiUndo: "Cofnij zmianę",
   aiUndone: "Zmiana cofnięta.",
-  // Napis przepisany znak w znak z aplikacji (Words.kt), żeby obie strony
-  // mówiły w tej sprawie jednym zdaniem.
-  aiUndoFailed: "Nie udało się cofnąć zmiany. Notatka została taka, jak ją zmienił asystent.",
-  aiQuestionLabel: "Asystent pyta",
+  aiUndoFailed: "Nie udało się cofnąć. Notatka została taka, jak ją zmienił KajetAI.",
+  aiQuestionLabel: "KajetAI pyta",
   aiHistoryTitle: "Wcześniejsze polecenia",
   aiHistoryEmpty: "Przy tej notatce jeszcze o nic nie proszono.",
   aiForgetHistory: "Wyczyść rozmowę",
   aiNeedsConsent:
-    "Zanim asystent ruszy, trzeba potwierdzić zgodę na wysyłanie treści notatki do Google.",
+    "KajetAI wysyła treść notatki do Google i wymaga Twojej zgody. Model jest darmowy, " +
+    "więc Google może wykorzystać wysłaną treść do uczenia swoich modeli.",
   aiGoToAccount: "Przejdź do ustawień konta",
-  aiConsentSection: "Asystent AI",
+  aiConsentSection: "Asystent KajetAI",
   aiConsentWhatHappens:
-    "Treść notatki – cały tekst, kod albo napisy w węzłach mapy – jest wysyłana do Google, " +
-    "bo to jego model wprowadza zmiany. Pismo odręczne i zdjęcia nie są wysyłane.",
+    "Kiedy poprosisz KajetAI o zmianę, treść notatki – cały tekst, kod albo napisy " +
+    "w węzłach mapy – zostanie wysłana do Google, bo to jego model wprowadza zmiany. " +
+    "Pismo odręczne i zdjęcia nie są wysyłane.",
   aiConsentTraining:
-    "Kajet korzysta z darmowego poziomu tej usługi, a to znaczy, że Google wykorzystuje wysłaną " +
-    "treść do rozwoju swoich produktów, w tym do uczenia modeli, i że mogą ją przeczytać jego " +
-    "pracownicy. Nie wysyłaj tą drogą notatek, które mają zostać prywatne.",
+    "Model jest darmowy, więc Google może wykorzystać wysłaną treść do uczenia swoich " +
+    "modeli, a jego pracownik może ją przeczytać. Nie wysyłaj notatek, które mają " +
+    "zostać prywatne.",
   aiConsentVoluntary:
-    "Zgoda jest dobrowolna i możesz ją wycofać w każdej chwili. Bez niej asystent nie działa, " +
-    "a cała reszta Kajetu działa tak samo jak dotąd.",
-  aiConsentGiven: "Zgoda udzielona.",
+    "Zgoda jest dobrowolna i wycofasz ją w każdej chwili. Bez niej KajetAI nie działa, " +
+    "a reszta Kajetu działa tak samo jak dotąd.",
+  aiConsentGiven: "Zgoda na wysyłanie treści notatek do Google jest udzielona.",
   aiConsentAgree: "Zgadzam się",
   aiConsentWithdraw: "Wycofaj zgodę",
-  aiConsentWithdrawn: "Zgoda wycofana. Rozmowy z asystentem zostały skasowane.",
+  aiConsentWithdrawn: "Zgoda wycofana. Rozmowy z KajetAI zostały skasowane.",
 
-  apiServerBusy: "Serwer uruchamia już tyle programów naraz, ile może.",
+  apiServerBusy: "Serwer jest w tej chwili zajęty uruchamianiem cudzego kodu.",
   apiTryInSeconds: "Spróbuj za kilka sekund.",
   apiBadReleaseHash: "Suma kontrolna pliku wydania się nie zgadza.",
   apiNotAnApk: "To nie wygląda na plik APK. Wskaż plik z aplikacją.",
@@ -2172,8 +2161,7 @@ const pl: Words = {
   actGiveDeviceName: "Wpisz nazwę urządzenia.",
   actNoTokensToRevoke: "Nie ma żadnych tokenów do unieważnienia.",
   actSavedAutosaveOn: "Zapisane. Autozapis jest włączony.",
-  actSavedAutosaveOff:
-    "Zapisane. Autozapis jest wyłączony – notatki zapisuje przycisk „Zapisz” albo Ctrl+S.",
+  actSavedAutosaveOff: "Zapisane. Autozapis jest wyłączony.",
   actPasswordTooShort: "Nowe hasło musi mieć co najmniej osiem znaków.",
   actCheckWhatYouTyped: "Sprawdź wpisane dane.",
   actPasswordsDiffer: "Nowe hasła się różnią.",
@@ -2205,7 +2193,7 @@ const pl: Words = {
   actPasswordChangedEverywhere:
     "Hasło zmienione. Dla bezpieczeństwa wylogowaliśmy wszystkie urządzenia, więc zaloguj " +
     "się na nowo także w aplikacji.",
-  actSignInDenied: "Odrzucono logowanie. Aplikacja dostanie informację przy następnym sprawdzeniu.",
+  actSignInDenied: "Logowanie odrzucone. Aplikacja dowie się o tym w ciągu kilku sekund.",
   actNoFileArrived: "Nie przyszedł żaden plik.",
   actAdminOnly: "Ta czynność jest tylko dla administratora.",
   actCheckNumbers: "Sprawdź wpisane liczby.",
@@ -2213,8 +2201,8 @@ const pl: Words = {
   actUnlimitedGiven: "Konto dostało miejsce bez limitu.",
   actCannotBlockSelf: "Nie da się zablokować własnego konta.",
   actLoginRulesAdmin:
-    "Login może mieć od 3 do 24 znaków: małe litery, cyfry, kropka, kreska, podkreślenie.",
-  actBadLogin: "Zły login.",
+    "Login może mieć od 3 do 24 znaków: małe litery, cyfry, kropka, kreska i podkreślenie.",
+  actBadLogin: "Ten login nie spełnia zasad wypisanych pod polem.",
   actAccountHasAddress: "Konto ma już ten adres.",
   actAddressOnAnother: "Na ten adres jest już inne konto.",
   actConfirmationSent: " Prośba o potwierdzenie poszła na nowy adres.",
@@ -2222,9 +2210,8 @@ const pl: Words = {
     " Nie udało się wysłać wiadomości z potwierdzeniem – przekaż odnośnik samodzielnie.",
 
   actOnlyTextNotes: "Na stronie da się na razie poprawiać tylko notatki tekstowe.",
-  actRefreshAfterConflict:
-    " Odśwież stronę, żeby zobaczyć wersję z serwera, i zapisz jeszcze raz jeśli trzeba.",
-  actNothingChanged: "Nic się nie zmieniło.",
+  actRefreshAfterConflict: " Odśwież stronę i zapisz jeszcze raz.",
+  actNothingChanged: "Notatka jest już zapisana.",
   actMindMapUnreadable: "Nie udało się odczytać mapy myśli.",
   actNotAMindMap: "To nie jest mapa myśli.",
   actHandwritingNeedsPage: "Notatka odręczna musi mieć przynajmniej jedną stronę.",
@@ -2235,7 +2222,7 @@ const pl: Words = {
   actNoteDeletedForGood: "Notatka skasowana na stałe.",
   actAddedToFavorites: "Dodano do ulubionych.",
   actRemovedFromFavorites: "Usunięto z ulubionych.",
-  actAttachmentDataMissing: "Brakuje danych załącznika.",
+  actAttachmentDataMissing: "Nie wiadomo, o który plik chodzi. Odśwież stronę i spróbuj jeszcze raz.",
   actAttachmentGone: "Tego załącznika już nie ma.",
   actOnlyOwnNote: "Udostępnić można tylko własną notatkę.",
   actShareMailFailed:
@@ -2259,7 +2246,7 @@ const pl: Words = {
   actNoReleaseForDownload:
     "Nie ma jeszcze żadnego wydania aplikacji. Zajrzyj na stronę /download.",
   actReleaseFileGone:
-    "Plik tego wydania zniknął z dysku serwera. Napisz do administratora.",
+    "Tego wydania nie da się już pobrać. Napisz do administratora.",
 
   strokeOpacity: "Krycie kreski",
   fontLabel: "Krój pisma",
@@ -2276,7 +2263,7 @@ const pl: Words = {
   password: "Hasło",
   wrongCredentials: "Zły adres albo złe hasło.",
   tooManyAttempts:
-    "Za dużo nieudanych prób logowania. Ze względów bezpieczeństwa odczekaj 15 minut " +
+    "Za dużo nieudanych prób logowania. Ze względów bezpieczeństwa odczekaj chwilę " +
     "i spróbuj jeszcze raz. Jeśli nie pamiętasz hasła, ustaw nowe przez „Nie pamiętam hasła”.",
   forgotPassword: "Nie pamiętam hasła",
 
@@ -2298,8 +2285,8 @@ const pl: Words = {
   contactSubjectLabel: "Tytuł",
   contactMessageLabel: "Treść wiadomości",
   contactSendButton: "Wyślij wiadomość",
-  contactSendingWord: "Wysyłam",
-  contactSent: "Wiadomość poszła. Dziękujemy - odpowiemy na podany adres.",
+  contactSendingWord: "Wysyłam…",
+  contactSent: "Wiadomość poszła. Dziękujemy – odpowiemy na podany adres.",
   contactFillEverything: "Wypełnij wszystkie pola i sprawdź adres e-mail.",
   contactTooMany: "Za dużo wiadomości w krótkim czasie. Odczekaj chwilę i spróbuj jeszcze raz.",
   contactFailed: "Nie udało się wysłać wiadomości. Spróbuj za chwilę albo napisz zwykłym mailem.",
@@ -2321,13 +2308,13 @@ const pl: Words = {
     "udostępnione odnośniki (przestają działać od razu) i zalogowane urządzenia. " +
     "Tego nie da się cofnąć. Zanim skasujesz konto, wyeksportuj to, co chcesz zachować.",
   sendDeletionCodeButton: "Wyślij kod na e-mail",
-  sendingDeletionCode: "Wysyłam kod",
+  sendingDeletionCode: "Wysyłam kod…",
   deletionCodeSent:
     "Kod poszedł na adres Twojego konta. Jest ważny godzinę i działa jeden raz.",
   deletionCodeLabel: "Kod z wiadomości",
   deletionCodeHint: "Osiem znaków, na przykład ABCD-EFGH. Wielkość liter nie ma znaczenia.",
   deleteAccountForever: "Skasuj konto na zawsze",
-  deletingAccount: "Kasuję konto",
+  deletingAccount: "Kasuję konto…",
   confirmDeleteAccount:
     "Skasować konto razem ze wszystkimi notatkami? Tego nie da się cofnąć.",
   deletionGiveCode: "Wpisz kod z wiadomości.",
@@ -2336,7 +2323,7 @@ const pl: Words = {
   deletionTooManyTries:
     "Za dużo nieudanych prób. Odczekaj kwadrans i spróbuj jeszcze raz.",
   deletionMailFailed:
-    "Nie udało się wysłać wiadomości z kodem. Spróbuj za chwilę - konto zostaje bez zmian.",
+    "Nie udało się wysłać wiadomości z kodem. Spróbuj za chwilę – konto zostaje bez zmian.",
   byeAccountDeleted:
     "Konto zostało skasowane razem ze wszystkimi notatkami. Dziękujemy i do zobaczenia.",
 };
@@ -2359,13 +2346,13 @@ const en: Words = {
   language: "Language",
 
   saved: "Saved",
-  saving: "Saving...",
-  unsavedWillSave: "Unsaved changes – saving in a moment",
-  unsavedPressSave: "Unsaved changes – press Save or Ctrl+S",
+  saving: "Saving…",
+  unsavedWillSave: "Saving in a moment",
+  unsavedPressSave: "Not saved – click Save (Ctrl+S)",
   autosaveOn: "Autosave is on",
-  autosaveOff: "Autosave is switched off in your account settings",
-  saveFailed: "Not saved – read the message above",
-  willSaveWhenYouType: "It will save itself once you start writing",
+  autosaveOff: "Autosave is off",
+  saveFailed: "Could not save",
+  willSaveWhenYouType: "It saves itself",
 
   library: "Library",
   folders: "Folders",
@@ -2378,11 +2365,11 @@ const en: Words = {
   trash: "Bin",
   moveNoteToFolder: "Move the note to a folder",
   emptyLibrary: "Nothing here yet",
-  emptyLibraryHint: "Write your first note, or sync the app.",
+  emptyLibraryHint: "Write your first note, or sign in to the app with the same account.",
 
   noteTitle: "Title",
   noteContent: "Note content",
-  writeHere: "Write here...",
+  writeHere: "Write here…",
   bold: "Bold",
   italic: "Italic",
   strike: "Strikethrough",
@@ -2395,14 +2382,12 @@ const en: Words = {
   collapse: "Collapse",
 
   codeRun: "Run",
-  codeRunning: "Running...",
+  codeRunning: "Running…",
   codeLanguage: "Language",
   codeTitle: "Title / file name",
   codePreview: "This is what the page looks like",
-  codePreviewAbout:
-    "The preview refreshes as you type. The page runs in its own frame, separate from the " +
-    "rest of Kajet.",
-  codeRunDisabled: "Running code is switched off on this server.",
+  codePreviewAbout: "The preview refreshes as you type.",
+  codeRunDisabled: "Running code is switched off here.",
 
   locale: "en-GB",
 
@@ -2431,13 +2416,12 @@ const en: Words = {
   filterButton: "Filter",
   filtersLabel: "Filters",
   emptyPageTitle: "Empty page",
-  emptyPageHeading: "There is nothing here",
+  emptyPageHeading: "You have gone past the last page",
   backToStart: "Back to the beginning",
   favoritesEmptyHeading: "No favourites yet",
   favoritesEmptyAbout:
-    "Press the star next to a note: in the list on a computer, on the bar of an open " +
-    "note, or in the editor on a phone. The note stays in its folder, and a shortcut to " +
-    "it turns up here.",
+    "Press the star next to any note and a shortcut to it turns up here. The note itself " +
+    "stays where it was.",
   emptyEyebrow: "Empty",
   emptyHeading: "Nothing here yet",
   emptyAbout:
@@ -2474,7 +2458,7 @@ const en: Words = {
   emptyTrashButton: "Empty the bin",
   confirmEmptyTrash: "Delete every note in the bin for good?",
   trashEmptyHeading: "The bin is empty",
-  trashEmptyAbout: "Nothing in here. Binned notes turn up in this place.",
+  trashEmptyAbout: "Notes you throw away land here.",
   columnTrashed: "Binned",
   restore: "Restore",
   forGood: "For good",
@@ -2489,20 +2473,14 @@ const en: Words = {
 
   newNoteEyebrow: "New note",
   newTextNoteTitle: "Text note",
-  newTextNoteAbout:
-    "Once saved, the note is on every device at the next sync.",
+  newTextNoteAbout: "Once you save it, the note shows up on your phone and tablet too.",
   newCodeNoteTitle: "Code file",
-  newCodeNoteAbout:
-    "A code file is saved on the server, so you can open it here and in the app. Either " +
-    "way the code runs on the server.",
+  newCodeNoteAbout: "You can open the file here and in the app. One button runs the code.",
   newMindMapTitle: "Mind map",
-  newMindMapAbout:
-    "Nodes and connections are saved in the same format as in the app, so after a sync " +
-    "you can open the map on your phone or tablet.",
+  newMindMapAbout: "Once saved, the map opens on your phone and tablet.",
   newHandwritingTitle: "Handwritten note",
   newHandwritingAbout:
-    "Draw with a mouse or a stylus. Strokes are saved just as they are in the app, so " +
-    "after a sync you will see them on your phone and tablet.",
+    "Write with a mouse or a stylus. Once saved, the note shows up on your phone and tablet.",
   createNoteButton: "Create the note",
   createFileButton: "Create the file",
   createMapButton: "Create the map",
@@ -2510,8 +2488,7 @@ const en: Words = {
   metaNewCode: "New code file – Kajet",
   metaNewMindMap: "New mind map – Kajet",
   metaNewHandwriting: "New handwritten note – Kajet",
-  codeDisabledHere:
-    "Running code is switched off on this server. You can still save the note.",
+  codeDisabledHere: "Running code is switched off here. Saving works as usual.",
   codeDisabledForAccount: "An administrator switched off running code on your account.",
 
   metaNoteNotFound: "No such note – Kajet",
@@ -2519,9 +2496,8 @@ const en: Words = {
   error404: "Error 404",
   noteNotFoundHeading: "No such note",
   noteNotFoundAbout:
-    "There is no note at this address. There are three usual reasons: it was deleted for " +
-    "good, it belongs to someone else, or the link that brought you here has expired. If " +
-    "it is only in the bin, it is safe – the bin keeps notes until you empty it.",
+    "There is no note at this address. It may have been someone else's, the link may have " +
+    "expired, or it may simply be sitting in the bin.",
   lookInTrash: "Look in the bin",
   pageNotFoundHeading: "No such page",
   pageNotFoundLead:
@@ -2532,8 +2508,7 @@ const en: Words = {
   pageNotFoundWriteLink: "write to us",
   homePage: "Home page",
   sharedLinkNote:
-    "If a link to a shared note brought you here, ask for a new one. Old links can be " +
-    "revoked, and they have an expiry date.",
+    "If a link to a shared note brought you here, ask for a new one – old ones stop working.",
 
   noteHandwritten: "Handwritten note",
   noteTextKind: "Text note",
@@ -2544,16 +2519,15 @@ const en: Words = {
   editingMindMap: "Editing the mind map",
   editingHandwriting: "Editing the handwriting",
   handwritingUnreadable:
-    "Kajet could not read this handwritten note. There is no preview – do not save it, " +
-    "or you may lose what is inside.",
+    "This note could not be opened. Do not save it, or you will lose what is inside.",
   codeUnreadable: "Kajet could not read the contents of this code file.",
   sharingEyebrow: "Sharing",
   shareThisNote: "Share this note",
   shareAbout:
-    "A link works for anyone who gets it, account or no account. Sharing to an e-mail " +
-    "address requires signing in.",
+    "A link works for anyone who gets it, account or no account. A share sent to an e-mail " +
+    "address opens only for the person signed in with that address.",
   shareButton: "Share",
-  sharePreparing: "Preparing...",
+  sharePreparing: "Preparing…",
   whatTheyMayDo: "What the other person may do",
   readOnly: "Read only",
   readAndEdit: "Read and edit",
@@ -2587,7 +2561,7 @@ const en: Words = {
   copiedWord: "Copied",
   copyLink: "Copy the link",
   linkCopied: "Copied",
-  justAMoment: "One moment...",
+  justAMoment: "One moment…",
   confirmationLabel: "Confirmation",
   areYouSure: "Are you sure?",
   emptyNoteText: "This note is empty.",
@@ -2599,7 +2573,7 @@ const en: Words = {
   attachmentsEyebrow: "Attachments",
   filesWithNote: "Files with this note",
   sendFile: "Upload a file",
-  sendingFile: "Uploading...",
+  sendingFile: "Uploading…",
   fileLabel: "File",
   nameInNote: "Name in the note (optional)",
   namePlaceholder: "e.g. photo-1.png",
@@ -2609,18 +2583,18 @@ const en: Words = {
   removeAttachment: "Remove the attachment",
   mindMapLabel: "Mind map",
   noteUnreadableHere:
-    "Kajet could not read this note. It may have been saved by a newer version of the app.",
+    "This note could not be opened on the website. Try it in the app – it should show up there.",
 
   codeFileNamePlaceholder: "e.g. task1.py",
   codeWord: "Code",
-  savingWord: "Saving...",
+  savingWord: "Saving…",
   previewEyebrow: "Preview",
   htmlPreviewFrame: "Preview of the HTML page",
   runningEyebrow: "Running",
   runOnServer: "Run it on the server",
-  cannotRunHere: "You cannot run this code on the website. Saving the note works as usual.",
+  cannotRunHere: "You cannot run this code on the website. Saving works as usual.",
   standardInput: "Standard input (optional)",
-  stdinPlaceholder: "Data for stdin…",
+  stdinPlaceholder: "What the program should read…",
   exitCodeWord: "exit code",
   interruptedByTimeout: "interrupted (time limit)",
 
@@ -2642,12 +2616,10 @@ const en: Words = {
   codeInText: "Code inside the text",
   codeBlockWord: "Code block",
   linkWord2: "Link",
-  sendingPhoto: "Uploading the photo...",
+  sendingPhoto: "Uploading the photo…",
   insertPhotoInNote: "Insert a photo into the note",
-  writeSomethingFirst:
-    "Write anything – you can add a photo once the note is saved",
-  saveNoteFirst:
-    "Save the note with the button below or Ctrl+S – only a saved note can take a photo",
+  writeSomethingFirst: "Write something first – you can add a photo once the note is saved.",
+  saveNoteFirst: "Save the note first – then you can add a photo.",
   formulaWord: "Formula",
   wholeNoteFont: "Typeface for the whole note",
   wholeNoteSize: "Text size for the whole note",
@@ -2661,11 +2633,8 @@ const en: Words = {
   shrinkPhoto: "Make the photo smaller",
   growPhoto: "Make the photo bigger",
   removePhotoFromNote: "Take the photo out of the note",
-  autosaveHint:
-    "The note saves itself when you pause. The button below saves it straight away.",
-  autosaveOffHint:
-    "Autosave is switched off in your account settings, so the button below or Ctrl+S " +
-    "saves the note.",
+  autosaveHint: "The note saves itself when you stop writing.",
+  autosaveOffHint: "Autosave is off. Save with the button or Ctrl+S.",
 
   penInk: "Ink",
   penTeal: "Teal",
@@ -2708,9 +2677,8 @@ const en: Words = {
   confirmClearPage:
     "Clear every stroke on this page? Text boxes and pictures stay.",
   uploadAndPlace: "Upload a photo and place it on this page",
-  drawSomethingFirst:
-    "Draw anything – you can add a photo once the note is saved",
-  uploadingWord: "Uploading...",
+  drawSomethingFirst: "Draw something first – you can add a photo once the note is saved.",
+  uploadingWord: "Uploading…",
   photoWord: "Photo",
   photoToInsert: "Photo to insert",
   choosePhoto: "Choose a photo…",
@@ -2822,8 +2790,8 @@ const en: Words = {
   homeStepTwo: "Allow installing from outside the Play Store. The phone will ask on its own.",
   homeStepThree: "Open the downloaded file and you are done.",
   homeDownloadFacts:
-    "Works from Android 8.0 on 64-bit processors (arm64). The download page lists the " +
-    "release notes, the file checksum and older releases.",
+    "Works from Android 8.0 upwards. The download page lists the release notes, the " +
+    "checksum and older releases.",
   homeDownloadPage: "Open the download page",
   homeDownloadFile: "Download the file",
   homeInviteTitle: "An account by invitation",
@@ -2839,7 +2807,7 @@ const en: Words = {
   readOnlyMark: "read only",
   openAsOwner: "Open it as the owner",
   codeRunOwnerOnly:
-    "Running code is available only to the note's owner. Saving changes works as usual.",
+    "Only the person the note belongs to can run the code. Saving works as usual.",
   thisIsAKajetNote: "This is a note from Kajet.",
   seeWhatItIs: "See what it is about",
 
@@ -2849,7 +2817,7 @@ const en: Words = {
   backToRegister: "Back to registration",
   noLinkHeading: "No link",
   noLinkBody:
-    "There is no token in this address. Open the link straight from the e-mail you were sent.",
+    "This address is incomplete. Open the whole link straight from the e-mail you were sent.",
   linkDeadHeading: "The link no longer works",
   linkDeadBody:
     "This link has already been used, or it is not valid. If your account works, just " +
@@ -2898,14 +2866,14 @@ const en: Words = {
   loginIsVisible: "Your login is visible to people you share notes with.",
   atLeastEightChars: "At least eight characters.",
   repeatPassword: "Repeat the password",
-  creatingAccount: "Creating the account...",
+  creatingAccount: "Creating the account…",
   createAccountButton: "Create the account",
   preferGoogle: "I would rather use Google",
   googleAccountEyebrow: "Google account",
   googleAccountAbout:
     "Enter the invite code. We check it and go straight to Google. The account is created " +
     "for whichever address you sign in with there – you do not need to give it here.",
-  checkingCode: "Checking the code...",
+  checkingCode: "Checking the code…",
   onWithGoogle: "Continue with Google",
 
   metaNewPassword: "New password – Kajet",
@@ -2927,7 +2895,7 @@ const en: Words = {
     "E-mail is not set up on this server, so no message will go out. Ask an administrator " +
     "for help.",
   sendLinkButton: "Send the link",
-  sendingWord: "Sending...",
+  sendingWord: "Sending…",
   backToSignIn: "Back to sign-in",
 
   metaConnectDevice: "Connect a device – Kajet",
@@ -2946,12 +2914,12 @@ const en: Words = {
   openTheApp: "Open the app",
   orStayInPanel: "Or stay in the panel",
   deviceFallback: "Device",
-  connecting: "Connecting...",
-  denying: "Denying...",
+  connecting: "Connecting…",
+  denying: "Denying…",
   notMeDeny: "That was not me – deny it",
   afterApprovalAbout:
-    "Once approved, the app collects the token by itself. You can also go back to Kajet " +
-    "with the “Open the app” button when it turns up.",
+    "Once approved, the app signs itself in within a few seconds. You can also go back to " +
+    "it with the “Open the app” button when it turns up.",
 
   adminPanelLink: "Admin panel",
   profileEyebrow: "Profile",
@@ -2964,27 +2932,25 @@ const en: Words = {
   lastSignIn: "Last sign-in",
   notedNever: "not noted yet",
   accountSince: "Account since",
-  noteList: "List of notes",
+  noteList: "Note list",
   spaceEyebrow: "Space",
   limitValidUntil: "the limit holds until",
   spaceRunningOut:
-    "You are running out of space. Delete something, or ask an administrator for a bigger limit.",
+    "You are running out of space. Empty the bin, or ask an administrator for a bigger limit.",
   writingEyebrow: "Writing",
   howIWriteHere: "Writing on the website",
   writingLead:
     "These settings are saved with your account, so they hold in every browser. Typeface, " +
-    "size and alignment set the look of a new text note and are saved in the note itself, " +
-    "so after a sync you will see them in the app too. To change a note that is already " +
-    "open, use the bar above the text.",
+    "size and alignment apply to new notes. To change a note that is already open, use " +
+    "the bar above the text.",
   saveSettings: "Save the settings",
   autoSaveTitle: "Autosave",
   autoSaveAbout:
-    "On: the note saves itself when you pause – just like in the app. Off: the “Save” " +
-    "button or Ctrl+S saves it, and the browser asks before you leave with unsaved changes.",
+    "On: the note saves itself when you stop writing. Off: you save it yourself, with the " +
+    "“Save” button or Ctrl+S.",
   boldFontTitle: "Bolder text",
   boldFontAbout:
-    "Heavier text in the writing area – easier to read on a bright screen. It applies to " +
-    "writing on the website only and is not saved in the note itself.",
+    "Heavier text in the writing area – easier to read. The note itself stays as it is.",
   fontOfNewNote: "Typeface of a new note",
   textSizeLabel: "Text size",
   zeroMeansDefault: "Zero means the default",
@@ -2993,11 +2959,10 @@ const en: Words = {
   tokenSignIn: "Signing in with a token",
   tokenSignInAbout:
     "In the app an e-mail address and a password are usually enough. A token helps when " +
-    "the account was created through Google and has no password yet, or when you would " +
-    "rather not type your password on someone else's device. This is not the same as " +
-    "signing in with Google – you issue the token here and paste it into the app.",
+    "the account was created through Google and has no password yet – or when you would " +
+    "rather not type your password on someone else's device.",
   issueToken: "Issue a token",
-  issuingToken: "Issuing...",
+  issuingToken: "Issuing…",
   deviceName: "Device name",
   deviceNamePlaceholder: "e.g. phone, tablet, laptop",
   lastUseWord: "last used",
@@ -3088,14 +3053,14 @@ const en: Words = {
   tagAdministrator: "administrator",
   tagBlocked: "blocked",
   tagNoCodeRunning: "no code running",
-  tagAiAllowed: "AI assistant",
+  tagAiAllowed: "KajetAI",
   accountSinceShort: "account from",
   blockReasonLabel: "Reason for the block",
   quotaSection: "Space quota",
   setQuota: "Set the quota",
   quotaInMb: "Quota in MB",
   forHowManyDays: "For how many days",
-  quotaHint: "Zero MB means no limit. Zero days means permanently.",
+  quotaHint: "Zero megabytes means unlimited space; zero days means the limit stays for good.",
   changeLogin: "Change the login",
   newLogin: "New login",
   changeEmail: "Change the e-mail",
@@ -3111,13 +3076,13 @@ const en: Words = {
   makeAdmin: "Make administrator",
   takeCodeRunning: "Take away code running",
   allowCodeRunning: "Allow code running",
-  takeAiAccess: "Take away the AI assistant",
-  allowAiAccess: "Allow the AI assistant",
-  aiSection: "AI assistant",
+  takeAiAccess: "Take KajetAI away",
+  allowAiAccess: "Allow KajetAI",
+  aiSection: "KajetAI",
   aiDailyLimitLabel: "Calls per day",
   setAiLimit: "Set the limit",
   aiLimitHint: "Zero means the default limit.",
-  aiNoUsageYet: "Has not used it yet.",
+  aiNoUsageYet: "This account has not asked for anything yet.",
   recomputeStorage: "Recompute the space",
   deleteAccount: "Delete the account",
 
@@ -3127,11 +3092,13 @@ const en: Words = {
     "A one-seat code is an ordinary invitation for one person. More seats help when you " +
     "invite a whole class with a single code.",
   issueCode: "Issue the code",
-  issuingCode: "Issuing...",
+  issuingCode: "Issuing…",
   howManyAccounts: "How many accounts",
   quotaMbLabel: "Space quota in MB",
-  codeGrantsAi: "With the AI assistant",
-  codeGrantsAiHint: "An account created with this code will be able to ask the assistant for changes right away.",
+  codeGrantsAi: "With KajetAI",
+  codeGrantsAiHint:
+    "An account created with this code will be able to ask KajetAI for changes right away. " +
+    "The model is free, so Google may use what is sent to train its models.",
   validForDaysLabel: "Valid for (days)",
   mailNotSetCodes:
     "E-mail is not set up, so no message will go out. You can copy the link from the list below.",
@@ -3147,11 +3114,11 @@ const en: Words = {
   copyCode: "Copy the code",
   tagSpent: "used up",
   tagExpired: "expired",
-  tagFree: "free",
+  tagFree: "unused",
   usedByWord: "used by",
   defaultWord: "default",
   confirmDeleteCode:
-    "Delete this code? Anyone who has not used it yet will not be able to create an account.",
+    "Delete this code? Anyone who has not used it yet will not get an account.",
 
   logLead: "The last two hundred administrator actions.",
   logEmpty: "The log is empty. Entries turn up after the first action in the panel.",
@@ -3164,8 +3131,7 @@ const en: Words = {
   adminCrashes: "Crashes",
   metaAdminCrashes: "App crashes – Kajet",
   crashesLead:
-    "Reports sent by the Android app. The same crash reported many times sits in one row, " +
-    "with the number of repeats. Sending does not require signing in.",
+    "Reports from the Android app. The same crash reported many times sits in one row.",
   crashesEmpty: "No crash report has arrived yet.",
   columnHowMany: "How many",
   columnDevice: "Device",
@@ -3198,13 +3164,12 @@ const en: Words = {
   versionHint: "The number people see – the same as versionName in the app.",
   releaseNumberLabel: "Release number",
   releaseNumberHint:
-    "versionCode from the file. The app knows it is behind by this number, so the server " +
-    "reads it itself and it cannot be swapped here.",
+    "The number read from the file. The app uses it to tell that it is out of date, so it " +
+    "cannot be changed here.",
   readFromFile: "read from the file",
   couldNotReadRelease:
     "The version could not be read from this file. Type the release number and the version " +
-    "by hand, exactly as they stand in build.gradle.kts – update notices depend on that " +
-    "number matching.",
+    "by hand, exactly as they are in the app – otherwise nobody gets an update notice.",
   whatChangedLabel: "What changed",
   releaseNotesPlaceholder: "You may leave this empty. People downloading see this text.",
   replacePreviousHint:
@@ -3216,8 +3181,8 @@ const en: Words = {
   connectionDropped2: "The connection dropped while uploading.",
   uploadAborted: "Upload cancelled.",
   pickApkFile: "Choose the APK file with the app.",
-  sendingFileStage: "Uploading the file...",
-  savingReleaseStage: "Saving the release...",
+  sendingFileStage: "Uploading the file…",
+  savingReleaseStage: "Saving the release…",
   uploadFailed: "The upload did not work.",
 
   metaSignIn: "Sign in – Kajet",
@@ -3226,9 +3191,8 @@ const en: Words = {
     "Once you sign in you will see your notes, and you can read and edit them here.",
   signInWithGoogleButton: "Sign in with Google",
   googleInAppHint:
-    "In the Kajet mobile app you can sign in with Google using the “Sign in with Google” " +
-    "button (it opens this page in the in-app browser), with a password, or with a token " +
-    "from your account page.",
+    "In the app you can sign in with Google, with a password, or with a token from your " +
+    "account page.",
   noAccountAsk: "No account yet?",
   registerOnCode: "Create one with an invite code",
   signInBlocked: "This account has been blocked. Write to an administrator.",
@@ -3240,14 +3204,13 @@ const en: Words = {
     "This address is already used for password sign-in. Sign in with your password, and " +
     "you can link Google afterwards.",
   signInConfiguration:
-    "Google sign-in is not set up correctly on the server (keys, return address or " +
-    "AUTH_URL). Write to an administrator, or sign in with a password.",
+    "Google sign-in does not work on this server. Sign in with a password, or write to an " +
+    "administrator.",
   signInAccessDenied: "Google did not allow the sign-in, or this account has no access.",
   signInOAuthStart: "Google sign-in could not be started. Try again.",
   signInOAuthCallback:
-    "Google did not finish the sign-in. Check that you come back to the same site address " +
-    "(https), or try again. If it keeps happening, it is usually a wrong return address in " +
-    "the Google console, or a missing AUTH_URL.",
+    "Google did not finish the sign-in. Try again. If it keeps happening, write to an " +
+    "administrator – this is a setting on the server side.",
   signInOAuthCreate:
     "The account could not be created through Google. Try again, or create one with a " +
     "password on an invite code.",
@@ -3263,21 +3226,21 @@ const en: Words = {
   byePasswordSet:
     "Password set. Sign in with it now; you will use the same password in the phone app.",
   siteDescription:
-    "A notebook for computer and mobile. Handwriting, text notes, mind maps and code – all " +
-    "in one place.",
+    "A notebook for your phone, tablet and browser. Handwriting, text, mind maps and code " +
+    "– all in one place.",
   sendStraightTo: "Send it straight to an address",
   searchAccountLabel: "Search accounts",
   deleteOlderReleases: "Delete older releases – from the database and the disk",
 
   apiDbBehind:
-    "The server's database is not ready – write to an administrator. Your notes on the " +
-    "device are safe.",
+    "The server is being updated and is not taking notes right now. Your notes on the " +
+    "device are safe. If it lasts, write to an administrator.",
   apiNoDatabase: "The server cannot reach its database. Try again in a moment.",
   apiUnexpected: "Unexpected server error.",
-  apiCrashTooOften: "Enough crash reports have come from this place already. Try later.",
+  apiCrashTooOften: "Too many crash reports at once. Try again in a few minutes.",
   apiCrashTooBig: "The crash report is too big.",
   apiCrashUnreadable: "The crash report cannot be read.",
-  apiVersionTooOften: "Enough version questions have come from this place already. Try later.",
+  apiVersionTooOften: "Too many update checks at once. Try again in a few minutes.",
   apiNotSignedIn: "You are not signed in. Sign in from the app settings.",
   apiTokenDead: "This token no longer works. Sign in again.",
   apiTokenExpired: "The token has expired. Sign in again.",
@@ -3311,19 +3274,20 @@ const en: Words = {
   apiOffInServerSettings: "Switched off in the server settings.",
   apiRunnerReady: "Ready to run code.",
   apiConflict:
-    "This note has also changed somewhere else. Save your version alongside so nothing is lost.",
-  apiNoteWithoutBody: "The note arrived with no content. Update the app.",
+    "This note changed somewhere else. Your change was not saved, so nothing is lost.",
+  apiNoteWithoutBody:
+    "The server did not get the content of this note. Update the app and sync again.",
   apiTrashFirst: "Move the note to the bin first, then you can delete it for good.",
   apiGiveAttachmentName: "Give the name of the attachment.",
   apiNoSuchAttachment: "There is no such attachment.",
   apiNoSuchAccount: "There is no such account.",
-  apiFileGoneFromDisk: "The file has gone from the server disk.",
-  apiNoSuchCode: "There is no such code. Check that you copied it exactly.",
+  apiFileGoneFromDisk: "That file is gone. Write to an administrator.",
+  apiNoSuchCode: "There is no such code. Copy it again, character for character.",
   apiCodeExpired: "This code has expired. Ask an administrator for a new one.",
   apiCodeUsedUp: "This code has already been used up. Ask an administrator for a new one.",
-  apiBadRequest: "The request could not be read.",
+  apiBadRequest: "Something went wrong on the way. Try again.",
   apiGiveDeviceName: "Give a device name.",
-  apiSignInDenied: "The sign-in was denied on the website.",
+  apiSignInDenied: "This sign-in was denied in the browser. If you want to sign in, start again.",
   apiCodeExpiredOrUsed:
     "The sign-in code has expired or has already been used. Try again from the app.",
   apiGiveEmailAndPassword: "Enter an e-mail address and a password.",
@@ -3334,10 +3298,12 @@ const en: Words = {
     "The file content does not match its kind. Send a photo or a drawing.",
   apiFileSaveFailed: "The file could not be saved.",
   apiGiveAttachmentToDelete: "Give the name of the attachment to delete.",
-  apiUnknownShape: "The server does not understand this request. Update the app.",
-  apiNoteUnknownShape: "The server does not understand how this note is saved. Update the app.",
+  apiUnknownShape:
+    "This version of the app is newer than the server. Ask an administrator to update the server.",
+  apiNoteUnknownShape:
+    "The server cannot save a note like this yet. Ask an administrator to update the server.",
   apiFolderUnknownShape:
-    "The server does not understand how this folder is saved. Update the app.",
+    "The server cannot save a folder like this yet. Ask an administrator to update the server.",
   apiNoteNotOnServer: "This note is not on the server yet. Sync it and try again.",
   apiCodeRunningOffForAccount: "An administrator switched off code running on this account.",
   apiCodeRunningOffKeepWriting:
@@ -3346,56 +3312,56 @@ const en: Words = {
   apiGiveLanguageAndCode: "Give a language and the code to run.",
   apiNothingToRun: "There is nothing to run.",
   apiUnknownAddress:
-    "The server does not know this address. Check the server address in settings, or " +
-    "update the app – this version is asking for something the server does not have yet.",
+    "This server does not have that feature. Update the app, or check the server address " +
+    "in settings.",
   apiAiNoConsent:
-    "Before the assistant will work, consent to sending note content to Google has to be " +
-    "confirmed. The consent sits in account settings.",
+    "KajetAI sends the content of the note to Google and needs your consent. You confirm " +
+    "it in account settings.",
   apiAiWrongKind:
-    "The assistant works on text notes, mind maps and code. There is nothing for it to " +
-    "read in a handwritten note.",
-  apiAiNoInstruction: "Write what the assistant should change in the note.",
-  apiAiTimeout:
-    "The assistant did not answer in time. The note was left untouched – try again.",
+    "KajetAI works on text notes, mind maps and code. There is nothing to read in a " +
+    "handwritten one.",
+  apiAiNoInstruction: "Write what KajetAI should change in the note.",
+  apiAiTimeout: "KajetAI did not answer in time. The note was left untouched – try again.",
   apiAiBusy:
-    "The model turned the request down – the quota of requests has run out for now. " +
-    "Try later; the note was left untouched.",
-  apiAiBroken: "Could not reach the model. The note was left untouched.",
-  apiAiNoAnswer:
-    "The assistant proposed no change at all. Try putting the instruction differently.",
-  apiAiHistoryCleared: "The conversation with the assistant about this note has been cleared.",
-  aiTitle: "Assistant",
+    "Google is not taking any more requests from KajetAI today. Try later – the note was " +
+    "left untouched.",
+  apiAiBroken: "KajetAI could not reach Google. The note was left untouched.",
+  apiAiNoAnswer: "KajetAI proposed no change. Try writing the instruction differently.",
+  apiAiHistoryCleared: "The conversation with KajetAI about this note has been cleared.",
+  // Napisy przepisane znak w znak z aplikacji (Words.kt), żeby obie strony
+  // mówiły w tej sprawie jednym zdaniem.
+  aiTitle: "KajetAI",
   aiHint: "What should change in this note?",
   aiAsk: "Ask",
-  aiWorking: "The assistant is working on the note...",
+  aiWorking: "KajetAI is working on the note…",
   aiUndo: "Undo the change",
   aiUndone: "Change undone.",
-  aiUndoFailed: "The change could not be undone. The note stayed as the assistant left it.",
-  aiQuestionLabel: "The assistant asks",
+  aiUndoFailed: "Could not undo it. The note stayed as KajetAI left it.",
+  aiQuestionLabel: "KajetAI asks",
   aiHistoryTitle: "Earlier instructions",
   aiHistoryEmpty: "Nothing has been asked about this note yet.",
   aiForgetHistory: "Clear the conversation",
   aiNeedsConsent:
-    "Before the assistant will work, consent to sending note content to Google has to be confirmed.",
+    "KajetAI sends the content of the note to Google and needs your consent. The model is " +
+    "free, so Google may use what is sent to train its models.",
   aiGoToAccount: "Go to account settings",
-  aiConsentSection: "AI assistant",
+  aiConsentSection: "KajetAI assistant",
   aiConsentWhatHappens:
-    "The content of the note – all the text, the code, or the labels in the map nodes – is sent " +
-    "to Google, because it is their model that makes the change. Handwriting and photographs " +
-    "are not sent.",
+    "When you ask KajetAI for a change, the content of the note – all the text, the code, " +
+    "or the labels in the map nodes – will be sent to Google, because it is their model " +
+    "that makes the change. Handwriting and photographs are not sent.",
   aiConsentTraining:
-    "Kajet uses the free tier of that service, which means Google uses what is sent to develop " +
-    "its products, including training models, and its staff may read it. Do not send notes this " +
-    "way if they are meant to stay private.",
+    "The model is free, so Google may use what is sent to train its models, and a Google " +
+    "employee may read it. Do not send notes that are meant to stay private.",
   aiConsentVoluntary:
-    "The consent is voluntary and you can withdraw it at any time. Without it the assistant does " +
-    "not work, and the rest of Kajet works exactly as before.",
-  aiConsentGiven: "Consent given.",
+    "The consent is voluntary and you can withdraw it at any time. Without it KajetAI does " +
+    "not work, and the rest of Kajet works as before.",
+  aiConsentGiven: "Consent to sending note content to Google has been given.",
   aiConsentAgree: "I agree",
   aiConsentWithdraw: "Withdraw consent",
-  aiConsentWithdrawn: "Consent withdrawn. Conversations with the assistant have been deleted.",
+  aiConsentWithdrawn: "Consent withdrawn. Your conversations with KajetAI have been deleted.",
 
-  apiServerBusy: "The server is already running as many programs at once as it can.",
+  apiServerBusy: "The server is busy running other people's code right now.",
   apiTryInSeconds: "Try again in a few seconds.",
   apiBadReleaseHash: "The checksum of the release file does not match.",
   apiNotAnApk: "That does not look like an APK. Choose the file with the app.",
@@ -3410,8 +3376,7 @@ const en: Words = {
   actGiveDeviceName: "Enter a device name.",
   actNoTokensToRevoke: "There are no tokens to revoke.",
   actSavedAutosaveOn: "Saved. Autosave is on.",
-  actSavedAutosaveOff:
-    "Saved. Autosave is off – the “Save” button or Ctrl+S saves your notes.",
+  actSavedAutosaveOff: "Saved. Autosave is off.",
   actPasswordTooShort: "The new password must be at least eight characters.",
   actCheckWhatYouTyped: "Check what you typed.",
   actPasswordsDiffer: "The new passwords do not match.",
@@ -3442,7 +3407,7 @@ const en: Words = {
   actNoAccountOnAddress: "There is no account on this address any more.",
   actPasswordChangedEverywhere:
     "Password changed. For safety we signed out every device, so sign in again in the app too.",
-  actSignInDenied: "Sign-in denied. The app will be told at its next check.",
+  actSignInDenied: "Sign-in denied. The app will find out within a few seconds.",
   actNoFileArrived: "No file arrived.",
   actAdminOnly: "This action is for administrators only.",
   actCheckNumbers: "Check the numbers you typed.",
@@ -3450,17 +3415,16 @@ const en: Words = {
   actUnlimitedGiven: "The account was given unlimited space.",
   actCannotBlockSelf: "You cannot block your own account.",
   actLoginRulesAdmin:
-    "A login can be 3 to 24 characters: lowercase letters, digits, dot, dash, underscore.",
-  actBadLogin: "Bad login.",
+    "A login can be 3 to 24 characters: lowercase letters, digits, dot, dash and underscore.",
+  actBadLogin: "That login does not follow the rules listed under the field.",
   actAccountHasAddress: "The account already has this address.",
   actAddressOnAnother: "Another account already uses this address.",
   actConfirmationSent: " A confirmation request went to the new address.",
   actConfirmationFailed: " The confirmation e-mail did not go out – pass the link on yourself.",
 
   actOnlyTextNotes: "On the website only text notes can be edited for now.",
-  actRefreshAfterConflict:
-    " Refresh the page to see the server version, and save again if you need to.",
-  actNothingChanged: "Nothing changed.",
+  actRefreshAfterConflict: " Refresh the page and save again.",
+  actNothingChanged: "The note is already saved.",
   actMindMapUnreadable: "The mind map could not be read.",
   actNotAMindMap: "That is not a mind map.",
   actHandwritingNeedsPage: "A handwritten note needs at least one page.",
@@ -3471,7 +3435,7 @@ const en: Words = {
   actNoteDeletedForGood: "The note has been deleted for good.",
   actAddedToFavorites: "Added to favourites.",
   actRemovedFromFavorites: "Removed from favourites.",
-  actAttachmentDataMissing: "Attachment details are missing.",
+  actAttachmentDataMissing: "Kajet cannot tell which file this is. Refresh the page and try again.",
   actAttachmentGone: "That attachment is gone already.",
   actOnlyOwnNote: "You can only share a note of your own.",
   actShareMailFailed:
@@ -3494,7 +3458,7 @@ const en: Words = {
   actDeviceWillSignIn: "should sign itself in within a few seconds.",
   actNoReleaseForDownload: "There is no release of the app yet. Look at the /download page.",
   actReleaseFileGone:
-    "The file for this release has gone from the server disk. Write to an administrator.",
+    "This release cannot be downloaded any more. Write to an administrator.",
 
   strokeOpacity: "Stroke opacity",
   fontLabel: "Typeface",
@@ -3511,7 +3475,7 @@ const en: Words = {
   password: "Password",
   wrongCredentials: "Wrong address or wrong password.",
   tooManyAttempts:
-    "Too many failed sign-in attempts. For safety, wait 15 minutes and try again. " +
+    "Too many failed sign-in attempts. For safety, wait a while and try again. " +
     "If you have forgotten your password, set a new one through “I forgot my password”.",
   forgotPassword: "I forgot my password",
 
@@ -3534,8 +3498,8 @@ const en: Words = {
   contactSubjectLabel: "Subject",
   contactMessageLabel: "Your message",
   contactSendButton: "Send the message",
-  contactSendingWord: "Sending",
-  contactSent: "The message is on its way. Thank you - we will answer to the address you gave.",
+  contactSendingWord: "Sending…",
+  contactSent: "The message is on its way. Thank you – we will answer to the address you gave.",
   contactFillEverything: "Fill in every field and check the e-mail address.",
   contactTooMany: "Too many messages in a short time. Wait a moment and try again.",
   contactFailed: "The message could not be sent. Try again in a moment or write a plain e-mail.",
@@ -3556,20 +3520,20 @@ const en: Words = {
     "links (they stop working immediately) and signed-in devices. This cannot be " +
     "undone. Export whatever you want to keep before you delete the account.",
   sendDeletionCodeButton: "Send the code by e-mail",
-  sendingDeletionCode: "Sending the code",
+  sendingDeletionCode: "Sending the code…",
   deletionCodeSent:
     "The code has gone to your account's address. It is valid for an hour and works once.",
   deletionCodeLabel: "Code from the message",
   deletionCodeHint: "Eight characters, for example ABCD-EFGH. Letter case does not matter.",
   deleteAccountForever: "Delete the account for good",
-  deletingAccount: "Deleting the account",
+  deletingAccount: "Deleting the account…",
   confirmDeleteAccount: "Delete the account with all your notes? This cannot be undone.",
   deletionGiveCode: "Type in the code from the message.",
   deletionCodeWrong: "Wrong code. Check the message or send a new code.",
   deletionCodeExpired: "This code is no longer valid. Send a new one.",
   deletionTooManyTries: "Too many failed attempts. Wait fifteen minutes and try again.",
   deletionMailFailed:
-    "The message with the code could not be sent. Try again in a moment - the account stays as it is.",
+    "The message with the code could not be sent. Try again in a moment – the account stays as it is.",
   byeAccountDeleted:
     "The account has been deleted together with all its notes. Thank you and see you around.",
 };
@@ -3657,8 +3621,9 @@ export function folderDeleteWarning(words: Words, name: string, count: number): 
   return words.locale === "en-GB"
     ? `Delete the folder \u201c${name}\u201d? ${notesCount(words, count)} will be left ` +
         "without a folder – nothing is lost."
-    : `Skasować folder \u201e${name}\u201d? ${notesCount(words, count)} zostanie bez ` +
-        "folderu – nic nie przepadnie.";
+    : `Skasować folder \u201e${name}\u201d? ${notesCount(words, count)} ` +
+        `${polishPlural(count, "zostanie", "zostaną", "zostanie")} bez folderu – ` +
+        "nic nie przepadnie.";
 }
 
 /** Blokada konta z powodem wpisanym przez administratora. */
@@ -3678,9 +3643,9 @@ export function themeOf(words: Words, name: string): string {
 /** Brakuje miejsca na koncie: ile zajęte z ilu. */
 export function outOfSpaceReason(words: Words, used: string, quota: string): string {
   return words.locale === "en-GB"
-    ? `Your account is out of space. ${used} of ${quota} used. Delete something from the ` +
-        "bin, or ask an administrator for a bigger limit."
-    : `Brakuje miejsca na koncie. Zajęte ${used} z ${quota}. Skasuj coś z kosza albo poproś ` +
+    ? `Your account is out of space. ${used} of ${quota} used. Empty the bin, or ask an ` +
+        "administrator for a bigger limit."
+    : `Brakuje miejsca na koncie. Zajęte ${used} z ${quota}. Opróżnij kosz albo poproś ` +
         "administratora o większy limit.";
 }
 
@@ -3746,7 +3711,7 @@ export function tooManyRuns(words: Words, limit: number, retryInSeconds: number)
   return `Kod uruchomił się już ${times} w ciągu minuty. Odczekaj ${retryInSeconds} s i spróbuj jeszcze raz.`;
 }
 
-/** Wyczerpany limit wywołań asystenta - dobowy albo godzinowy. */
+/** Wyczerpany limit wywołań KajetAI - dobowy albo godzinowy. */
 export function aiLimitReached(
   words: Words,
   limit: number,
@@ -3754,15 +3719,15 @@ export function aiLimitReached(
 ): string {
   if (words.locale === "en-GB") {
     const period = window === "doba" ? "the past 24 hours" : "the past hour";
-    return `The assistant has already been asked ${limit} times in ${period}. Try later.`;
+    return `KajetAI has already been asked ${limit} times in ${period}. Try later.`;
   }
   const razy = limit === 1 ? "raz" : `${limit} razy`;
   const okres = window === "doba" ? "w ciągu doby" : "w ciągu godziny";
-  return `Asystent był już proszony o zmianę ${razy} ${okres}. Spróbuj później.`;
+  return `KajetAI był już proszony o zmianę ${razy} ${okres}. Spróbuj później.`;
 }
 
 /**
- * Notatka za duża dla asystenta. Nigdy nie obcinamy jej po cichu - notatka
+ * Notatka za duża dla KajetAI. Nigdy nie obcinamy jej po cichu - notatka
  * wróciłaby wtedy skrócona o połowę, a człowiek dowiedziałby się o tym dopiero
  * przy czytaniu.
  */
@@ -3770,10 +3735,10 @@ export function aiNoteTooBig(words: Words, chars: number, most: number): string 
   const has = chars.toLocaleString(words.locale);
   const limit = most.toLocaleString(words.locale);
   return words.locale === "en-GB"
-    ? `This note has ${has} characters and the assistant takes at most ${limit}. ` +
-        `Split it into a few smaller notes, or change the part you need by hand.`
-    : `Ta notatka ma ${has} znaków, a asystent przyjmuje najwyżej ${limit}. ` +
-        `Podziel ją na kilka mniejszych albo popraw ten fragment ręcznie.`;
+    ? `This note has ${has} characters and KajetAI takes at most ${limit}. ` +
+        `Split it into smaller notes, or change the part you need by hand.`
+    : `Ta notatka ma ${has} znaków, a KajetAI przyjmuje najwyżej ${limit}. ` +
+        `Podziel ją na mniejsze albo popraw ten fragment ręcznie.`;
 }
 
 /** Załącznik cięższy, niż serwer przyjmuje. */
@@ -3887,9 +3852,8 @@ export function deviceNameLabel(words: Words, device: string): string {
 
 
 export function blockedOfWhich(words: Words, count: number): string {
-  return words.locale === "en-GB"
-    ? `${count} of them blocked`
-    : `w tym ${count} zablokowanych`;
+  if (words.locale === "en-GB") return `${count} of them blocked`;
+  return `w tym ${count} ${polishPlural(count, "zablokowane", "zablokowane", "zablokowanych")}`;
 }
 
 /** „ostatnie 7.08.2026” pod liczbą nowych kont; bez żadnego konta - inaczej. */
