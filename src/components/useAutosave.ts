@@ -59,8 +59,12 @@ export function useAutosave({
 }): {
   /** Są zmiany, których serwer jeszcze nie widział. */
   dirty: boolean;
-  /** Zapisz teraz, jeśli jest co zapisywać. `force` pomija ustawienie `auto`. */
-  flush: (force?: boolean) => void;
+  /**
+   * Zapisz teraz, jeśli jest co zapisywać. `force` pomija ustawienie `auto`.
+   * Oddaje true, gdy zapis naprawdę ruszył - po tym poznaje asystent, czy ma
+   * na co czekać, zanim wyśle notatkę do modelu.
+   */
+  flush: (force?: boolean) => boolean;
   /**
    * „To już poszło na serwer" - do ręcznego zapisu przyciskiem, żeby zaraz po
    * nim autozapis nie wysłał tej samej treści drugi raz.
@@ -140,13 +144,14 @@ export function useAutosave({
   }, [snapshot]);
 
   const flush = useCallback(
-    (force = false) => {
-      if (!enabledNow.current || busyNow.current) return;
+    (force = false): boolean => {
+      if (!enabledNow.current || busyNow.current) return false;
       // Przy wyłączonym autozapisie zapis leci tylko na żądanie (Ctrl+S).
-      if (!autoNow.current && !force) return;
+      if (!autoNow.current && !force) return false;
       const now = snapshot();
-      if (now === null || now === lastSent.current) return;
+      if (now === null || now === lastSent.current) return false;
       send(now);
+      return true;
     },
     [snapshot, send],
   );
@@ -222,7 +227,12 @@ export function useAutosave({
   // zdarzenia okna — dlatego przy odmontowaniu dosyłamy to, co zostało.
   const flushRef = useRef(flush);
   flushRef.current = flush;
-  useEffect(() => () => flushRef.current(), []);
+  useEffect(
+    () => () => {
+      flushRef.current();
+    },
+    [],
+  );
 
   // Ostatnia siatka bezpieczeństwa: zamknięcie karty z niezapisaną zmianą.
   useEffect(() => {

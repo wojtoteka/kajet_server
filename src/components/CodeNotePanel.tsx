@@ -1,11 +1,12 @@
 "use client";
 
-import { startTransition, useActionState, useMemo, useRef, useState } from "react";
+import { startTransition, useActionState, useCallback, useMemo, useRef, useState } from "react";
 import { assistKey, type CodeAssistEdit } from "@/lib/code-assist";
 import { useWords } from "@/components/LanguageProvider";
 import { SaveStatus } from "@/components/SaveStatus";
 import { useAutosave } from "@/components/useAutosave";
 import { useSavedNote } from "@/components/useSavedNote";
+import { useNoteFlush } from "@/components/NoteSync";
 import { TITLE_LIMIT } from "@/lib/note-title";
 
 type SaveResult = { error?: string; success?: string; version?: number; noteId?: string };
@@ -119,6 +120,26 @@ export function CodeNotePanel({
     event.preventDefault();
     applyAssist(area, edit, setCurrentSource);
   }
+
+  /*
+    Zapis na żądanie asystenta. Nie idzie przez `flush` z autozapisu, bo tamten
+    odmawia w dwóch sytuacjach, które są tu najważniejsze: gdy nic się nie
+    zmieniło i gdy pliku jeszcze nie ma. KajetAI czyta kod z bazy, więc musi on
+    tam być - także wtedy, gdy plik powstał przed chwilą i jest pusty.
+    `autosave=1` zostawia człowieka na tej samej stronie, bez przekierowania.
+  */
+  const saveForAssistant = useCallback((): boolean => {
+    const form = formRef.current;
+    if (!form) return false;
+    // Zapis już leci - jego odpowiedź i tak przyjdzie, nie ma po co wysyłać dwóch.
+    if (saveBusy) return true;
+    markSent();
+    const data = new FormData(form);
+    data.set("autosave", "1");
+    startTransition(() => saveSubmit(data));
+    return true;
+  }, [saveBusy, markSent, saveSubmit]);
+  useNoteFlush(saveForAssistant);
 
   /*
     Zapis przyciskiem idzie tą samą drogą co autozapis. Gdyby szedł przez

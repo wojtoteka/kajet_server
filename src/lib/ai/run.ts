@@ -39,6 +39,13 @@ export type AiRunResult =
       version: number;
       updatedAt: number;
       content: string;
+      /**
+       * Treść sprzed zmiany. Stąd, a nie z propsa strony, bierze się „Cofnij":
+       * strona nie odświeża się przy autozapisie, więc jej treść bywa starsza
+       * niż to, na czym KajetAI naprawdę pracował - i cofnięcie przywracałoby
+       * wtedy nie tę wersję, co trzeba.
+       */
+      before: string;
     }
   | { status: "pytanie"; pytanie: string }
   | { status: "konflikt"; version: number }
@@ -232,6 +239,7 @@ export async function runAiEdit(input: {
     version: saved.version,
     updatedAt: saved.updatedAt,
     content: outcome.content,
+    before: note.content,
   };
 }
 

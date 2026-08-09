@@ -1,6 +1,14 @@
 "use client";
 
-import { startTransition, useActionState, useEffect, useMemo, useRef, useState } from "react";
+import {
+  startTransition,
+  useActionState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Icon } from "@/components/Icon";
 import { RichText } from "@/components/RichText";
 import { useWords } from "@/components/LanguageProvider";
@@ -9,6 +17,7 @@ import { tally } from "@/lib/text-tally";
 import { SaveStatus } from "@/components/SaveStatus";
 import { useAutosave } from "@/components/useAutosave";
 import { useSavedNote } from "@/components/useSavedNote";
+import { useNoteFlush } from "@/components/NoteSync";
 import { TITLE_LIMIT } from "@/lib/note-title";
 import {
   activeFormats,
@@ -171,6 +180,26 @@ export function TextNoteEditor({
     busy,
     save: (data) => startTransition(() => submit(data)),
   });
+
+  /*
+    Zapis na żądanie asystenta. Nie idzie przez `flush` z autozapisu, bo tamten
+    odmawia w dwóch sytuacjach, które są tu najważniejsze: gdy nic się nie
+    zmieniło i gdy notatki jeszcze nie ma. KajetAI czyta notatkę z bazy, więc
+    musi ona tam być - także wtedy, gdy powstała przed chwilą i jest pusta.
+    `autosave=1` zostawia człowieka na tej samej stronie, bez przekierowania.
+  */
+  const saveForAssistant = useCallback((): boolean => {
+    const form = formRef.current;
+    if (!form) return false;
+    // Zapis już leci - jego odpowiedź i tak przyjdzie, nie ma po co wysyłać dwóch.
+    if (busy) return true;
+    markSent();
+    const data = new FormData(form);
+    data.set("autosave", "1");
+    startTransition(() => submit(data));
+    return true;
+  }, [busy, markSent, submit]);
+  useNoteFlush(saveForAssistant);
 
   /*
     Zapis przyciskiem idzie tą samą drogą co autozapis. Gdyby szedł przez

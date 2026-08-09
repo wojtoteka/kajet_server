@@ -935,8 +935,29 @@ export async function suggestLanguageFromTitle(title: string): Promise<string | 
 // urządzenia. Reszta - bramka, limity, walidacja, zapis - jest wspólna.
 
 export type AiAnswer =
-  | { status: "zmieniono"; opis: string; version: number }
+  | {
+      status: "zmieniono";
+      opis: string;
+      version: number;
+      /** Notatka, jaka była przed zmianą - do tego wraca „Cofnij". */
+      before: string;
+      /**
+       * Identyfikator notatki. Przy notatce zakładanej dopiero teraz panel
+       * poznaje go stąd i po zmianie przechodzi na jej stronę.
+       */
+      noteId: string;
+    }
   | { status: "pytanie"; pytanie: string }
+  | { status: "konflikt" }
+  | { status: "blad"; message: string };
+
+/**
+ * Odpowiedź na cofnięcie. Nie ma tu ani treści sprzed zmiany, ani
+ * identyfikatora: cofa się notatkę, która już istnieje, i po cofnięciu nie ma
+ * czego cofać dalej.
+ */
+export type AiUndoAnswer =
+  | { status: "zmieniono"; opis: string; version: number }
   | { status: "konflikt" }
   | { status: "blad"; message: string };
 
@@ -961,7 +982,13 @@ export async function askAssistant(
   if (outcome.status === "pytanie") return { status: "pytanie", pytanie: outcome.pytanie };
 
   revalidatePath(`/note/${noteId}`);
-  return { status: "zmieniono", opis: outcome.opis, version: outcome.version };
+  return {
+    status: "zmieniono",
+    opis: outcome.opis,
+    version: outcome.version,
+    before: outcome.before,
+    noteId,
+  };
 }
 
 /**
@@ -974,7 +1001,7 @@ export async function undoAssistant(
   noteId: string,
   content: string,
   baseVersion: number,
-): Promise<AiAnswer> {
+): Promise<AiUndoAnswer> {
   const user = await currentUser();
   const words = await currentWords();
   if (!user) return { status: "blad", message: words.apiNotSignedIn };

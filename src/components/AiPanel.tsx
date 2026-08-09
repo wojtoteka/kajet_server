@@ -1,11 +1,12 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Icon } from "@/components/Icon";
 import { useWords } from "@/components/LanguageProvider";
-import type { AiAnswer } from "@/app/note/[id]/actions";
+import { useNoteSync } from "@/components/NoteSync";
+import type { AiAnswer, AiUndoAnswer } from "@/app/note/[id]/actions";
 
 /*
   Panel asystenta w panelu WWW - ten sam, co w aplikacji, tylko w przeglądarce.
@@ -19,23 +20,39 @@ import type { AiAnswer } from "@/app/note/[id]/actions";
   notatką, zawsze otwarty, i zabierał dwieście pikseli, zanim widać było
   pierwszą literę.
 
-  Cofnięcie działa na treści zapamiętanej W CHWILI WYSYŁANIA POLECENIA, a nie
-  na tej z propsa. Props po odświeżeniu strony niesie już treść PO zmianie -
-  cofanie do niej wysyłało to samo, co jest, serwer stwierdzał brak zmian,
-  a panel i tak meldował sukces. Nie ma osobnej ścieżki „przywróć" na serwerze:
-  stara treść wraca zwykłym zapisem, jako kolejna wersja notatki.
+  Dwie rzeczy dzieją się tu, zanim polecenie w ogóle pojedzie do modelu:
+
+  1. NOTATKA IDZIE NA SERWER. Model czyta ją z bazy, nie z ekranu, więc bez
+     tego pracowałby na treści sprzed ostatnich zdań - albo, przy notatce
+     dopiero zakładanej, nie miałby czego czytać. Ten sam zapis zakłada
+     notatkę, której jeszcze nie ma, więc o pomoc można poprosić od razu po
+     kliknięciu „nowa notatka".
+
+  2. WERSJA BIERZE SIĘ Z TEGO ZAPISU, a nie z propsa strony. Autozapis celowo
+     nie odświeża strony notatki, więc numer wersji na niej starzeje się już
+     po pierwszym dopisanym słowie - a wysłanie starego numeru kończyło się
+     komunikatem „Ta notatka zmieniła się w innym miejscu", choć nikt jej
+     nigdzie indziej nie tknął.
+
+  Cofnięcie wraca do treści, którą serwer PRZYSŁAŁ jako sprzed zmiany. Props
+  strony się do tego nie nadaje: po odświeżeniu niesie już treść po zmianie,
+  a bez odświeżenia bywa starszy niż to, co widział model. Nie ma osobnej
+  ścieżki „przywróć" na serwerze: stara treść wraca zwykłym zapisem, jako
+  kolejna wersja notatki.
 */
 
 type Turn = { request: string; reply: string };
 
 export type AiPanelProps = {
-  noteId: string;
+  /**
+   * Pusto przy notatce, której jeszcze nie ma. Prawdziwy identyfikator
+   * przychodzi z zapisu wymuszonego przed pierwszym poleceniem.
+   */
+  noteId?: string;
   version: number;
-  /** Treść notatki teraz - to od niej zaczyna się „Cofnij" przy najbliższej prośbie. */
-  contentBefore: string;
   consented: boolean;
   askAction: (noteId: string, instruction: string, baseVersion: number) => Promise<AiAnswer>;
-  undoAction: (noteId: string, content: string, baseVersion: number) => Promise<AiAnswer>;
+  undoAction: (noteId: string, content: string, baseVersion: number) => Promise<AiUndoAnswer>;
   historyAction: (noteId: string) => Promise<Turn[]>;
   clearAction: (noteId: string) => Promise<boolean>;
   /**
@@ -49,7 +66,6 @@ export type AiPanelProps = {
 export function AiPanel({
   noteId,
   version,
-  contentBefore,
   consented,
   askAction,
   undoAction,
@@ -59,54 +75,94 @@ export function AiPanel({
 }: AiPanelProps) {
   const words = useWords();
   const router = useRouter();
-  const [busy, startTransition] = useTransition();
+  const sync = useNoteSync();
+  /*
+    Zwykły stan, a NIE useTransition.
+
+    Panel każe edytorowi zapisać notatkę i czeka na odpowiedź serwera. Gdyby
+    działo się to w środku przejścia Reacta, zapis edytora - też akcja -
+    trafiłby w to samo przejście, które właśnie na niego czeka. Wychodzi z tego
+    czekanie na samego siebie, do wyczerpania cierpliwości. Akcje serwerowe są
+    zwykłymi funkcjami asynchronicznymi i nie potrzebują przejścia do niczego
+    poza `isPending`, a to umiemy potrzymać sami.
+  */
+  const [busy, setBusy] = useState(false);
 
   const [instruction, setInstruction] = useState("");
-  const [answer, setAnswer] = useState<AiAnswer | null>(null);
+  const [answer, setAnswer] = useState<AiAnswer | AiUndoAnswer | null>(null);
   const [undoneAt, setUndoneAt] = useState<number | null>(null);
   const [turns, setTurns] = useState<Turn[] | null>(null);
 
-  /** Treść sprzed ostatniej prośby. To do niej wraca „Cofnij". */
+  /** Treść sprzed ostatniej zmiany asystenta. To do niej wraca „Cofnij". */
   const before = useRef<string | null>(null);
+  /** Notatka, o której panel wie w tej chwili - po zapisie może być nowsza. */
+  const live = useRef<{ noteId?: string; version: number }>({ noteId, version });
+  /** Czy notatka istniała, gdy strona się otwierała. */
+  const wasNew = useRef(!noteId);
 
-  /** Wersja, na której stoi kolejny zapis: po zmianie asystenta ta nowa. */
-  const currentVersion = answer?.status === "zmieniono" ? answer.version : version;
-
-  function ask() {
+  async function ask() {
     const asked = instruction.trim();
-    if (!asked) return;
-    // Migawka PRZED wysłaniem - potem props już nie będzie tym, czym był.
-    before.current = contentBefore;
-    startTransition(async () => {
-      const result = await askAction(noteId, asked, currentVersion);
+    if (!asked || busy) return;
+    setBusy(true);
+    try {
+      // Najpierw zapis, potem pytanie - w tej kolejności i bez wyjątków.
+      const fresh = (await sync?.settle()) ?? {};
+      const id = fresh.noteId ?? live.current.noteId ?? noteId;
+      const base = Math.max(fresh.version ?? 0, live.current.version, version);
+
+      if (!id) {
+        setAnswer({ status: "blad", message: words.aiNoteNotSavedYet });
+        return;
+      }
+
+      const result = await askAction(id, asked, base);
       setAnswer(result);
       setUndoneAt(null);
-      // Pole czyści się dopiero po UDANEJ zmianie - po błędzie polecenie ma
-      // zostać, żeby dało się poprawić jedno słowo i spróbować znowu.
+
       if (result.status === "zmieniono") {
+        before.current = result.before;
+        live.current = { noteId: result.noteId, version: result.version };
         setInstruction("");
         onApplied?.(result.version);
-        router.refresh();
+        // Notatka powstała dopiero teraz, a strona „nowa notatka" nie ma z
+        // czego pokazać jej treści. Przechodzimy na stronę notatki - tam jest
+        // i świeży tekst, i historia rozmowy.
+        if (wasNew.current) router.replace(`/note/${result.noteId}`);
+        else router.refresh();
       }
-      if (turns !== null) setTurns(await historyAction(noteId));
-    });
+      if (turns !== null) setTurns(await historyAction(id));
+    } finally {
+      setBusy(false);
+    }
   }
 
-  function undo() {
-    const back = before.current ?? contentBefore;
-    startTransition(async () => {
-      const result = await undoAction(noteId, back, currentVersion);
+  async function undo() {
+    const back = before.current;
+    const id = live.current.noteId ?? noteId;
+    if (back === null || !id || busy) return;
+
+    setBusy(true);
+    try {
+      const fresh = (await sync?.settle()) ?? {};
+      const base = Math.max(fresh.version ?? 0, live.current.version, version);
+      const result = await undoAction(id, back, base);
+
       if (result.status === "zmieniono") {
         setAnswer(null);
         setUndoneAt(Date.now());
         before.current = null;
+        live.current = { noteId: id, version: result.version };
         onApplied?.(result.version);
         router.refresh();
-      } else if (result.status === "blad") {
+      } else {
         setAnswer(result);
       }
-    });
+    } finally {
+      setBusy(false);
+    }
   }
+
+  const changed = answer?.status === "zmieniono";
 
   return (
     <details className="sheet ai-fold">
@@ -145,7 +201,7 @@ export function AiPanel({
                 {busy ? words.aiWorking : words.aiAsk}
               </button>
 
-              {answer?.status === "zmieniono" ? (
+              {changed && before.current !== null ? (
                 <button type="button" className="compact" onClick={undo} disabled={busy}>
                   <Icon name="undo" size={18} />
                   {words.aiUndo}
@@ -179,8 +235,9 @@ export function AiPanel({
             <details
               style={{ marginTop: 14 }}
               onToggle={async (event) => {
+                const id = live.current.noteId ?? noteId;
                 if ((event.target as HTMLDetailsElement).open && turns === null) {
-                  setTurns(await historyAction(noteId));
+                  setTurns(id ? await historyAction(id) : []);
                 }
               }}
             >
@@ -205,12 +262,11 @@ export function AiPanel({
                   className="compact"
                   style={{ marginTop: 12 }}
                   disabled={busy}
-                  onClick={() =>
-                    startTransition(async () => {
-                      await clearAction(noteId);
-                      setTurns([]);
-                    })
-                  }
+                  onClick={async () => {
+                    const id = live.current.noteId ?? noteId;
+                    if (id) await clearAction(id);
+                    setTurns([]);
+                  }}
                 >
                   {words.aiForgetHistory}
                 </button>

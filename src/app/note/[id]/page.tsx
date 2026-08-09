@@ -161,7 +161,6 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
               ? {
                   noteId: note.id,
                   version: note.version,
-                  contentBefore: note.content,
                   consented: owner?.aiConsentAt != null,
                   askAction: askAssistant,
                   undoAction: undoAssistant,

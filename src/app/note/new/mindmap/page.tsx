@@ -3,9 +3,17 @@ import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { KajetMark } from "@/components/KajetMark";
 import { MindMapEditor } from "@/components/MindMapEditor";
+import { NoteLive } from "@/components/NoteLive";
 import { defaultMindMapSeed } from "@/lib/mindmap-note";
 import { readWritingSettings } from "@/lib/writing-settings";
-import { saveMindMapNote } from "../../[id]/actions";
+import {
+  saveMindMapNote,
+  askAssistant,
+  undoAssistant,
+  readAiConversation,
+  clearAiConversation,
+} from "../../[id]/actions";
+import { aiVisibleFor } from "@/lib/ai/access";
 import { currentWords } from "@/lib/language";
 
 export async function generateMetadata() {
@@ -36,13 +44,36 @@ export default async function NewMindMapPage() {
         </Link>
       </div>
 
-      <MindMapEditor
-        action={saveMindMapNote}
-        title=""
-        initial={{ ...seed, viewX: 0, viewY: 0, zoom: 1 }}
-        autoSave={readWritingSettings(user).autoSave}
-        submitLabel={words.createMapButton}
-      />
+      {/*
+        Asystent stoi tu tak samo jak przy notatce już zapisanej. Notatka
+        powstaje w chwili, gdy KajetAI dostaje pierwsze polecenie: panel
+        wymusza zapis, ZANIM cokolwiek pojedzie do modelu, bo model czyta
+        notatkę z bazy, a nie z ekranu. Dzięki temu można kliknąć „nowa
+        notatka" i od razu poprosić o pomoc, nie nazywając jej wcześniej.
+      */}
+      <NoteLive
+        version={0}
+        ai={
+          aiVisibleFor(user)
+            ? {
+                version: 0,
+                consented: user.aiConsentAt != null,
+                askAction: askAssistant,
+                undoAction: undoAssistant,
+                historyAction: readAiConversation,
+                clearAction: clearAiConversation,
+              }
+            : null
+        }
+      >
+        <MindMapEditor
+          action={saveMindMapNote}
+          title=""
+          initial={{ ...seed, viewX: 0, viewY: 0, zoom: 1 }}
+          autoSave={readWritingSettings(user).autoSave}
+          submitLabel={words.createMapButton}
+        />
+      </NoteLive>
     </main>
   );
 }

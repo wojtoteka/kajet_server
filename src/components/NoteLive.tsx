@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { AiPanel, type AiPanelProps } from "@/components/AiPanel";
+import { NoteSyncProvider } from "@/components/NoteSync";
 
 /*
   Sklejka między asystentem a edytorem.
@@ -21,6 +22,10 @@ import { AiPanel, type AiPanelProps } from "@/components/AiPanel";
   zapis i autozapis też podbijają wersję notatki, ale wtedy nikt niczego nie
   zgłosił - i kursor zostaje tam, gdzie był.
 
+  NoteSyncProvider owija oba: to przez niego edytor melduje asystentowi, ile
+  wynosi wersja PO ostatnim autozapisie, i to przez niego asystent każe
+  zapisać notatkę, zanim wyśle ją do modelu.
+
   Panel stoi po dzieciach, bo asystent ma być pod edytorem, nie nad nim.
 */
 export function NoteLive({
@@ -28,7 +33,7 @@ export function NoteLive({
   ai,
   children,
 }: {
-  /** Wersja notatki prosto z serwera. */
+  /** Wersja notatki prosto z serwera. Zero przy notatce jeszcze niezałożonej. */
   version: number;
   /** Propsy panelu albo null, gdy asystenta przy tej notatce nie ma. */
   ai: Omit<AiPanelProps, "onApplied"> | null;
@@ -45,7 +50,7 @@ export function NoteLive({
   }, [version]);
 
   return (
-    <>
+    <NoteSyncProvider>
       <Fragment key={seed}>{children}</Fragment>
       {ai ? (
         <AiPanel
@@ -55,6 +60,6 @@ export function NoteLive({
           }}
         />
       ) : null}
-    </>
+    </NoteSyncProvider>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useNoteSync } from "@/components/NoteSync";
 
 /**
  * Trzyma to, co o notatce wie serwer: jej identyfikator i ostatnią wersję.
@@ -27,19 +28,33 @@ export function useSavedNote({
   const [liveVersion, setLiveVersion] = useState(version);
   const [saved, setSaved] = useState(false);
   const addressed = useRef(Boolean(noteId));
+  const sync = useNoteSync();
+  const known = useRef({ noteId, version });
 
   useEffect(() => {
     if (state.version != null) {
       setLiveVersion(state.version);
       setSaved(true);
+      known.current.version = state.version;
     }
-    if (!state.noteId) return;
-    const fresh = state.noteId;
-    setCurrentId((previous) => previous ?? fresh);
-    if (addressed.current) return;
-    addressed.current = true;
-    window.history.replaceState(null, "", `/note/${fresh}`);
-  }, [state]);
+    if (state.noteId) {
+      const fresh = state.noteId;
+      setCurrentId((previous) => previous ?? fresh);
+      known.current.noteId = known.current.noteId ?? fresh;
+      if (!addressed.current) {
+        addressed.current = true;
+        window.history.replaceState(null, "", `/note/${fresh}`);
+      }
+    }
+    /*
+      Meldunek dla asystenta idzie po KAŻDEJ odpowiedzi serwera, także po
+      takiej, z której nic nie wynika (błąd, konflikt, „bez zmian"). Panel
+      czeka na ten meldunek przed wysłaniem notatki do modelu i musi się
+      doczekać - inaczej stałby do wyczerpania cierpliwości przy każdym
+      nieudanym zapisie.
+    */
+    sync?.publish({ ...known.current });
+  }, [state, sync]);
 
   return { noteId: currentId, version: liveVersion, saved };
 }

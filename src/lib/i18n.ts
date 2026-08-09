@@ -922,6 +922,7 @@ export type Words = {
   aiUndo: string;
   aiUndone: string;
   aiUndoFailed: string;
+  aiNoteNotSavedYet: string;
   aiQuestionLabel: string;
   aiHistoryTitle: string;
   aiHistoryEmpty: string;
@@ -2157,6 +2158,9 @@ const pl: Words = {
   aiUndo: "Cofnij zmianę",
   aiUndone: "Zmiana cofnięta.",
   aiUndoFailed: "Nie udało się cofnąć. Notatka została taka, jak ją zmienił KajetAI.",
+  aiNoteNotSavedYet:
+    "Nie udało się zapisać tej notatki, więc KajetAI nie ma jeszcze czego przeczytać. "
+    + "Zapisz ją i spróbuj jeszcze raz.",
   aiQuestionLabel: "KajetAI pyta",
   aiHistoryTitle: "Wcześniejsze polecenia",
   aiHistoryEmpty: "Przy tej notatce jeszcze o nic nie proszono.",
@@ -3405,6 +3409,8 @@ const en: Words = {
   aiUndo: "Undo the change",
   aiUndone: "Change undone.",
   aiUndoFailed: "Could not undo it. The note stayed as KajetAI left it.",
+  aiNoteNotSavedYet:
+    "This note could not be saved, so KajetAI has nothing to read yet. Save it and try again.",
   aiQuestionLabel: "KajetAI asks",
   aiHistoryTitle: "Earlier instructions",
   aiHistoryEmpty: "Nothing has been asked about this note yet.",
