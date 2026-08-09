@@ -88,9 +88,6 @@ export default async function DownloadPage() {
           <p className="small" style={{ margin: "6px 0 0 0", maxWidth: 620 }}>
             {words.howToInstallBody}
           </p>
-          <p className="small" style={{ marginTop: 10, marginBottom: 0 }}>
-            {words.fileChecksum}: <span className="mono">{release.hash}</span>
-          </p>
         </div>
       ) : null}
 

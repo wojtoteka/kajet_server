@@ -522,7 +522,6 @@ export type Words = {
   noAppYetBody: string;
   howToInstall: string;
   howToInstallBody: string;
-  fileChecksum: string;
   olderVersions: string;
 
 
@@ -1601,8 +1600,8 @@ const pl: Words = {
   homeStepTwo: "Zgódź się na instalację spoza sklepu Play. Telefon sam o to zapyta.",
   homeStepThree: "Otwórz pobrany plik i gotowe.",
   homeDownloadFacts:
-    "Działa od Androida 8.0 wzwyż. Na stronie pobierania znajdziesz opis zmian, sumę " +
-    "kontrolną i starsze wydania.",
+    "Działa od Androida 8.0 wzwyż. Na stronie pobierania znajdziesz opis zmian " +
+    "i starsze wydania.",
   homeDownloadPage: "Otwórz stronę pobierania",
   homeDownloadFile: "Pobierz plik",
   homeInviteTitle: "Konto na zaproszenie",
@@ -1658,7 +1657,6 @@ const pl: Words = {
     "plik i pozwól przeglądarce instalować aplikacje z tego źródła – Android nazywa to " +
     "„instalowaniem nieznanych aplikacji”. Kolejne wersje wystarczy pobrać stąd i otworzyć, " +
     "a notatki zostaną na miejscu.",
-  fileChecksum: "Suma kontrolna pliku (SHA-256)",
   olderVersions: "Starsze wersje",
 
   metaRegister: "Załóż konto – Kajet",
@@ -2862,8 +2860,8 @@ const en: Words = {
   homeStepTwo: "Allow installing from outside the Play Store. The phone will ask on its own.",
   homeStepThree: "Open the downloaded file and you are done.",
   homeDownloadFacts:
-    "Works from Android 8.0 upwards. The download page lists the release notes, the " +
-    "checksum and older releases.",
+    "Works from Android 8.0 upwards. The download page lists the release notes " +
+    "and older releases.",
   homeDownloadPage: "Open the download page",
   homeDownloadFile: "Download the file",
   homeInviteTitle: "An account by invitation",
@@ -2919,7 +2917,6 @@ const en: Words = {
     "After downloading, open the file and let the browser install apps from this source – " +
     "Android calls it “installing unknown apps”. For later versions, download and open " +
     "them the same way; your notes stay where they are.",
-  fileChecksum: "File checksum (SHA-256)",
   olderVersions: "Older versions",
 
   metaRegister: "Create an account – Kajet",
