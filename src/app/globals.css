@@ -588,6 +588,12 @@ input[type="file"]:disabled {
   .library-actions {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    /*
+      Wszystkie kafelki jednej wysokości. „Nowy plik z kodem" nie mieści się
+      w jednym wierszu i łamie się na dwa, przez co jego rząd był wyższy od
+      pozostałych i siatka wyglądała na przekrzywioną.
+    */
+    grid-auto-rows: 1fr;
     gap: 8px;
     width: 100%;
   }
@@ -1167,8 +1173,15 @@ tbody tr:last-child td {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 4px 10px;
-    padding: 14px 0;
+    /*
+      Odstępu W POZIOMIE nie ma tu wcale, bo w drobnej linii rozdzielają
+      kropki - a odstęp dokładany do ich marginesu dawał 20 px z jednej strony
+      kropki i 10 z drugiej, przez co siedziała krzywo między słowami.
+    */
+    gap: 4px 0;
+    /* Wcięcie takie samo jak w każdej innej karcie, żeby tytuł notatki nie
+       zaczynał się na samej krawędzi arkusza. */
+    padding: 14px 18px;
     border-bottom: var(--hairline) solid var(--rule);
   }
 
@@ -1200,15 +1213,24 @@ tbody tr:last-child td {
     order: 3;
   }
 
+  /*
+    Data z numerem wersji dostaje własny wiersz karty.
+
+    Wcześniej cała czwórka - rodzaj, rozmiar, data, wersja - jechała jedną
+    linią, która przy 360 px i tak się łamała, tyle że w przypadkowym miejscu:
+    na końcu pierwszego wiersza zostawała wisząca kropka rozdzielająca. Dwa
+    wiersze z góry wiadomo gdzie są lepsze od jednego, który czasem się łamie.
+  */
   .notes-table td:nth-child(5) {
+    flex: 1 0 100%;
     order: 4;
   }
 
-  /* Kropka rozdziela to, co w tabeli rozdzielały kolumny. */
-  .notes-table td:nth-child(2)::after,
-  .notes-table td:nth-child(4)::after {
+  /* Kropka rozdziela to, co w tabeli rozdzielały kolumny. Odstęp z obu stron
+     jest jej własny, bo wiersz nie ma już odstępu w poziomie. */
+  .notes-table td:nth-child(2)::after {
     content: "·";
-    margin-left: 10px;
+    margin: 0 10px;
     color: var(--text-muted);
   }
 
@@ -1218,8 +1240,8 @@ tbody tr:last-child td {
   }
 
   .notes-table .note-version::before {
-    content: "· ";
-    margin-left: 6px;
+    content: "·";
+    margin: 0 10px;
     color: var(--text-muted);
   }
 
@@ -1227,6 +1249,12 @@ tbody tr:last-child td {
     flex: 1 0 100%;
     order: 5;
     margin-top: 4px;
+  }
+
+  /* Konto bez ani jednego folderu nie ma czego wybierać, a sama kreska
+     zajmowała w karcie osobny wiersz i wyglądała na zgubioną. */
+  .notes-table td:nth-child(3):has(.folder-none) {
+    display: none;
   }
 
   /* Wybór folderu na całą szerokość karty - w kolumnie tabeli musiał być
@@ -1245,6 +1273,17 @@ tbody tr:last-child td {
   .notes-table td:nth-child(6) {
     flex: 1 0 100%;
     order: 6;
+    margin-top: 10px;
+  }
+
+  /* W tabeli przyciski stały przy prawej krawędzi, żeby tworzyły równą
+     kolumnę. W karcie nie ma kolumny, do której miałyby się równać - za to
+     zostawiały pół szerokości pustki i uciekały pod krawędź ekranu. */
+  .notes-table .row-actions,
+  .trash-table .row-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
   /*
@@ -1267,7 +1306,7 @@ tbody tr:last-child td {
   .trash-table td:nth-child(2)::after,
   .trash-table td:nth-child(3)::after {
     content: "·";
-    margin-left: 10px;
+    margin: 0 10px;
     color: var(--text-muted);
   }
 
@@ -1276,8 +1315,8 @@ tbody tr:last-child td {
   }
 
   .trash-table td:nth-child(4) > div::before {
-    content: "· ";
-    margin-left: 6px;
+    content: "·";
+    margin: 0 10px;
     color: var(--text-muted);
   }
 

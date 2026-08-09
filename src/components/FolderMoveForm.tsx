@@ -41,7 +41,10 @@ export function FolderMoveForm({
   const current = folderId ? (folders.find((entry) => entry.id === folderId) ?? null) : null;
 
   // Bez ani jednego folderu nie ma czego wybierać - zostaje sama kreska.
-  if (folders.length === 0) return <>-</>;
+  // W kolumnie tabeli ma sens: pusta komórka wyglądałaby na zgubioną. Na
+  // telefonie, gdzie wiersz jest kartą, ta kreska wisiała samotnie w swojej
+  // linii - dlatego nosi klasę, po której CSS ją tam chowa.
+  if (folders.length === 0) return <span className="folder-none">-</span>;
 
   return (
     <form
