@@ -66,7 +66,7 @@ export function NoteActionsBar({
       </ActionForm>
       <ActionForm
         action={trashAction}
-        label="Do kosza"
+        label={words.moveToTrash}
         icon="delete"
         iconOnly
         compact
