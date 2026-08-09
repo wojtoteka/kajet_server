@@ -3611,6 +3611,25 @@ export function disappearsIn(words: Words, days: number): string {
   return words.locale === "en-GB" ? `Disappears in ${days} days` : `Zniknie za ${days} dni`;
 }
 
+/**
+ * Rachunek pod notatką tekstową: „212 słów · 1177 znaków".
+ *
+ * Liczby idą przez toLocaleString z językiem strony, więc po polsku jest
+ * „1 177", a po angielsku „1,177" - wcześniej licznik miał wpisane „pl-PL"
+ * na sztywno i Anglik dostawał polski format razem z polskim słowem.
+ */
+export function noteTally(words: Words, wordCount: number, chars: number): string {
+  const w = wordCount.toLocaleString(words.locale);
+  const c = chars.toLocaleString(words.locale);
+  if (words.locale === "en-GB") {
+    return `${w} ${wordCount === 1 ? "word" : "words"} · ${c} ${chars === 1 ? "character" : "characters"}`;
+  }
+  return (
+    `${w} ${polishPlural(wordCount, "słowo", "słowa", "słów")} · ` +
+    `${c} ${polishPlural(chars, "znak", "znaki", "znaków")}`
+  );
+}
+
 export function attachmentsCount(words: Words, count: number): string {
   if (words.locale === "en-GB") {
     return `${count} ${count === 1 ? "attachment" : "attachments"}`;

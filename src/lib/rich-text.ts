@@ -634,6 +634,113 @@ export function markdownToHtml(markdown: string, options: HtmlOptions = {}): str
 }
 
 /* ------------------------------------------------------------------ */
+/* Markdown -> sam tekst (do liczenia słów i znaków)                    */
+/* ------------------------------------------------------------------ */
+
+/** Drzewko znaczników na goły tekst - bliźniak `inlineToHtml`. */
+function inlineToPlain(nodes: Inline[]): string {
+  return nodes
+    .map((node) => {
+      switch (node.kind) {
+        case "text":
+          return node.text;
+        case "break":
+          return "\n";
+        // Kod w wierszu widać, więc się liczy - same grawisy już nie.
+        case "code":
+          return node.text;
+        // Zdjęcia nie liczymy wcale: ani zapisu ![opis](assets/plik.png), ani
+        // opisu, którego na kartce nie widać.
+        case "image":
+          return "";
+        // Z odnośnika zostaje sam napis - adresu człowiek nie widzi.
+        case "link":
+          return inlineToPlain(node.children);
+        default:
+          return inlineToPlain(node.children);
+      }
+    })
+    .join("");
+}
+
+/**
+ * Treść notatki bez znaczników - to, co człowiek widzi na kartce.
+ *
+ * Idzie tym samym przebiegiem po wierszach co `markdownToHtml` i po tych
+ * samych wyrażeniach, bo inaczej powstałyby dwie prawdy o jednym zapisie:
+ * jedna do rysowania, druga do liczenia.
+ *
+ * Puste wiersze zostają, żeby dało się policzyć akapity.
+ */
+export function markdownToPlain(markdown: string): string {
+  const lines = markdown.split("\n");
+  const out: string[] = [];
+
+  let at = 0;
+  while (at < lines.length) {
+    const line = lines[at];
+
+    // Blok kodu i wzór: treść w środku widać, płotu nie.
+    const fence = /^\s*(```|\$\$)\s*$/.exec(line);
+    if (fence) {
+      const closer = fence[1];
+      at += 1;
+      while (at < lines.length && lines[at].trim() !== closer) {
+        out.push(lines[at]);
+        at += 1;
+      }
+      at += 1;
+      continue;
+    }
+
+    // Linia pozioma to nie tekst.
+    if (RULE.test(line)) {
+      at += 1;
+      continue;
+    }
+
+    // Kreski pod nagłówkiem tabeli (|---|---|) to sama budowa.
+    if (TABLE_SPLIT.test(line)) {
+      at += 1;
+      continue;
+    }
+
+    const table = TABLE_ROW.exec(line);
+    if (table) {
+      out.push(tableCells(line).map((cell) => inlineToPlain(parseInline(cell))).join(" "));
+      at += 1;
+      continue;
+    }
+
+    const heading = HEADING.exec(line);
+    if (heading) {
+      out.push(inlineToPlain(parseInline(heading[2])));
+      at += 1;
+      continue;
+    }
+
+    const quote = QUOTE.exec(line);
+    if (quote) {
+      out.push(inlineToPlain(parseInline(quote[1])));
+      at += 1;
+      continue;
+    }
+
+    const entry = listEntry(line);
+    if (entry) {
+      out.push(inlineToPlain(parseInline(entry.text)));
+      at += 1;
+      continue;
+    }
+
+    out.push(inlineToPlain(parseInline(line)));
+    at += 1;
+  }
+
+  return out.join("\n");
+}
+
+/* ------------------------------------------------------------------ */
 /* HTML -> markdown                                                     */
 /* ------------------------------------------------------------------ */
 

@@ -4,7 +4,8 @@ import { startTransition, useActionState, useEffect, useMemo, useRef, useState }
 import { Icon } from "@/components/Icon";
 import { RichText } from "@/components/RichText";
 import { useWords } from "@/components/LanguageProvider";
-import type { Words } from "@/lib/i18n";
+import { noteTally, type Words } from "@/lib/i18n";
+import { tally } from "@/lib/text-tally";
 import { SaveStatus } from "@/components/SaveStatus";
 import { useAutosave } from "@/components/useAutosave";
 import { useSavedNote } from "@/components/useSavedNote";
@@ -122,6 +123,9 @@ export function TextNoteEditor({
   */
   const [blocks, setBlocks] = useState<TextBlock[]>(() => splitTextBlocks(markdown));
   const body = useMemo(() => joinTextBlocks(blocks), [blocks]);
+  // Licznik rośnie w trakcie pisania, a liczy to, co widać na kartce - bez
+  // gwiazdek pogrubienia, znaczników barwy i zapisu zdjęć.
+  const counted = useMemo(() => tally(body), [body]);
   /*
     Znacznik „treść zmieniła się z zewnątrz". Pola do pisania czytają z niego,
     kiedy wolno im przepisać swoją zawartość od nowa - w trakcie pisania nie
@@ -473,10 +477,12 @@ export function TextNoteEditor({
 
         <span className="toolbar-sep" />
 
-        {markButton("bold", words.bold, "format_bold")}
-        {markButton("italic", words.italic, "format_italic")}
+        {/* Skrót przy podpisie przycisku - widać go po najechaniu, czyli
+            dokładnie wtedy, gdy człowiek szuka tej właśnie rzeczy. */}
+        {markButton("bold", `${words.bold} (Ctrl+B)`, "format_bold")}
+        {markButton("italic", `${words.italic} (Ctrl+I)`, "format_italic")}
         {markButton("strike", words.strike, "format_strikethrough")}
-        {markButton("underline", words.underline, "format_underlined")}
+        {markButton("underline", `${words.underline} (Ctrl+U)`, "format_underlined")}
         {markButton("mark", words.highlight, "ink_highlighter")}
         <button
           type="button"
@@ -843,14 +849,20 @@ export function TextNoteEditor({
         )}
       </div>
 
+      {/*
+        Rachunek, a po nim jedno zdanie - ten sam układ co pod mapą myśli
+        i pod kartką odręczną.
+
+        Stał tu wcześniej akapit, który naraz tłumaczył wygląd w trakcie
+        pisania, skróty klawiszowe, autozapis i konflikt wersji, a na końcu
+        doklejał liczbę znaków kropką. Trzy z tych zdań były wpisane po polsku
+        na twardo, więc po angielsku wychodziła mieszanka. Skróty siedzą teraz
+        na przyciskach paska, gdzie są potrzebne, a o konflikcie wersji mówi
+        komunikat wtedy, gdy konflikt naprawdę wystąpi.
+      */}
       <p className="small" style={{ marginTop: -6, marginBottom: 14 }}>
-        Wygląd widać od razu w trakcie pisania - notatka zapisuje się i tak
-        w zapisie, który czyta tablet. Ctrl+B, Ctrl+I i Ctrl+U też działają.{" "}
-        {autoSave
-          ? words.autosaveHint
-          : words.autosaveOffHint}{" "}
-        Przy rozbieżności wersji dostaniesz komunikat zamiast nadpisać cudzą zmianę.{" "}
-        {body.length.toLocaleString("pl-PL")} znaków.
+        {noteTally(words, counted.words, counted.chars)} ·{" "}
+        {autoSave ? words.autosaveHint : words.autosaveOffHint}
       </p>
 
       {/* Powodzenie zapisu pokazuje napis przy przycisku - zielona ramka nad
