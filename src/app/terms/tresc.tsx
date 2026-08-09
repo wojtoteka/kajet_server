@@ -135,7 +135,7 @@ export function RegulaminPl() {
       <ol className="legal-items">
         <li><strong>Wszelkie prawa do treści notatek pozostają przy Użytkowniku.</strong> Administrator nie nabywa do nich żadnych praw — ani majątkowych praw autorskich, ani licencji wykraczającej poza to, co opisano w ust. 2.</li>
         <li>Administrator przechowuje i przetwarza notatki wyłącznie w zakresie technicznie niezbędnym do świadczenia usługi: zapisania ich na serwerze, przesłania na urządzenia Użytkownika, pokazania w przeglądarce, udostępnienia osobom wskazanym przez Użytkownika, wykonania kopii zapasowej i usunięcia na żądanie.</li>
-        <li>Notatki nie są wykorzystywane w żadnym innym celu. W szczególności nie są <strong>czytane, analizowane, publikowane ani wykorzystywane do uczenia modeli sztucznej inteligencji</strong>.</li>
+        <li>Notatki nie są wykorzystywane w żadnym innym celu. W szczególności nie są <strong>czytane, analizowane, publikowane ani wykorzystywane do uczenia modeli sztucznej inteligencji</strong>. Jedyny wyjątek to KajetAI: notatka, przy której Użytkownik sam o to poprosi, jest wysyłana do Google na zasadach opisanych w § 11a.</li>
         <li>Treść notatek przechowywanych na serwerze <strong>nie jest szyfrowana</strong> w sposób uniemożliwiający jej odczytanie przez Administratora. Kajet nie stosuje szyfrowania end-to-end. Użytkownik, który chce mieć pewność, że danej notatki nie odczyta nikt poza nim, powinien trzymać ją wyłącznie na swoim urządzeniu, bez synchronizacji.</li>
         <li>Aplikacja pozwala w każdej chwili wyeksportować notatki do plików PDF, DOCX i Markdown, a notatki na urządzeniu leżą jako zwykłe pliki w folderze wskazanym przez Użytkownika. Nic nie jest zamknięte w Kajecie.</li>
       </ol>
@@ -159,14 +159,14 @@ export function RegulaminPl() {
 
       <h2 id="par11a">§ 11a. Asystent KajetAI</h2>
       <ol className="legal-items">
-        <li>Kajet udostępnia asystenta, który na polecenie Użytkownika zmienia treść notatki tekstowej, mapy myśli albo pliku z kodem. Przy notatkach odręcznych asystent nie działa.</li>
+        <li>Kajet udostępnia KajetAI — asystenta, który na polecenie Użytkownika zmienia treść notatki tekstowej, mapy myśli albo pliku z kodem. Przy notatkach odręcznych KajetAI nie działa.</li>
         <li>Funkcja jest <strong>opcjonalna i domyślnie niedostępna</strong>. Prawo do korzystania z niej nadaje pojedynczemu Kontu Administrator i może je w każdej chwili odebrać. Pozostałe funkcje Kajetu działają wtedy bez zmian.</li>
-        <li>Skorzystanie z asystenta oznacza, że <strong>treść notatki jest wysyłana do zewnętrznego dostawcy — Google LLC</strong> — którego model językowy wprowadza zmianę. Zasady przetwarzania tych danych, w tym wykorzystanie ich przez Google do rozwoju własnych produktów, opisuje punkt 3.9 <a href="/privacy#sek3">Polityki prywatności</a>.</li>
-        <li>Przed pierwszym użyciem Użytkownik potwierdza zgodę na wysyłanie treści notatek do Google. <strong>Bez zgody asystent nie działa.</strong> Zgodę można wycofać w każdej chwili w ustawieniach konta.</li>
+        <li>Skorzystanie z KajetAI oznacza, że <strong>treść notatki jest wysyłana do Google LLC</strong>, którego model językowy wprowadza zmianę. Model jest darmowy, więc Google może wykorzystać wysłaną treść do uczenia swoich modeli. Szczegóły opisuje punkt 3.9 <a href="/privacy#sek3-9">Polityki prywatności</a>.</li>
+        <li>Przed pierwszym użyciem Użytkownik potwierdza zgodę na wysyłanie treści notatek do Google. <strong>Bez zgody KajetAI nie działa.</strong> Zgodę można wycofać w każdej chwili w ustawieniach konta.</li>
         <li><strong>Wyniki pracy modelu mogą być błędne, niepełne lub niezgodne z poleceniem.</strong> Model może też zmienić więcej, niż o to poproszono. Użytkownik odpowiada za sprawdzenie wprowadzonych zmian, zanim uzna notatkę za poprawną.</li>
-        <li>Każdą zmianę wprowadzoną przez asystenta można cofnąć jednym kliknięciem, dopóki nie zostanie zastąpiona kolejną zmianą. Administrator nie przechowuje wersji notatki sprzed zmiany dłużej niż do zamknięcia edytora.</li>
-        <li>Liczba wywołań asystenta jest ograniczona dobowo i godzinowo; Administrator może ustawić własny limit dla pojedynczego Konta oraz wyłączyć funkcję dla wszystkich, w szczególności gdy jej koszt albo obciążenie serwera tego wymagają.</li>
-        <li>Zabronione jest używanie asystenta do treści bezprawnych (§ 8), do obchodzenia limitów oraz do zautomatyzowanego, masowego przetwarzania treści.</li>
+        <li>Każdą zmianę wprowadzoną przez KajetAI można cofnąć jednym kliknięciem, dopóki nie zostanie zastąpiona kolejną zmianą. Administrator nie przechowuje wersji notatki sprzed zmiany dłużej niż do zamknięcia edytora.</li>
+        <li>Liczba wywołań KajetAI jest ograniczona dobowo i godzinowo; Administrator może ustawić własny limit dla pojedynczego Konta oraz wyłączyć funkcję dla wszystkich, w szczególności gdy jej koszt albo obciążenie serwera tego wymagają.</li>
+        <li>Zabronione jest używanie KajetAI do treści bezprawnych (§ 8), do obchodzenia limitów oraz do zautomatyzowanego, masowego przetwarzania treści.</li>
       </ol>
 
       <h2 id="par12">§ 12. Blokada konta</h2>
@@ -393,7 +393,7 @@ export function RegulaminEn() {
       <ol className="legal-items">
         <li><strong>All rights to the content of notes remain with the User.</strong> The Administrator acquires no rights to them — neither economic copyright nor any licence beyond what paragraph 2 describes.</li>
         <li>The Administrator stores and processes notes only as far as is technically necessary to provide the service: saving them on the server, sending them to the User's devices, showing them in a browser, sharing them with people the User chooses, making a backup and deleting them on request.</li>
-        <li>Notes are used for no other purpose. In particular they are <strong>not read, analysed, published or used to train artificial intelligence models</strong>.</li>
+        <li>Notes are used for no other purpose. In particular they are <strong>not read, analysed, published or used to train artificial intelligence models</strong>. The only exception is KajetAI: a note the User asks about themselves is sent to Google on the terms described in § 11a.</li>
         <li>The content of notes stored on the server <strong>is not encrypted</strong> in a way that would prevent the Administrator from reading it. Kajet does not use end-to-end encryption. A User who wants to be certain that nobody else can read a particular note should keep it on their own device only, without synchronisation.</li>
         <li>The application can export notes to PDF, DOCX and Markdown at any time, and notes on the device sit as ordinary files in a folder the User chose. Nothing is locked inside Kajet.</li>
       </ol>
@@ -417,14 +417,14 @@ export function RegulaminEn() {
 
       <h2 id="par11a">§ 11a. The KajetAI assistant</h2>
       <ol className="legal-items">
-        <li>Kajet offers an assistant that, on the User's instruction, changes the content of a text note, a mind map or a code file. It does not work on handwritten notes.</li>
+        <li>Kajet offers KajetAI — an assistant that, on the User's instruction, changes the content of a text note, a mind map or a code file. KajetAI does not work on handwritten notes.</li>
         <li>The feature is <strong>optional and unavailable by default</strong>. The right to use it is granted to a single Account by the Administrator, who may withdraw it at any time. The rest of Kajet keeps working.</li>
-        <li>Using the assistant means that <strong>the content of the note is sent to an external provider — Google LLC</strong> — whose language model makes the change. How that data is processed, including Google's use of it to develop its own products, is described in section 3.9 of the <a href="/privacy#sek3">Privacy Policy</a>.</li>
-        <li>Before first use the User confirms consent to sending note content to Google. <strong>Without consent the assistant does not work.</strong> The consent can be withdrawn at any time in account settings.</li>
+        <li>Using KajetAI means that <strong>the content of the note is sent to Google LLC</strong>, whose language model makes the change. The model is free, so Google may use what is sent to train its models. The details are in section 3.9 of the <a href="/privacy#sek3-9">Privacy Policy</a>.</li>
+        <li>Before first use the User confirms consent to sending note content to Google. <strong>Without consent KajetAI does not work.</strong> The consent can be withdrawn at any time in account settings.</li>
         <li><strong>The model's output may be wrong, incomplete or not what was asked for.</strong> It may also change more than was requested. The User is responsible for checking the changes made before treating the note as correct.</li>
-        <li>Every change made by the assistant can be undone with one click, until it is replaced by a further change. The Administrator does not keep the version of the note from before the change beyond the closing of the editor.</li>
-        <li>The number of assistant calls is limited per day and per hour; the Administrator may set a separate limit for a single Account and may switch the feature off for everyone, in particular where its cost or the load on the server requires it.</li>
-        <li>Using the assistant for unlawful content (§ 8), to circumvent limits, or for automated bulk processing of content, is forbidden.</li>
+        <li>Every change made by KajetAI can be undone with one click, until it is replaced by a further change. The Administrator does not keep the version of the note from before the change beyond the closing of the editor.</li>
+        <li>The number of KajetAI calls is limited per day and per hour; the Administrator may set a separate limit for a single Account and may switch the feature off for everyone, in particular where its cost or the load on the server requires it.</li>
+        <li>Using KajetAI for unlawful content (§ 8), to circumvent limits, or for automated bulk processing of content, is forbidden.</li>
       </ol>
 
       <h2 id="par12">§ 12. Blocking an account</h2>

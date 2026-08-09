@@ -104,18 +104,18 @@ export function PolitykaPl() {
       <p>Serwer Kajetu <strong>nie prowadzi dziennika odwiedzin</strong> — nie zapisuje adresów IP, adresów odwiedzanych stron ani informacji o przeglądarce osób wchodzących na stronę. Adres IP zapisywany jest wyłącznie przy raporcie o awarii (punkt 3.6).</p>
       <p>Strona wczytuje jednak kroje pisma i ikony bezpośrednio z serwerów Google, przez co <strong>przy każdym wejściu na dowolną podstronę Twój adres IP i informacja o przeglądarce trafiają do Google</strong>. Dotyczy to również osób niezalogowanych. Szczegóły w punktach <a href="#sek6">6</a> i <a href="#sek7">7</a>.</p>
 
-      <h3>3.9. Asystent KajetAI</h3>
+      <h3 id="sek3-9">3.9. Asystent KajetAI</h3>
       <div className="legal-note legal-note-warning">
-        <p style={{ margin: "0" }}><strong>Ta funkcja wysyła treść Twojej notatki do Google.</strong> Jest dobrowolna, domyślnie wyłączona i dostaje ją tylko konto, któremu administrator ją nada. Bez Twojej wyraźnej zgody nie zadziała ani razu.</p>
+        <p style={{ margin: "0" }}><strong>Ta funkcja wysyła treść Twojej notatki do Google.</strong> Model jest darmowy, więc Google może wykorzystać wysłaną treść do uczenia swoich modeli. Jest dobrowolna, domyślnie wyłączona i dostaje ją tylko konto, któremu administrator ją nada. Bez Twojej wyraźnej zgody nie zadziała ani razu.</p>
       </div>
-      <p>Asystent zmienia treść notatki na Twoje polecenie. Żeby to zrobić, notatka musi zostać przeczytana przez model językowy Google (Gemini). Wysyłane są:</p>
+      <p>KajetAI zmienia treść notatki na Twoje polecenie. Żeby to zrobić, notatka musi zostać przeczytana przez model językowy Google (Gemini). Wysyłane są:</p>
       <ul>
         <li><strong>treść notatki</strong> — cały tekst notatki tekstowej, całe źródło pliku z kodem albo napisy w węzłach mapy myśli, wraz z tytułem notatki,</li>
         <li><strong>Twoje polecenie</strong> oraz kilka wcześniejszych poleceń przy tej samej notatce, żeby „skróć to jeszcze bardziej” miało do czego się odnieść.</li>
       </ul>
-      <p><strong>Nie są wysyłane:</strong> pismo odręczne, zdjęcia i rysunki wstawione do notatek, notatki odręczne w całości (przy nich asystent w ogóle się nie pokazuje), Twój adres e-mail, login ani identyfikator konta. Google nie dowiaduje się, czyja jest notatka.</p>
-      <p>Kajet korzysta z <strong>darmowego poziomu</strong> Gemini API. Zgodnie z warunkami tej usługi Google wykorzystuje przesłaną treść <strong>do rozwoju swoich produktów i usług, w tym do uczenia modeli</strong>, a upoważnieni pracownicy Google mogą ją przeczytać i opisać. Google podaje, że przed takim przeglądem odłącza dane od konta, klucza i projektu. Niezależnie od tego treść wysyłana asystentowi jest przechowywana przez Google przez <strong>55 dni</strong> na potrzeby wykrywania nadużyć.</p>
-      <p>Po stronie Kajetu zapisujemy Twoje polecenia i jednozdaniowe odpowiedzi asystenta (patrz punkt <a href="#sek5">5</a>) oraz — osobno, bez treści i bez numeru notatki — sam fakt wywołania: datę, rodzaj notatki, nazwę modelu i liczbę zużytych jednostek. To drugie służy wyłącznie pilnowaniu limitów i kosztów.</p>
+      <p><strong>Nie są wysyłane:</strong> pismo odręczne, zdjęcia i rysunki wstawione do notatek, notatki odręczne w całości (przy nich KajetAI w ogóle się nie pokazuje), Twój adres e-mail, login ani identyfikator konta. Google nie dowiaduje się, czyja jest notatka.</p>
+      <p>Model jest darmowy, więc Google może wykorzystać wysłaną treść <strong>do uczenia swoich modeli</strong>. Może ją też przeczytać i opisać upoważniony pracownik Google. Tak działa darmowy poziom Gemini API i nie da się tego wyłączyć. Google podaje, że przed takim przeglądem odłącza dane od konta, klucza i projektu. Niezależnie od tego treść wysłana KajetAI jest przechowywana przez Google przez <strong>55 dni</strong> na potrzeby wykrywania nadużyć.</p>
+      <p>Po stronie Kajetu zapisujemy Twoje polecenia i jednozdaniowe odpowiedzi KajetAI (patrz punkt <a href="#sek5">5</a>) oraz — osobno, bez treści i bez numeru notatki — sam fakt wywołania: datę, rodzaj notatki, nazwę modelu i liczbę zużytych jednostek. To drugie służy wyłącznie pilnowaniu limitów i kosztów.</p>
       <p>Zgodę potwierdzasz raz, przy pierwszym użyciu, i możesz ją wycofać w każdej chwili w ustawieniach konta. Wycofanie kasuje zapisane polecenia i wyłącza funkcję; nie ma wpływu na to, co Google zdążył już otrzymać.</p>
 
       <h3>3.10. Czego nie robimy</h3>
@@ -132,7 +132,7 @@ export function PolitykaPl() {
           </thead>
           <tbody>
             <tr>
-              <td>Zmiana treści notatki przez asystenta KajetAI, w tym przekazanie jej do Google</td>
+              <td>Zmiana treści notatki przez KajetAI, w tym przekazanie jej do Google</td>
               <td>treść notatki, jej tytuł, Twoje polecenia</td>
               <td><strong>lit. a</strong> — Twoja zgoda, dobrowolna i możliwa do wycofania w każdej chwili</td>
             </tr>
@@ -188,16 +188,16 @@ export function PolitykaPl() {
               <td>Do usunięcia konta. Usunięcie konta kasuje te dane nieodwracalnie.</td>
             </tr>
             <tr>
-              <td>Polecenia wydane asystentowi i jego odpowiedzi</td>
-              <td><strong>24 godziny</strong> od ostatniego polecenia przy danej notatce. Możesz je skasować wcześniej — przyciskiem przy asystencie albo wycofując zgodę.</td>
+              <td>Polecenia wydane KajetAI i jego odpowiedzi</td>
+              <td><strong>24 godziny</strong> od ostatniego polecenia przy danej notatce. Możesz je skasować wcześniej — przyciskiem w panelu KajetAI albo wycofując zgodę.</td>
             </tr>
             <tr>
-              <td>Zapis wywołań asystenta do rozliczeń (bez treści i bez numeru notatki)</td>
+              <td>Zapis wywołań KajetAI do rozliczeń (bez treści i bez numeru notatki)</td>
               <td>Do usunięcia konta.</td>
             </tr>
             <tr>
-              <td>Treść wysłana do Google przez asystenta</td>
-              <td>Po stronie Google: <strong>55 dni</strong> na potrzeby wykrywania nadużyć. Ponadto na darmowym poziomie usługi Google wykorzystuje tę treść do rozwoju swoich produktów i uczenia modeli — na to Kajet nie ma wpływu i nie da się tego cofnąć po wysłaniu.</td>
+              <td>Treść wysłana do Google przez KajetAI</td>
+              <td>Po stronie Google: <strong>55 dni</strong> na potrzeby wykrywania nadużyć. Model jest darmowy, więc Google może wykorzystać tę treść do uczenia swoich modeli — po wysłaniu nie da się tego cofnąć (punkt <a href="#sek3-9">3.9</a>).</td>
             </tr>
             <tr>
               <td>Konto, z którego nikt nie korzysta</td>
@@ -260,9 +260,9 @@ export function PolitykaPl() {
               <td>Adres e-mail odbiorcy oraz treść wiadomości, w tym login nadawcy i tytuł udostępnianej notatki</td>
             </tr>
             <tr>
-              <td><strong>Google LLC</strong> (Stany Zjednoczone) — model językowy Gemini, tylko przy asystencie KajetAI</td>
+              <td><strong>Google LLC</strong> (Stany Zjednoczone) — model językowy Gemini, tylko przy KajetAI</td>
               <td>Wprowadzenie do notatki zmiany, o którą poprosisz</td>
-              <td>Treść notatki i Twoje polecenie — wyłącznie wtedy, gdy masz nadane uprawnienie, potwierdziłeś zgodę i sam poprosisz asystenta o zmianę. Szczegóły w punkcie <a href="#sek3">3.9</a>.</td>
+              <td>Treść notatki i Twoje polecenie — wyłącznie wtedy, gdy masz nadane uprawnienie, potwierdziłeś zgodę i sam poprosisz KajetAI o zmianę. Szczegóły w punkcie <a href="#sek3-9">3.9</a>.</td>
             </tr>
             <tr>
               <td><strong>Google LLC</strong> (Stany Zjednoczone) — kroje pisma i ikony</td>
@@ -297,13 +297,13 @@ export function PolitykaPl() {
         <li><strong>adres IP i informacja o przeglądarce</strong> każdej osoby wchodzącej na stronę, przy wczytywaniu krojów pisma i ikon,</li>
         <li>dane wymieniane przy logowaniu przez Google, jeżeli sam wybierzesz tę drogę,</li>
         <li>zapytanie o plik modelu rozpoznawania pisma, jeżeli włączysz tę funkcję w aplikacji,</li>
-        <li><strong>treść notatki i Twoje polecenie</strong> — wtedy i tylko wtedy, gdy sam poprosisz asystenta KajetAI o zmianę (punkt <a href="#sek3">3.9</a>). Usługa Gemini API nie pozwala wskazać regionu przetwarzania, więc dane mogą być przetwarzane i przechowywane w dowolnym kraju, w którym Google ma swoje ośrodki.</li>
+        <li><strong>treść notatki i Twoje polecenie</strong> — wtedy i tylko wtedy, gdy sam poprosisz KajetAI o zmianę (punkt <a href="#sek3-9">3.9</a>). Usługa Gemini API nie pozwala wskazać regionu przetwarzania, więc dane mogą być przetwarzane i przechowywane w dowolnym kraju, w którym Google ma swoje ośrodki.</li>
       </ul>
 
       <p>Google LLC uczestniczy w programie Data Privacy Framework, uznanym przez Komisję Europejską za zapewniający odpowiedni stopień ochrony danych (decyzja wykonawcza z 10 lipca 2023 r.), a ponadto stosuje standardowe klauzule umowne.</p>
 
       <div className="legal-note legal-note-warning">
-        <p style={{ margin: "0" }}><strong>Poza asystentem KajetAI treść notatek nie opuszcza EOG.</strong> Bez tej funkcji — czyli domyślnie, dopóki nie dostaniesz do niej dostępu i sam się na nią nie zgodzisz — notatki i załączniki leżą wyłącznie na serwerze w Polsce.</p>
+        <p style={{ margin: "0" }}><strong>Poza KajetAI treść notatek nie opuszcza EOG.</strong> Bez tej funkcji — czyli domyślnie, dopóki nie dostaniesz do niej dostępu i sam się na nią nie zgodzisz — notatki i załączniki leżą wyłącznie na serwerze w Polsce.</p>
       </div>
 
       <h2 id="sek8">8. Dane, które zostają na Twoim urządzeniu</h2>
@@ -422,7 +422,7 @@ export function PolitykaEn() {
       <div className="legal-sheet legal-accent">
         <p className="eyebrow">Kajet</p>
         <h1>Privacy policy</h1>
-        <p className="lead">Last updated: 7 August 2026</p>
+        <p className="lead">Last updated: 9 August 2026</p>
       </div>
 
       <div className="legal-note">
@@ -514,7 +514,21 @@ export function PolitykaEn() {
       <p>The Kajet server <strong>keeps no visit log</strong> — it does not record IP addresses, the pages visited or browser information of people opening the site. An IP address is recorded only with a crash report (section 3.6).</p>
       <p>The website does, however, load typefaces and icons directly from Google's servers, which means that <strong>every time you open any page, your IP address and browser information reach Google</strong>. This also applies to people who are not signed in. Details in sections <a href="#sek6">6</a> and <a href="#sek7">7</a>.</p>
 
-      <h3>3.9. What we do not do</h3>
+      <h3 id="sek3-9">3.9. The KajetAI assistant</h3>
+      <div className="legal-note legal-note-warning">
+        <p style={{ margin: "0" }}><strong>This feature sends the content of your note to Google.</strong> The model is free, so Google may use what is sent to train its models. It is voluntary, off by default, and only an account the administrator grants it to receives it. Without your explicit consent it will not run even once.</p>
+      </div>
+      <p>KajetAI changes the content of a note on your instruction. To do that, the note has to be read by a Google language model (Gemini). What is sent:</p>
+      <ul>
+        <li>the <strong>content of the note</strong> — the whole text of a text note, the whole source of a code file, or the labels in the nodes of a mind map, together with the title of the note,</li>
+        <li><strong>your instruction</strong>, and a few earlier instructions about the same note, so that “make it shorter still” has something to refer to.</li>
+      </ul>
+      <p><strong>What is not sent:</strong> handwriting, photos and drawings placed in notes, handwritten notes as a whole (KajetAI does not show up next to them at all), your e-mail address, your login and your account identifier. Google does not learn whose note it is.</p>
+      <p>The model is free, so Google may use what is sent <strong>to train its models</strong>. An authorised Google employee may also read it and describe it. That is how the free tier of the Gemini API works and it cannot be switched off. Google states that it detaches the data from the account, the key and the project before any such review. Regardless of that, content sent to KajetAI is kept by Google for <strong>55 days</strong> for abuse detection.</p>
+      <p>On the Kajet side we save your instructions and KajetAI's one-sentence replies (see section <a href="#sek5">5</a>) and — separately, with no content and no note identifier — the bare fact of a call: the date, the kind of note, the name of the model and the number of units used. The second of these serves only to keep watch over limits and costs.</p>
+      <p>You confirm consent once, at first use, and you can withdraw it at any time in the account settings. Withdrawing it deletes the saved instructions and switches the feature off; it has no effect on what Google has already received.</p>
+
+      <h3>3.10. What we do not do</h3>
       <p>Kajet has <strong>no</strong> analytics, no visitor statistics, no advertising, no ad networks, no tracking tools, no profiling and no automated decision-making producing legal effects concerning you. Data is not sold or shared for marketing purposes — to anyone, ever.</p>
 
       <h2 id="sek4">4. Why, and on what legal basis</h2>
@@ -528,7 +542,7 @@ export function PolitykaEn() {
           </thead>
           <tbody>
             <tr>
-              <td>Changing the content of a note with the KajetAI assistant, including passing it to Google</td>
+              <td>Changing the content of a note with KajetAI, including passing it to Google</td>
               <td>note content, its title, your instructions</td>
               <td><strong>point (a)</strong> — your consent, voluntary and withdrawable at any time</td>
             </tr>
@@ -604,16 +618,16 @@ export function PolitykaEn() {
               <td><strong>30 days</strong> from signing in. It ends earlier on signing out, changing the password or “sign out everywhere”.</td>
             </tr>
             <tr>
-              <td>Instructions given to the assistant and its replies</td>
-              <td><strong>24 hours</strong> from the last instruction about a given note. You can delete them sooner — with the button in the assistant, or by withdrawing consent.</td>
+              <td>Instructions given to KajetAI and its replies</td>
+              <td><strong>24 hours</strong> from the last instruction about a given note. You can delete them sooner — with the button in the KajetAI panel, or by withdrawing consent.</td>
             </tr>
             <tr>
-              <td>Record of assistant calls for billing (no content, no note identifier)</td>
+              <td>Record of KajetAI calls for billing (no content, no note identifier)</td>
               <td>Until the account is deleted.</td>
             </tr>
             <tr>
-              <td>Content sent to Google by the assistant</td>
-              <td>On Google's side: <strong>55 days</strong> for abuse detection. In addition, on the free tier of the service Google uses that content to develop its products and train models — Kajet has no influence over this and it cannot be undone once sent.</td>
+              <td>Content sent to Google by KajetAI</td>
+              <td>On Google's side: <strong>55 days</strong> for abuse detection. The model is free, so Google may use that content to train its models — once sent, it cannot be undone (section <a href="#sek3-9">3.9</a>).</td>
             </tr>
             <tr>
               <td>Device token in the application</td>
@@ -656,9 +670,9 @@ export function PolitykaEn() {
               <td>The recipient's e-mail address and the content of the message, including the sender's login and the title of the shared note</td>
             </tr>
             <tr>
-              <td><strong>Google LLC</strong> (United States) — the Gemini language model, only for the KajetAI assistant</td>
+              <td><strong>Google LLC</strong> (United States) — the Gemini language model, only for KajetAI</td>
               <td>Making the change to the note that you ask for</td>
-              <td>The content of the note and your instruction — only when you have been granted the permission, have confirmed consent, and ask the assistant for a change yourself. Details in section <a href="#sek3">3.9</a>.</td>
+              <td>The content of the note and your instruction — only when you have been granted the permission, have confirmed consent, and ask KajetAI for a change yourself. Details in section <a href="#sek3-9">3.9</a>.</td>
             </tr>
             <tr>
               <td><strong>Google LLC</strong> (United States) — typefaces and icons</td>
@@ -693,13 +707,13 @@ export function PolitykaEn() {
         <li>the <strong>IP address and browser information</strong> of everyone opening the site, when typefaces and icons are loaded,</li>
         <li>the data exchanged when signing in with Google, if you choose that way,</li>
         <li>the request for the handwriting model file, if you turn that feature on in the application,</li>
-        <li>the <strong>content of a note and your instruction</strong> — if and only if you ask the KajetAI assistant for a change yourself (section <a href="#sek3">3.9</a>). The Gemini API does not allow a processing region to be chosen, so the data may be processed and stored in any country where Google maintains facilities.</li>
+        <li>the <strong>content of a note and your instruction</strong> — if and only if you ask KajetAI for a change yourself (section <a href="#sek3-9">3.9</a>). The Gemini API does not allow a processing region to be chosen, so the data may be processed and stored in any country where Google maintains facilities.</li>
       </ul>
 
       <p>Google LLC participates in the Data Privacy Framework, which the European Commission has recognised as providing an adequate level of protection (implementing decision of 10 July 2023), and additionally applies standard contractual clauses.</p>
 
       <div className="legal-note legal-note-warning">
-        <p style={{ margin: "0" }}><strong>Apart from the KajetAI assistant, the content of notes does not leave the EEA.</strong> Without that feature — that is, by default, until you are given access to it and consent to it yourself — notes and attachments sit on the server in Poland only.</p>
+        <p style={{ margin: "0" }}><strong>Apart from KajetAI, the content of notes does not leave the EEA.</strong> Without that feature — that is, by default, until you are given access to it and consent to it yourself — notes and attachments sit on the server in Poland only.</p>
       </div>
 
       <h2 id="sek8">8. Data that stays on your device</h2>
