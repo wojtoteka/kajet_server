@@ -2,6 +2,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { reserveBytes, changeUsed } from "@/lib/quota";
 import { contentHash, deleteAttachment, deleteNoteDirectory } from "@/lib/files";
+import { fitTitle } from "@/lib/note-title";
 import { apiWords } from "./language";
 
 /**
@@ -17,7 +18,10 @@ export const PUT_KINDS = [...SYNC_KINDS, "CODE"] as const;
 
 export const outgoingNoteSchema = z.object({
   id: z.string().min(1).max(64),
-  title: z.string().max(300),
+  // Hojna granica, bo tytuł i tak przycina fitTitle przy zapisie.
+  // Odmowa zatrzymałaby synchronizację starszych wydań aplikacji na
+  // zawsze - wpis w kolejce wracałby z błędem przy każdej próbie.
+  title: z.string().max(2_000),
   kind: z.enum(PUT_KINDS),
   favorite: z.boolean().optional(),
   tags: z.array(z.string()).optional(),
@@ -262,7 +266,7 @@ export async function upsertNoteForUser(
         id: note.id,
         ownerId: userId,
         folderId: folderId ?? null,
-        title: note.title,
+        title: fitTitle(note.title),
         kind: note.kind,
         favorite: note.favorite ?? false,
         tags: (note.tags ?? []).join("|"),
@@ -276,7 +280,7 @@ export async function upsertNoteForUser(
         // An absent field leaves the note where it is; "" (root) and unknown
         // folders are already straightened out by resolveFolderId.
         folderId: folderId === undefined ? undefined : folderId,
-        title: note.title,
+        title: fitTitle(note.title),
         favorite: note.favorite ?? false,
         tags: (note.tags ?? []).join("|"),
         content,
@@ -408,7 +412,7 @@ export async function upsertCodeNoteForUser(
   // conflict/quota logic; we force CODE on the actual Prisma write below.
   const asSync: OutgoingNote = {
     id: note.id,
-    title: note.title,
+    title: fitTitle(note.title),
     kind: "TEXT",
     content: note.content,
     baseVersion: note.baseVersion,
@@ -514,7 +518,7 @@ export async function upsertCodeNoteForUser(
         id: note.id,
         ownerId: userId,
         folderId: folderId ?? null,
-        title: note.title,
+        title: fitTitle(note.title),
         kind: "CODE",
         favorite: note.favorite ?? false,
         tags: (note.tags ?? []).join("|"),
@@ -528,7 +532,7 @@ export async function upsertCodeNoteForUser(
         // Same rule as in upsertNoteForUser: an absent folderId leaves the
         // note in its folder, "" and unknown folders are resolved above.
         folderId: folderId === undefined ? undefined : folderId,
-        title: note.title,
+        title: fitTitle(note.title),
         favorite: note.favorite ?? false,
         tags: (note.tags ?? []).join("|"),
         content: note.content,

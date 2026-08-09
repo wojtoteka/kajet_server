@@ -9,6 +9,7 @@ import { tally } from "@/lib/text-tally";
 import { SaveStatus } from "@/components/SaveStatus";
 import { useAutosave } from "@/components/useAutosave";
 import { useSavedNote } from "@/components/useSavedNote";
+import { TITLE_LIMIT } from "@/lib/note-title";
 import {
   activeFormats,
   applyColour,
@@ -59,6 +60,8 @@ type ActionResult = {
   version?: number;
   noteId?: string;
   attachment?: { name: string };
+  /** Tytuł podpowiedziany przez serwer z pierwszego wiersza treści. */
+  title?: string;
 };
 type Action = (previous: ActionResult, data: FormData) => Promise<ActionResult>;
 
@@ -148,6 +151,18 @@ export function TextNoteEditor({
   // Nowa też - pierwszy zapis ją zakłada, gdy tylko jest co zapisać.
   const formRef = useRef<HTMLFormElement | null>(null);
   const saved = useSavedNote({ noteId, version, state });
+
+  /*
+    Tytuł podpowiedziany przez serwer wpisujemy do pola - ale TYLKO wtedy, gdy
+    pole jest jeszcze puste. Inaczej podpowiedź liczyłaby się od nowa przy
+    każdym autozapisie i rosła razem z pierwszym wierszem notatki, aż do
+    granicy obcięcia. Warunek pilnuje też tego, żeby nie nadpisać tytułu,
+    który człowiek zaczął właśnie wpisywać.
+  */
+  useEffect(() => {
+    if (!state.title) return;
+    setNoteTitle((current) => (current.trim() === "" ? state.title! : current));
+  }, [state]);
   const autosaves = Boolean(saved.noteId) || body.trim().length > 0;
   const { dirty, markSent } = useAutosave({
     formRef,
@@ -460,7 +475,7 @@ export function TextNoteEditor({
           type="text"
           value={noteTitle}
           onChange={(event) => setNoteTitle(event.target.value)}
-          maxLength={300}
+          maxLength={TITLE_LIMIT}
           placeholder={words.untitled}
         />
       </div>

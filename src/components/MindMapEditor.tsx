@@ -29,6 +29,7 @@ import { mapTally, type Words } from "@/lib/i18n";
 import { SaveStatus } from "@/components/SaveStatus";
 import { useAutosave } from "@/components/useAutosave";
 import { useSavedNote } from "@/components/useSavedNote";
+import { TITLE_LIMIT } from "@/lib/note-title";
 
 type ActionResult = { error?: string; success?: string; version?: number; noteId?: string };
 type Action = (previous: ActionResult, data: FormData) => Promise<ActionResult>;
@@ -647,7 +648,7 @@ export function MindMapEditor({
           type="text"
           value={noteTitle}
           onChange={(event) => setNoteTitle(event.target.value)}
-          maxLength={300}
+          maxLength={TITLE_LIMIT}
           placeholder={words.untitled}
         />
       </div>

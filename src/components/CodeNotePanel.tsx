@@ -6,6 +6,7 @@ import { useWords } from "@/components/LanguageProvider";
 import { SaveStatus } from "@/components/SaveStatus";
 import { useAutosave } from "@/components/useAutosave";
 import { useSavedNote } from "@/components/useSavedNote";
+import { TITLE_LIMIT } from "@/lib/note-title";
 
 type SaveResult = { error?: string; success?: string; version?: number; noteId?: string };
 type SaveAction = (previous: SaveResult, data: FormData) => Promise<SaveResult>;
@@ -156,7 +157,7 @@ export function CodeNotePanel({
               type="text"
               value={noteTitle}
               onChange={(event) => setNoteTitle(event.target.value)}
-              maxLength={300}
+              maxLength={TITLE_LIMIT}
               placeholder={words.codeFileNamePlaceholder}
             />
           </div>

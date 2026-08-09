@@ -76,8 +76,32 @@ describe("tytuł podpowiedziany z treści", () => {
     const long = "słowo ".repeat(40).trim();
     const title = titleFromMarkdown(long);
     expect(title).not.toBeNull();
-    expect(title!.length).toBeLessThanOrEqual(84);
+    // 48 znaków granicy plus wielokropek.
+    expect(title!.length).toBeLessThanOrEqual(51);
     expect(title!.endsWith("...")).toBe(true);
+  });
+
+  it("tnie na spacji, nie w połowie słowa", () => {
+    const zdanie =
+      "Pomaganie drugiemu człowiekowi to jedna z najważniejszych wartości w życiu.";
+    const title = titleFromMarkdown(zdanie)!;
+
+    expect(title.endsWith("...")).toBe(true);
+    // Ostatnie słowo przed wielokropkiem musi być całe - „...z najważn" czyta
+    // się jak usterka, a nie jak tytuł.
+    const bezKropek = title.slice(0, -3);
+    expect(zdanie.startsWith(bezKropek)).toBe(true);
+    expect(zdanie[bezKropek.length]).toBe(" ");
+  });
+
+  it("jedno słowo dłuższe niż cała granica tniemy równo", () => {
+    // Nie ma gdzie ciąć - inaczej tytuł zostałby pusty.
+    const title = titleFromMarkdown("a".repeat(120))!;
+    expect(title).toBe(`${"a".repeat(48)}...`);
+  });
+
+  it("krótki wiersz zostaje bez wielokropka", () => {
+    expect(titleFromMarkdown("Zakupy na sobotę")).toBe("Zakupy na sobotę");
   });
 
   it("pusta treść nie daje tytułu", () => {

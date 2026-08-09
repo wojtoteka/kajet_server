@@ -63,6 +63,7 @@ import {
 import { SaveStatus } from "@/components/SaveStatus";
 import { useAutosave } from "@/components/useAutosave";
 import { useSavedNote } from "@/components/useSavedNote";
+import { TITLE_LIMIT } from "@/lib/note-title";
 
 type ActionResult = {
   error?: string;
@@ -960,7 +961,7 @@ export function HandwritingEditor({
           type="text"
           value={noteTitle}
           onChange={(event) => setNoteTitle(event.target.value)}
-          maxLength={300}
+          maxLength={TITLE_LIMIT}
           placeholder={words.untitled}
         />
       </div>

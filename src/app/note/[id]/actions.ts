@@ -62,6 +62,12 @@ export type Result = {
    * w treść notatki, zamiast kazać człowiekowi przepisywać nazwę ręcznie.
    */
   attachment?: { name: string };
+  /**
+   * Tytuł podpowiedziany z treści - odsyłany tylko wtedy, gdy człowiek nie
+   * wpisał własnego. Edytor wstawia go do swojego pola i od tej chwili
+   * podpowiedź już się nie powtarza.
+   */
+  title?: string;
 };
 
 /** Czy to zapis w tle (z useAutosave), czy kliknięcie w „Zapisz". */
@@ -196,6 +202,16 @@ export async function saveTextNote(_previous: Result, data: FormData): Promise<R
     // bez tego drugi zapis z rzędu wpadałby w konflikt sam ze sobą.
     version: outcome.version,
     noteId: existingId ? undefined : noteId,
+    /*
+      Tytuł podpowiedziany z treści wraca do edytora, żeby wpisał go do
+      swojego pola.
+
+      Bez tego pole tytułu zostawało puste, więc KAŻDY kolejny autozapis
+      liczył tytuł od nowa z aktualnej treści - a ta rosła razem
+      z pierwszym wierszem. Stąd w spisie tytuły na trzy wiersze:
+      podpowiedź miała działać raz, a działała bez końca.
+    */
+    title: parsed.data.title.trim() ? undefined : title,
   };
 }
 
@@ -327,6 +343,16 @@ export async function saveMindMapNote(_previous: Result, data: FormData): Promis
     // bez tego drugi zapis z rzędu wpadałby w konflikt sam ze sobą.
     version: outcome.version,
     noteId: existingId ? undefined : noteId,
+    /*
+      Tytuł podpowiedziany z treści wraca do edytora, żeby wpisał go do
+      swojego pola.
+
+      Bez tego pole tytułu zostawało puste, więc KAŻDY kolejny autozapis
+      liczył tytuł od nowa z aktualnej treści - a ta rosła razem
+      z pierwszym wierszem. Stąd w spisie tytuły na trzy wiersze:
+      podpowiedź miała działać raz, a działała bez końca.
+    */
+    title: parsed.data.title.trim() ? undefined : title,
   };
 }
 

@@ -10,8 +10,17 @@
   tytułu zostało puste, i nie zmienia niczego, co człowiek napisał sam.
 */
 
-/** Dłuższy pierwszy wiersz obcinamy - w spisie i tak by się nie zmieścił. */
-const LONGEST = 80;
+/**
+ * Dłuższy pierwszy wiersz obcinamy - w spisie i tak by się nie zmieścił.
+ *
+ * Osiemdziesiąt znaków zajmowało na karcie telefonu trzy wiersze i tytuł
+ * zjadał całą kartę. Czterdzieści osiem mieści się w jednym wierszu z zapasem.
+ *
+ * Ta sama liczba stoi w aplikacji (NoteTitles.kt). Rozjazd między stronami
+ * znaczyłby, że te same notatki przetytułowują się nawzajem przy każdej
+ * synchronizacji.
+ */
+const LONGEST = 48;
 
 /**
  * Ile znaków musi mieć NIEDOKOŃCZONY wiersz, żeby dało się z niego zrobić
@@ -23,8 +32,52 @@ const LONGEST = 80;
  */
 const SETTLED_LENGTH = 12;
 
+/**
+ * Obcięcie na ostatniej spacji przed granicą, a nie w połowie słowa.
+ * „Pomaganie drugiemu człowiekowi to jedna z najważn..." czyta się jak tytuł;
+ * „...z najważn" jak usterka.
+ *
+ * Wyjątek: jedno słowo dłuższe niż cała granica - wtedy nie ma gdzie ciąć
+ * i tniemy równo, bo inaczej tytuł zostałby pusty.
+ */
 function shorten(text: string): string {
-  return text.length > LONGEST ? `${text.slice(0, LONGEST).trimEnd()}...` : text;
+  if (text.length <= LONGEST) return text;
+
+  const cut = text.slice(0, LONGEST);
+  const space = cut.lastIndexOf(" ");
+  const kept = space > LONGEST / 2 ? cut.slice(0, space) : cut;
+  return `${kept.trimEnd()}...`;
+}
+
+/**
+ * Najdłuższy tytuł, jaki przyjmujemy — także wpisany ręcznie.
+ *
+ * Do tej pory bramki przepuszczały trzysta znaków, a kolumna `Note.title`
+ * w bazie to zwykły `String`, czyli VARCHAR(191) w MySQL. Tytuł między tymi
+ * liczbami nie zapisywał się WCALE — wywracał zapis błędem bazy danych.
+ *
+ * Sto dwadzieścia mieści się w kolumnie z zapasem i zgadza się z limitem
+ * nazwy folderu.
+ */
+export const TITLE_LIMIT = 120;
+
+/**
+ * Tytuł przycięty do granicy. PRZYCINAMY, nie odmawiamy.
+ *
+ * Odmowa zatrzymałaby synchronizację starszych wydań aplikacji na zawsze:
+ * wpis w kolejce wysyłki wracałby z błędem przy każdej próbie i utknąłby tam
+ * na dobre. Przycięcie jest niemiłe, ale przechodzi.
+ *
+ * Wielokropka tu nie dodajemy — to tytuł napisany przez człowieka, a nie
+ * podpowiedź z treści.
+ */
+export function fitTitle(title: string): string {
+  const clean = title.trim();
+  if (clean.length <= TITLE_LIMIT) return clean;
+
+  const cut = clean.slice(0, TITLE_LIMIT);
+  const space = cut.lastIndexOf(" ");
+  return (space > TITLE_LIMIT / 2 ? cut.slice(0, space) : cut).trimEnd();
 }
 
 /**
