@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { currentUser } from "@/lib/auth";
 import { approveLoginChallenge, denyLoginChallenge } from "@/lib/login-challenge";
+import { currentWords } from "@/lib/language";
+import { deviceConnectedMsg } from "@/lib/i18n";
 
 export type DeviceResult = { error?: string; success?: string; deepLink?: string };
 
@@ -22,9 +24,7 @@ export async function approveDevice(
 
   revalidatePath("/signin/device");
   return {
-    success:
-      `Połączono urządzenie „${result.device}". Wróć do aplikacji Kajet — ` +
-      "powinna się zalogować sama w ciągu kilku sekund.",
+    success: deviceConnectedMsg(await currentWords(), result.device),
     deepLink: `kajet://auth?code=${encodeURIComponent(code)}`,
   };
 }
@@ -43,5 +43,5 @@ export async function denyDevice(
   if (!result.ok) return { error: result.reason };
 
   revalidatePath("/signin/device");
-  return { success: "Odrzucono logowanie. Aplikacja dostanie informację przy następnym sprawdzeniu." };
+  return { success: (await currentWords()).actSignInDenied };
 }

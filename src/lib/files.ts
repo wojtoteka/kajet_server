@@ -26,18 +26,38 @@ export function contentHash(data: Buffer | string): string {
   return createHash("sha256").update(data).digest("hex");
 }
 
+/**
+ * Nazwa załącznika nadająca się do wstawienia w treść notatki.
+ *
+ * Odnośnik do zdjęcia zapisuje się jako `![zdjęcie](assets/nazwa)`, więc
+ * spacja albo nawias w nazwie rozbija adres - czytnik markdownu urywa go
+ * w pierwszym takim miejscu. Aplikacja obchodzi to od dawna, nazywając
+ * zdjęcia z galerii samym znacznikiem czasu; tutaj zostawiamy nazwę, jaką
+ * dał człowiek, tylko oczyszczoną z tego, co rozbija odnośnik.
+ *
+ * Nazwa jest też kluczem załącznika przy notatce (para noteId+name), więc
+ * czyścimy ją raz, przy przyjęciu pliku - i taka trafia do bazy, do treści
+ * notatki i na tablet.
+ */
+export function safeAttachmentName(raw: string): string {
+  const bare = raw.trim().replace(/^.*[\\/]/, "");
+  const cleaned = bare
+    // Spacje w adresie kończą odnośnik - myślnik znaczy to samo dla oka.
+    .replace(/\s+/g, "-")
+    // Nawiasy zamykają odnośnik, reszta to znaki kłopotliwe w adresach.
+    .replace(/[()[\]<>"'`|*?:;,#%&]/g, "")
+    .replace(/-{2,}/g, "-")
+    // Kropka albo myślnik na początku to plik ukryty lub nazwa wyglądająca
+    // jak przełącznik wiersza poleceń.
+    .replace(/^[-.]+/, "");
+  return cleaned || `plik-${Date.now()}`;
+}
+
 export type StoredFile = {
 path: string;
   hash: string;
   sizeBytes: number;
 };
-
-/**
- * Odmowa zapisu z komunikatem przeznaczonym dla użytkownika. Każdy inny
- * wyjątek z zapisu (błędy dysku) niesie w treści ścieżki serwera i ma
- * zostać w dzienniku, nie w odpowiedzi.
- */
-export class RefusedUpload extends Error {}
 
 export async function storeAttachment(
   ownerId: string,
@@ -46,7 +66,7 @@ export async function storeAttachment(
   data: Buffer,
 ): Promise<StoredFile> {
   if (data.byteLength > settings.files.maxFileBytes) {
-    throw new RefusedUpload(
+    throw new Error(
       `Plik jest za duży. Największy przyjmowany rozmiar to ${Math.round(settings.files.maxFileBytes / 1024 / 1024)} MB.`,
     );
   }
@@ -88,6 +108,11 @@ export async function deleteAttachment(relativePath: string): Promise<void> {
 
 export async function deleteNoteDirectory(ownerId: string, noteId: string): Promise<void> {
   await rm(noteDirectory(ownerId, noteId), { recursive: true, force: true });
+}
+
+/** Removes every file of the account, that is the whole owner directory. */
+export async function deleteUserDirectory(ownerId: string): Promise<void> {
+  await rm(path.join(rootDirectory(), safeId(ownerId)), { recursive: true, force: true });
 }
 
 const ALLOWED_TYPES = new Set([
@@ -161,14 +186,14 @@ export function sniffUploadMime(data: Buffer): string | null {
 
 /**
  * Decide the MIME type for an upload. Declared `Content-Type` alone is not
- * trusted — the bytes must sniff to an allowed type. When both are present
+ * trusted - the bytes must sniff to an allowed type. When both are present
  * and disagree, the sniffed type wins.
  */
 export function resolveUploadMime(declared: string, data: Buffer): string | null {
   const sniffed = sniffUploadMime(data);
   if (!sniffed || !mayUpload(sniffed)) return null;
   if (declared && mayUpload(declared) && declared !== sniffed) {
-    // Declared type is allowed but does not match the bytes — refuse rather
+    // Declared type is allowed but does not match the bytes - refuse rather
     // than store a misleading MIME.
     return null;
   }

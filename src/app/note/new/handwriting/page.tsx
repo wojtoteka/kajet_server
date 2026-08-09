@@ -4,13 +4,19 @@ import { currentUser } from "@/lib/auth";
 import { KajetMark } from "@/components/KajetMark";
 import { HandwritingEditor } from "@/components/HandwritingEditor";
 import { defaultHandwritingSeed } from "@/lib/handwriting-note";
-import { saveHandwritingNote } from "../../[id]/actions";
+import { readWritingSettings } from "@/lib/writing-settings";
+import { saveHandwritingNote, uploadAttachment } from "../../[id]/actions";
+import { currentWords } from "@/lib/language";
 
-export const metadata = { title: "Nowa notatka odręczna — Kajet" };
+export async function generateMetadata() {
+  return { title: (await currentWords()).metaNewHandwriting };
+}
 
 export default async function NewHandwritingPage() {
   const user = await currentUser();
   if (!user) redirect("/signin?next=/note/new/handwriting");
+
+  const words = await currentWords();
 
   return (
     <main className="page wide">
@@ -18,23 +24,24 @@ export default async function NewHandwritingPage() {
 
       <div className="row-spread" style={{ marginBottom: 18 }}>
         <div>
-          <p className="eyebrow">Nowa notatka</p>
-          <h1 style={{ marginBottom: 4 }}>Notatka odręczna</h1>
+          <p className="eyebrow">{words.newNoteEyebrow}</p>
+          <h1 style={{ marginBottom: 4 }}>{words.newHandwritingTitle}</h1>
           <p className="small" style={{ margin: 0 }}>
-            Rysuj myszą lub rysikiem. Kreski zapisują się w formacie Kajetu (6 wartości na punkt),
-            więc wrócą na tablet przy synchronizacji.
+            {words.newHandwritingAbout}
           </p>
         </div>
         <Link className="button compact" href="/library">
-          Anuluj
+          {words.cancel}
         </Link>
       </div>
 
       <HandwritingEditor
         action={saveHandwritingNote}
+        uploadAction={uploadAttachment}
         title=""
         initial={defaultHandwritingSeed()}
-        submitLabel="Utwórz notatkę"
+        autoSave={readWritingSettings(user).autoSave}
+        submitLabel={words.createNoteButton}
       />
     </main>
   );

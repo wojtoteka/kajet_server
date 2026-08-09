@@ -2,15 +2,27 @@ import Link from "next/link";
 import { tokenAccess } from "@/lib/sharing";
 import { KajetMark } from "@/components/KajetMark";
 import { NotePreview } from "@/components/NotePreview";
+import { currentWords } from "@/lib/language";
+import type { Words } from "@/lib/i18n";
 
-export const metadata = { title: "Udostępniona notatka — Kajet" };
+export async function generateMetadata() {
+  return { title: (await currentWords()).metaSharedNote };
+}
 
-const KIND_NAMES: Record<string, string> = {
-  HANDWRITTEN: "Notatka odręczna",
-  TEXT: "Notatka tekstowa",
-  MINDMAP: "Mapa myśli",
-  CODE: "Plik z kodem",
-};
+function kindName(words: Words, kind: string): string {
+  switch (kind) {
+    case "HANDWRITTEN":
+      return words.noteHandwritten;
+    case "TEXT":
+      return words.noteTextKind;
+    case "MINDMAP":
+      return words.mindMap;
+    case "CODE":
+      return words.noteCodeKind;
+    default:
+      return kind;
+  }
+}
 
 export default async function SharedNotePage({
   params,
@@ -18,6 +30,7 @@ export default async function SharedNotePage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
+  const words = await currentWords();
   const result = await tokenAccess(token);
 
   if (!result.ok) {
@@ -25,11 +38,11 @@ export default async function SharedNotePage({
       <main className="page" style={{ maxWidth: 520 }}>
         <KajetMark />
         <div className="sheet-ruled" style={{ paddingBlock: 32, paddingInlineEnd: 28 }}>
-          <p className="eyebrow">Odnośnik</p>
-          <h1 style={{ marginBottom: 10 }}>Nie możemy pokazać tej notatki</h1>
+          <p className="eyebrow">{words.linkEyebrow}</p>
+          <h1 style={{ marginBottom: 10 }}>{words.cannotShowNote}</h1>
           <p className="lead">{result.reason}</p>
           <Link className="button" href="/signin">
-            Zaloguj się
+            {words.signIn}
           </Link>
         </div>
       </main>
@@ -40,28 +53,27 @@ export default async function SharedNotePage({
 
   return (
     <main className="page wide">
-      <KajetMark caption="udostępniona notatka" />
+      <KajetMark caption={words.sharedNoteCaption} />
 
       <div className="row-spread" style={{ marginBottom: 18 }}>
         <div>
-          <p className="eyebrow">{KIND_NAMES[note.kind] ?? note.kind}</p>
-          <h1 style={{ marginBottom: 4 }}>{note.title || "Bez nazwy"}</h1>
+          <p className="eyebrow">{kindName(words, note.kind)}</p>
+          <h1 style={{ marginBottom: 4 }}>{note.title || words.untitled}</h1>
           <p className="small" style={{ margin: 0 }}>
-            Zmieniona {note.updatedAt.toLocaleString("pl-PL")}
-            {canEdit ? " · masz prawo do zmian" : " · tylko do czytania"}
+            {words.changedWord} {note.updatedAt.toLocaleString(words.locale)}
+            {canEdit ? ` · ${words.mayChangeIt}` : ` · ${words.readOnlyMark}`}
           </p>
         </div>
         {isOwner ? (
           <Link className="button compact" href={`/note/${note.id}`}>
-            Otwórz jako właściciel
+            {words.openAsOwner}
           </Link>
         ) : null}
       </div>
 
       {canEdit ? (
         <p className="success">
-          Masz prawo poprawiać tę notatkę. Edytor w przeglądarce jest jeszcze w robocie, więc
-          na razie możesz ją tylko przeczytać.
+          {words.canEditButNoEditor}
         </p>
       ) : null}
 
@@ -69,8 +81,8 @@ export default async function SharedNotePage({
 
       <hr className="divider" />
       <p className="small">
-        To jest notatka z Kajetu.{" "}
-        <Link href="/">Zobacz, o co chodzi</Link>
+        {words.thisIsAKajetNote}{" "}
+        <Link href="/">{words.seeWhatItIs}</Link>
       </p>
     </main>
   );

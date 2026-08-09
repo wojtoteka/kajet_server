@@ -3,42 +3,78 @@ import { redirect } from "next/navigation";
 import { auth, signIn } from "@/lib/auth";
 import { googleWorks } from "@/lib/settings";
 import { KajetMark } from "@/components/KajetMark";
+import { currentWords } from "@/lib/language";
+import type { Words } from "@/lib/i18n";
 
-export const metadata = { title: "Zaloguj się — Kajet" };
+export async function generateMetadata() {
+  return { title: (await currentWords()).metaSignIn };
+}
 
-const MESSAGES: Record<string, string> = {
-  blocked: "To konto zostało zablokowane. Napisz do administratora.",
-  "code-required":
-    "Na ten adres nie ma jeszcze konta. Konto zakłada się na kod od administratora, na stronie rejestracji.",
-  CredentialsSignin: "Zły adres albo złe hasło.",
-  OAuthAccountNotLinked:
-    "Ten adres jest już używany przy logowaniu hasłem. Zaloguj się hasłem, a potem możesz powiązać Google.",
-  Configuration:
-    "Logowanie przez Google nie jest poprawnie ustawione na serwerze (klucze, adres powrotu albo AUTH_URL). Napisz do administratora albo zaloguj się hasłem.",
-  AccessDenied: "Google nie pozwoliło na logowanie, albo to konto nie ma dostępu.",
-  OAuthSignin: "Nie udało się rozpocząć logowania przez Google. Spróbuj jeszcze raz.",
-  OAuthCallback:
-    "Google nie dokończyło logowania. Sprawdź, czy wracasz na ten sam adres strony (https), albo spróbuj jeszcze raz. Jeśli problem wraca — to zwykle zły adres powrotu w konsoli Google albo brak AUTH_URL.",
-  OAuthCreateAccount: "Nie udało się założyć konta przez Google. Spróbuj jeszcze raz albo załóż konto hasłem na kodzie zaproszenia.",
-  Callback: "Logowanie zostało przerwane. Spróbuj jeszcze raz.",
-  Verification: "Odnośnik do logowania wygasł albo został już użyty.",
-  Default: "Nie udało się zalogować. Spróbuj jeszcze raz.",
-};
+function messages(words: Words): Record<string, string> {
+  return {
+    blocked: words.signInBlocked,
+    "code-required": words.signInCodeRequired,
+    CredentialsSignin: words.wrongCredentials,
+    "too-many-attempts": words.tooManyAttempts,
+    OAuthAccountNotLinked: words.signInNotLinked,
+    Configuration: words.signInConfiguration,
+    AccessDenied: words.signInAccessDenied,
+    OAuthSignin: words.signInOAuthStart,
+    OAuthCallback: words.signInOAuthCallback,
+    OAuthCreateAccount: words.signInOAuthCreate,
+    Callback: words.signInInterrupted,
+    Verification: words.signInVerification,
+    Default: words.signInDefault,
+  };
+}
+
+/** Powody, dla których ktoś tu właśnie wrócił - to nie są błędy. */
+function farewells(words: Words): Record<string, string> {
+  return {
+    wszedzie: words.byeEverywhere,
+    haslo: words.byePasswordChanged,
+    "haslo-nowe": words.byePasswordSet,
+  };
+}
 
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; next?: string }>;
+  searchParams: Promise<{
+    error?: string;
+    code?: string;
+    next?: string;
+    wylogowano?: string;
+  }>;
 }) {
   const params = await searchParams;
+  const words = await currentWords();
   const session = await auth();
-  if (session?.user?.id) {
+  /*
+    Samo `user.id` nie wystarczy. Konto zablokowane albo wylogowane wszędzie ma
+    ciasteczko, które nadal niesie identyfikator, ale nie otwiera już niczego -
+    odesłanie do biblioteki wracałoby tu z powrotem, w kółko.
+  */
+  if (session?.user?.id && !session.user.blocked) {
     const next = params.next?.startsWith("/") ? params.next : "/library";
     redirect(next);
   }
 
+  // Auth.js dokłada `code` przy błędach z providera - stąd wiadomo, że to
+  // zapora po pięciu próbach, a nie zwyczajnie złe hasło.
+  /*
+    Dwa najczęstsze komunikaty idą ze słownika, więc mówią w wybranym języku.
+    Reszta (błędy Google, wygasłe odnośniki) czeka jeszcze na przeniesienie
+    i zostaje po polsku - lepiej to niż pusty ekran bez wyjaśnienia.
+  */
+  const reasons = messages(words);
   const message = params.error
-    ? (MESSAGES[params.error] ?? MESSAGES.Default)
+    ? (reasons[params.code ?? ""] ?? reasons[params.error] ?? reasons.Default)
+    : null;
+
+  const partings = farewells(words);
+  const goodbye = params.wylogowano
+    ? (partings[params.wylogowano] ?? partings.wszedzie)
     : null;
 
   return (
@@ -46,13 +82,13 @@ export default async function SignInPage({
       <KajetMark />
 
       <div className="sheet-ruled" style={{ paddingBlock: 32, paddingInlineEnd: 28 }}>
-        <p className="eyebrow">Wejście</p>
-        <h1 style={{ marginBottom: 8 }}>Zaloguj się</h1>
+        <p className="eyebrow">{words.signInEntrance}</p>
+        <h1 style={{ marginBottom: 8 }}>{words.signInTitle}</h1>
         <p className="lead">
-          Po zalogowaniu zobaczysz swoje notatki i będziesz mógł je tu przeglądać oraz
-          poprawiać.
+          {words.signInLead}
         </p>
 
+        {goodbye ? <p className="success">{goodbye}</p> : null}
         {message ? <p className="error">{message}</p> : null}
 
         <form
@@ -66,12 +102,12 @@ export default async function SignInPage({
           }}
         >
           <div className="field">
-            <label htmlFor="email">Adres e-mail</label>
+            <label htmlFor="email">{words.emailAddress}</label>
             <input id="email" name="email" type="email" required autoComplete="email" />
           </div>
 
           <div className="field">
-            <label htmlFor="password">Hasło</label>
+            <label htmlFor="password">{words.password}</label>
             <input
               id="password"
               name="password"
@@ -82,7 +118,7 @@ export default async function SignInPage({
           </div>
 
           <button type="submit" className="primary" style={{ width: "100%" }}>
-            Zaloguj się
+            {words.signInTitle}
           </button>
         </form>
 
@@ -96,24 +132,22 @@ export default async function SignInPage({
               }}
             >
               <button type="submit" style={{ width: "100%" }}>
-                Zaloguj się przez Google
+                {words.signInWithGoogleButton}
               </button>
             </form>
             <p className="small" style={{ marginTop: 10 }}>
-              W aplikacji mobilnej Kajet możesz zalogować się przez Google przyciskiem
-              „Zaloguj przez Google” (otwiera tę stronę w przeglądarce w aplikacji),
-              hasłem albo tokenem ze strony konta.
+              {words.googleInAppHint}
             </p>
           </>
         ) : null}
 
         <p className="small" style={{ marginTop: 18 }}>
-          <Link href="/password">Nie pamiętam hasła</Link>
+          <Link href="/password">{words.forgotPassword}</Link>
         </p>
       </div>
 
       <p className="small" style={{ marginTop: 20, textAlign: "center" }}>
-        Nie masz konta? <Link href="/register">Załóż je na kod zaproszenia</Link>
+        {words.noAccountAsk} <Link href="/register">{words.registerOnCode}</Link>
       </p>
     </main>
   );

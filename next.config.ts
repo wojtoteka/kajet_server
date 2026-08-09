@@ -14,6 +14,20 @@ const config: NextConfig = {
     },
   },
 
+  /*
+    Stare, polskie adresy. Strona do pobierania i zakładka wydań nazywają się
+    teraz po angielsku, jak reszta - a odnośnik do pobierania mógł już gdzieś
+    pójść (aplikacja pyta serwer o adres sama, ale człowiek mógł go wkleić).
+    Przekierowanie jest stałe, więc kosztuje jedno zapytanie i tyle.
+  */
+  async redirects() {
+    return [
+      { source: "/pobierz", destination: "/download", permanent: true },
+      { source: "/pobierz/plik", destination: "/download/file", permanent: true },
+      { source: "/admin/aplikacja", destination: "/admin/app", permanent: true },
+    ];
+  },
+
   async headers() {
     return [
       {

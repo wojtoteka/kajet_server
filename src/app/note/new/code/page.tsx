@@ -6,20 +6,25 @@ import { CodeNotePanel } from "@/components/CodeNotePanel";
 import { languageOptions } from "@/lib/code-note";
 import { LANGUAGES, runnerState } from "@/lib/code-runner";
 import { settings } from "@/lib/settings";
+import { readWritingSettings } from "@/lib/writing-settings";
 import { saveCodeNote, runCodeAction } from "@/app/note/[id]/actions";
+import { currentWords } from "@/lib/language";
 
-export const metadata = { title: "Nowy plik z kodem — Kajet" };
+export async function generateMetadata() {
+  return { title: (await currentWords()).metaNewCode };
+}
 
 export default async function NewCodeNotePage() {
   const user = await currentUser();
   if (!user) redirect("/signin?next=/note/new/code");
 
+  const words = await currentWords();
   const state = await runnerState();
   const canRun = settings.code.enabled && state.works && user.canRunCode;
   const runnerHint = !settings.code.enabled
-    ? "Uruchamianie kodu jest wyłączone na tym serwerze (CODE_ENABLED)."
+    ? words.codeDisabledHere
     : !user.canRunCode
-      ? "Administrator wyłączył uruchamianie kodu na Twoim koncie."
+      ? words.codeDisabledForAccount
       : state.description;
 
   const defaultLang = LANGUAGES[0]?.id ?? "python";
@@ -30,15 +35,14 @@ export default async function NewCodeNotePage() {
 
       <div className="row-spread" style={{ marginBottom: 18 }}>
         <div>
-          <p className="eyebrow">Nowa notatka</p>
-          <h1 style={{ marginBottom: 4 }}>Plik z kodem</h1>
+          <p className="eyebrow">{words.newNoteEyebrow}</p>
+          <h1 style={{ marginBottom: 4 }}>{words.newCodeNoteTitle}</h1>
           <p className="small" style={{ margin: 0 }}>
-            Notatki z kodem żyją na serwerze i w panelu WWW. Aplikacja mobilna uruchamia kod
-            przez to samo API.
+            {words.newCodeNoteAbout}
           </p>
         </div>
         <Link className="button compact" href="/library">
-          Anuluj
+          {words.cancel}
         </Link>
       </div>
 
@@ -51,7 +55,8 @@ export default async function NewCodeNotePage() {
         languages={languageOptions()}
         canRun={canRun}
         runnerHint={runnerHint}
-        submitLabel="Utwórz plik"
+        autoSave={readWritingSettings(user).autoSave}
+        submitLabel={words.createFileButton}
       />
     </main>
   );

@@ -2,16 +2,21 @@
 
 import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { currentAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { recomputeUsed } from "@/lib/quota";
-import { inviteMail, send } from "@/lib/mail";
+import { confirmationMail, inviteMail, passwordResetMail, send } from "@/lib/mail";
 import { settings } from "@/lib/settings";
+import { forgetFile, sweepUnused, uploadedFile } from "@/lib/app-release";
+import { deleteUserDirectory } from "@/lib/files";
+import { currentWords } from "@/lib/language";
+import type { Words } from "@/lib/i18n";
 
 async function requireAdmin() {
   const admin = await currentAdmin();
-  if (!admin) throw new Error("Ta czynność jest tylko dla administratora.");
+  if (!admin) throw new Error((await currentWords()).actAdminOnly);
   return admin;
 }
 
@@ -19,7 +24,11 @@ async function writeToLog(actorId: string, action: string, details: string) {
   await prisma.auditEntry.create({ data: { actorId, action, details } });
 }
 
-export type Result = { error?: string; success?: string };
+export type Result = {
+  error?: string;
+  success?: string;
+  copyable?: { value: string; label?: string };
+};
 
 // --- Invite codes ---
 
@@ -50,7 +59,7 @@ export async function createCode(_previous: Result, data: FormData): Promise<Res
     description: data.get("description") || "",
     email: data.get("email") || "",
   });
-  if (!parsed.success) return { error: "Sprawdź wpisane liczby." };
+  if (!parsed.success) return { error: (await currentWords()).actCheckNumbers };
 
   const { seats, quotaMb, validDays, description, email } = parsed.data;
   const code = newCode();
@@ -80,7 +89,13 @@ export async function createCode(_previous: Result, data: FormData): Promise<Res
   }
 
   revalidatePath("/admin/codes");
-  return { success: `Kod ${code} gotowy.${note}` };
+  return {
+    success: `Kod ${code} gotowy.${note}`,
+    copyable: {
+      value: `${settings.baseUrl}/register?code=${encodeURIComponent(code)}`,
+      label: (await currentWords()).actCopyRegistrationLink,
+    },
+  };
 }
 
 export async function deleteCode(_previous: Result, data: FormData): Promise<Result> {
@@ -111,7 +126,7 @@ export async function setQuota(_previous: Result, data: FormData): Promise<Resul
     quotaMb: data.get("quotaMb") ?? 0,
     forDays: data.get("forDays") ?? 0,
   });
-  if (!parsed.success) return { error: "Sprawdź wpisane liczby." };
+  if (!parsed.success) return { error: (await currentWords()).actCheckNumbers };
 
   const { userId, quotaMb, forDays } = parsed.data;
   const quota = BigInt(quotaMb) * 1024n * 1024n;
@@ -144,7 +159,7 @@ export async function setQuota(_previous: Result, data: FormData): Promise<Resul
   return {
     success:
       quotaMb === 0
-        ? "Konto dostało miejsce bez limitu."
+        ? (await currentWords()).actUnlimitedGiven
         : `Limit ustawiony na ${quotaMb} MB${forDays > 0 ? ` na ${forDays} dni` : ""}.`,
   };
 }
@@ -156,7 +171,7 @@ export async function toggleBlock(_previous: Result, data: FormData): Promise<Re
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) return { error: "Nie ma takiego konta." };
-  if (user.id === admin.id) return { error: "Nie da się zablokować własnego konta." };
+  if (user.id === admin.id) return { error: (await currentWords()).actCannotBlockSelf };
 
   const blocking = !user.blocked;
 
@@ -188,33 +203,35 @@ export async function toggleBlock(_previous: Result, data: FormData): Promise<Re
   };
 }
 
-const loginForm = z.object({
-  userId: z.string().min(1),
-  login: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .regex(
-      /^[a-z0-9._-]{3,24}$/,
-      "Login może mieć od 3 do 24 znaków: małe litery, cyfry, kropka, kreska, podkreślenie.",
-    ),
-});
+function loginForm(words: Words) {
+  return z.object({
+    userId: z.string().min(1),
+    login: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .regex(
+        /^[a-z0-9._-]{3,24}$/,
+        words.actLoginRulesAdmin,
+      ),
+  });
+}
 
 export async function changeLogin(_previous: Result, data: FormData): Promise<Result> {
   const admin = await requireAdmin();
 
-  const parsed = loginForm.safeParse({
+  const parsed = loginForm(await currentWords()).safeParse({
     userId: data.get("userId"),
     login: data.get("login"),
   });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Zły login." };
+    return { error: parsed.error.issues[0]?.message ?? (await currentWords()).actBadLogin };
   }
 
   const { userId, login } = parsed.data;
 
   const taken = await prisma.user.findUnique({ where: { login }, select: { id: true } });
-  if (taken && taken.id !== userId) return { error: "Ten login jest już zajęty." };
+  if (taken && taken.id !== userId) return { error: (await currentWords()).actLoginTaken };
 
   await prisma.user.update({ where: { id: userId }, data: { login } });
   await writeToLog(admin.id, "account.login", `${userId} -> ${login}`);
@@ -223,13 +240,156 @@ export async function changeLogin(_previous: Result, data: FormData): Promise<Re
   return { success: `Login zmieniony na ${login}.` };
 }
 
+function emailForm(words: Words) {
+  return z.object({
+    userId: z.string().min(1),
+    email: z.string().trim().toLowerCase().email(words.actNotAnEmail),
+  });
+}
+
+export async function changeEmail(_previous: Result, data: FormData): Promise<Result> {
+  const admin = await requireAdmin();
+
+  const parsed = emailForm(await currentWords()).safeParse({
+    userId: data.get("userId"),
+    email: data.get("email"),
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? (await currentWords()).actNotAnEmail };
+  }
+
+  const { userId, email } = parsed.data;
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) return { error: "Nie ma takiego konta." };
+  if (user.email === email) return { error: (await currentWords()).actAccountHasAddress };
+
+  const taken = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+  if (taken) return { error: (await currentWords()).actAddressOnAnother };
+
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: userId }, data: { email, emailVerified: null } }),
+    // Odnośniki wysłane na stary adres (zmiana hasła, potwierdzenie) nie mogą
+    // dalej działać - dotyczą konta, które ma już inny adres.
+    prisma.verificationToken.deleteMany({
+      where: {
+        identifier: {
+          in: [`password:${user.email}`, `confirm:${user.email}`],
+        },
+      },
+    }),
+  ]);
+
+  // Nowy adres czeka na potwierdzenie, tak samo jak przy rejestracji.
+  const token = randomBytes(32).toString("base64url");
+  await prisma.verificationToken.create({
+    data: {
+      identifier: `confirm:${email}`,
+      token,
+      expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    },
+  });
+  const link = `${settings.baseUrl}/confirm?token=${token}`;
+  const sent = await send(confirmationMail(email, link));
+
+  await writeToLog(admin.id, "account.email", `${user.login}: ${user.email} -> ${email}`);
+
+  revalidatePath("/admin/accounts");
+  return {
+    success:
+      `Adres zmieniony na ${email}.` +
+      (sent
+        ? (await currentWords()).actConfirmationSent
+        : (await currentWords()).actConfirmationFailed),
+    copyable: sent ? undefined : { value: link, label: (await currentWords()).actCopyConfirmLink },
+  };
+}
+
+export async function sendPasswordReset(_previous: Result, data: FormData): Promise<Result> {
+  const admin = await requireAdmin();
+  const userId = String(data.get("userId") ?? "");
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) return { error: "Nie ma takiego konta." };
+
+  const token = randomBytes(32).toString("base64url");
+
+  // Starsze odnośniki przestają działać, tak samo jak przy prośbie ze strony.
+  await prisma.verificationToken.deleteMany({ where: { identifier: `password:${user.email}` } });
+  await prisma.verificationToken.create({
+    data: {
+      identifier: `password:${user.email}`,
+      token,
+      expires: new Date(Date.now() + 60 * 60 * 1000),
+    },
+  });
+
+  const link = `${settings.baseUrl}/password?token=${token}`;
+  const sent = await send(passwordResetMail(user.email, link));
+
+  await writeToLog(admin.id, "account.password.link", user.login);
+
+  revalidatePath("/admin/accounts");
+  return {
+    success: sent
+      ? `Odnośnik do zmiany hasła poszedł na ${user.email}. Jest ważny przez godzinę.`
+      : (await currentWords()).actResetMailFailed,
+    copyable: { value: link, label: (await currentWords()).copyLink },
+  };
+}
+
+function newPasswordForm(words: Words) {
+  return z.object({
+    userId: z.string().min(1),
+    password: z.string().min(8, words.actPasswordMinEight),
+  });
+}
+
+export async function setUserPassword(_previous: Result, data: FormData): Promise<Result> {
+  const admin = await requireAdmin();
+
+  const parsed = newPasswordForm(await currentWords()).safeParse({
+    userId: data.get("userId"),
+    password: data.get("password"),
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? (await currentWords()).actCheckWhatYouTyped };
+  }
+
+  const { userId, password } = parsed.data;
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) return { error: "Nie ma takiego konta." };
+
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: userId },
+      data: {
+        passwordHash: await bcrypt.hash(password, 12),
+        // Nowe hasło zamyka konto na wszystkich urządzeniach - sesje strony
+        // odpadają przez znacznik, tokeny aplikacji znikają z bazy.
+        sessionsRevokedAt: new Date(),
+      },
+    }),
+    prisma.session.deleteMany({ where: { userId } }),
+    prisma.appToken.deleteMany({ where: { userId } }),
+  ]);
+
+  await writeToLog(admin.id, "account.password.set", user.login);
+
+  revalidatePath("/admin/accounts");
+  return {
+    success: `Hasło dla ${user.login} ustawione. Konto zostało wylogowane ze wszystkich urządzeń.`,
+  };
+}
+
 export async function toggleAdmin(_previous: Result, data: FormData): Promise<Result> {
   const admin = await requireAdmin();
   const userId = String(data.get("userId") ?? "");
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) return { error: "Nie ma takiego konta." };
-  if (user.id === admin.id) return { error: "Nie da się odebrać uprawnień samemu sobie." };
+  if (user.id === admin.id) return { error: (await currentWords()).actCannotTakeOwnRights };
 
   const newRole = user.role === "ADMIN" ? "USER" : "ADMIN";
   await prisma.user.update({ where: { id: userId }, data: { role: newRole } });
@@ -274,5 +434,184 @@ export async function recomputeStorage(_previous: Result, data: FormData): Promi
 
   await recomputeUsed(userId);
   revalidatePath("/admin/accounts");
-  return { success: "Zajęte miejsce przeliczone od nowa." };
+  return { success: (await currentWords()).actStorageRecomputed };
+}
+
+export async function deleteUser(_previous: Result, data: FormData): Promise<Result> {
+  const admin = await requireAdmin();
+  const userId = String(data.get("userId") ?? "");
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { _count: { select: { notes: true } } },
+  });
+  if (!user) return { error: "Nie ma takiego konta." };
+  if (user.id === admin.id) return { error: (await currentWords()).actCannotDeleteOwnAccount };
+
+  await prisma.$transaction([
+    // Odnośniki z maili nie mają klucza obcego, więc kaskada ich nie sprzątnie.
+    prisma.verificationToken.deleteMany({
+      where: {
+        identifier: {
+          in: [`password:${user.email}`, `confirm:${user.email}`],
+        },
+      },
+    }),
+    prisma.user.delete({ where: { id: userId } }),
+  ]);
+
+  // Baza poszła kaskadą, na dysku został jeszcze katalog z załącznikami.
+  await deleteUserDirectory(userId);
+
+  await writeToLog(
+    admin.id,
+    "account.deleted",
+    `${user.login} (${user.email}), notatek: ${user._count.notes}`,
+  );
+
+  revalidatePath("/admin/accounts");
+  return { success: `Konto ${user.login} skasowane razem ze wszystkim, co na nim było.` };
+}
+
+// --- Android application ---
+
+function releaseForm(words: Words) {
+  return z.object({
+    version: z
+      .string()
+      .trim()
+      .min(1)
+      .max(40)
+      .regex(/^[0-9A-Za-z][0-9A-Za-z.\-_+ ]*$/, words.actVersionExample),
+    versionCode: z.coerce.number().int().min(1).max(2_000_000_000),
+    notes: z.string().trim().max(4000).optional(),
+    fileName: z.string().trim().max(120).optional(),
+    /** Skrót pliku, który przyszedł wcześniej na /admin/app/upload. */
+    upload: z.string().regex(/^[0-9a-f]{64}$/, words.actPickApkFirst),
+    replacePrevious: z.boolean(),
+  });
+}
+
+function refreshAppPages() {
+  revalidatePath("/admin/app");
+  revalidatePath("/download");
+  revalidatePath("/");
+}
+
+export async function publishRelease(_previous: Result, data: FormData): Promise<Result> {
+  const admin = await requireAdmin();
+
+  const parsed = releaseForm(await currentWords()).safeParse({
+    version: data.get("version") ?? "",
+    versionCode: data.get("versionCode") ?? 0,
+    notes: data.get("notes") ?? "",
+    fileName: data.get("fileName") ?? "",
+    upload: data.get("upload") ?? "",
+    replacePrevious: data.get("replacePrevious") === "on",
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? (await currentWords()).actCheckWhatYouTyped };
+  }
+
+  const { version, versionCode, notes, fileName, upload, replacePrevious } = parsed.data;
+
+  // Plik przyszedł osobnym zapytaniem. Zanim zrobimy z niego wydanie, upewniamy
+  // się, że nadal leży na dysku - mógł go sprzątnąć porządek albo drugi admin.
+  const file = await uploadedFile(upload);
+  if (!file) {
+    return { error: (await currentWords()).actUploadLost };
+  }
+
+  const clash = await prisma.appRelease.findUnique({ where: { versionCode } });
+  if (clash) {
+    return {
+      error: `Numer wydania ${versionCode} ma już wersja ${clash.version}. Podnieś numer albo skasuj tamto wydanie.`,
+    };
+  }
+
+  const created = await prisma.$transaction(async (tx) => {
+    // Aktualne wydanie jest jedno, więc poprzednie przestaje nim być.
+    await tx.appRelease.updateMany({ where: { current: true }, data: { current: false } });
+    return tx.appRelease.create({
+      data: {
+        version,
+        versionCode,
+        notes: notes || null,
+        fileName: fileName || `kajet-${version}.apk`,
+        hash: upload,
+        sizeBytes: file.sizeBytes,
+        current: true,
+        uploadedById: admin.id,
+      },
+    });
+  });
+
+  let note = "";
+  if (replacePrevious) {
+    const older = await prisma.appRelease.findMany({
+      where: { id: { not: created.id } },
+      select: { id: true, hash: true },
+    });
+    if (older.length > 0) {
+      await prisma.appRelease.deleteMany({ where: { id: { not: created.id } } });
+      for (const release of older) await forgetFile(release.hash);
+      note = ` Starsze wydania (${older.length}) poszły z bazy i z dysku.`;
+    }
+  }
+
+  await sweepUnused();
+  await writeToLog(admin.id, "app.published", `${version} (${versionCode})`);
+
+  refreshAppPages();
+  return {
+    success: `Wersja ${version} jest już do pobrania.${note}`,
+    copyable: { value: `${settings.baseUrl}/download`, label: (await currentWords()).actCopyDownloadLink },
+  };
+}
+
+export async function makeReleaseCurrent(_previous: Result, data: FormData): Promise<Result> {
+  const admin = await requireAdmin();
+  const id = String(data.get("id") ?? "");
+
+  const release = await prisma.appRelease.findUnique({ where: { id } });
+  if (!release) return { error: "Nie ma takiego wydania." };
+
+  await prisma.$transaction([
+    prisma.appRelease.updateMany({ where: { current: true }, data: { current: false } }),
+    prisma.appRelease.update({ where: { id }, data: { current: true } }),
+  ]);
+
+  await writeToLog(admin.id, "app.current", `${release.version} (${release.versionCode})`);
+
+  refreshAppPages();
+  return { success: `Do pobrania idzie teraz wersja ${release.version}.` };
+}
+
+export async function deleteRelease(_previous: Result, data: FormData): Promise<Result> {
+  const admin = await requireAdmin();
+  const id = String(data.get("id") ?? "");
+
+  const release = await prisma.appRelease.findUnique({ where: { id } });
+  if (!release) return { error: "Nie ma takiego wydania." };
+
+  await prisma.appRelease.delete({ where: { id } });
+  await forgetFile(release.hash);
+
+  // Po skasowaniu tego, co było na stronie, wskakuje na jego miejsce najnowsze
+  // z pozostałych - inaczej strona pobierania zostałaby pusta.
+  let note = "";
+  if (release.current) {
+    const next = await prisma.appRelease.findFirst({ orderBy: { versionCode: "desc" } });
+    if (next) {
+      await prisma.appRelease.update({ where: { id: next.id }, data: { current: true } });
+      note = ` Do pobrania idzie teraz wersja ${next.version}.`;
+    } else {
+      note = (await currentWords()).actNoReleaseLeft;
+    }
+  }
+
+  await writeToLog(admin.id, "app.deleted", `${release.version} (${release.versionCode})`);
+
+  refreshAppPages();
+  return { success: `Wydanie ${release.version} skasowane z bazy i z dysku.${note}` };
 }

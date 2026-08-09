@@ -3,6 +3,7 @@ import { error, userFromRequest, json, wrapApi } from "@/lib/api";
 import { LANGUAGES, runnerState, run } from "@/lib/code-runner";
 import { checkLimit, takeSlot } from "@/lib/run-limits";
 import { settings } from "@/lib/settings";
+import { apiWords } from "@/lib/language";
 
 export { OPTIONS } from "@/lib/api";
 
@@ -30,7 +31,7 @@ export const GET = wrapApi(async (request: Request) => {
     works: state.works && result.user.canRunCode,
     description: result.user.canRunCode
       ? state.description
-      : "Administrator wyłączył uruchamianie kodu na tym koncie.",
+      : (await apiWords()).apiCodeRunningOffForAccount,
     languages: LANGUAGES.map(({ id, namePl, extension }) => ({ id, namePl, extension })),
     timeoutSeconds: settings.code.timeoutSeconds,
     runsPerMinute: settings.code.runsPerMinute,
@@ -45,7 +46,7 @@ export const POST = wrapApi(async (request: Request) => {
   if (!user.canRunCode) {
     return error(
       "not-allowed",
-      "Administrator wyłączył uruchamianie kodu na tym koncie. Kod nadal możesz pisać i zapisywać.",
+      (await apiWords()).apiCodeRunningOffKeepWriting,
       403,
     );
   }
@@ -59,19 +60,19 @@ export const POST = wrapApi(async (request: Request) => {
   try {
     data = await request.json();
   } catch {
-    return error("bad-request", "Nie udało się odczytać zapytania.", 400);
+    return error("bad-request", (await apiWords()).apiBadRequest, 400);
   }
 
   const parsed = runRequest.safeParse(data);
   if (!parsed.success) {
-    return error("bad-request", "Podaj język i kod do uruchomienia.", 400);
+    return error("bad-request", (await apiWords()).apiGiveLanguageAndCode, 400);
   }
 
   const { language, code, input } = parsed.data;
   if (!code.trim()) {
     return json({
       output: "",
-      errors: "Nie ma czego uruchomić.",
+      errors: (await apiWords()).apiNothingToRun,
       exitCode: 0,
       interrupted: false,
       timeMs: 0,
@@ -81,7 +82,7 @@ export const POST = wrapApi(async (request: Request) => {
   // A slot on the machine. The server normally stands next to other things
   // belonging to the same owner and has no business knocking them over
   // because somebody is learning loops.
-  const slot = takeSlot();
+  const slot = takeSlot(await apiWords());
   if (!slot.taken) {
     return error("server-busy", slot.message, 503);
   }

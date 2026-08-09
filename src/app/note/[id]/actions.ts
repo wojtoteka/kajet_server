@@ -9,6 +9,7 @@ import { currentUser } from "@/lib/auth";
 import { shareMail, send } from "@/lib/mail";
 import { settings } from "@/lib/settings";
 import { shareUrl, createShare } from "@/lib/sharing";
+import { titleFromMarkdown, titleFromMindMap } from "@/lib/note-title";
 import {
   upsertNoteForUser,
   upsertCodeNoteForUser,
@@ -29,40 +30,76 @@ import { buildCodeNoteContent, parseCodeNote, guessLanguageFromTitle } from "@/l
 import type { MindEdge, MindNode, Page } from "@/lib/document";
 import { LANGUAGES, run, runnerState } from "@/lib/code-runner";
 import { checkLimit, takeSlot } from "@/lib/run-limits";
+import { currentWords } from "@/lib/language";
 import {
   mayUpload,
   resolveUploadMime,
+  safeAttachmentName,
   storeAttachment,
   deleteAttachment,
-  RefusedUpload,
 } from "@/lib/files";
 import { reserveBytes, changeUsed } from "@/lib/quota";
 
-export type Result = { error?: string; success?: string };
+export type Result = {
+  error?: string;
+  success?: string;
+  copyable?: { value: string; label?: string };
+  /** Wersja po zapisie — autozapis wysyła ją jako baseVersion kolejnego. */
+  version?: number;
+  /**
+   * Identyfikator notatki założonej przez autozapis. Ręczny zapis nowej
+   * notatki kończy się przekierowaniem, ale autozapis nie może wyrzucić
+   * człowieka ze środka pisania — dostaje więc identyfikator i od tej pory
+   * dopisuje do tej samej notatki (adres w pasku podmienia sama strona).
+   */
+  noteId?: string;
+  /**
+   * Nazwa świeżo wysłanego załącznika. Edytor wstawia po niej zdjęcie prosto
+   * w treść notatki, zamiast kazać człowiekowi przepisywać nazwę ręcznie.
+   */
+  attachment?: { name: string };
+};
+
+/** Czy to zapis w tle (z useAutosave), czy kliknięcie w „Zapisz". */
+function isAutosave(data: FormData): boolean {
+  return String(data.get("autosave") ?? "") === "1";
+}
 
 const textNoteForm = z.object({
   noteId: z.string().min(1).max(64).optional(),
   title: z.string().max(300),
   markdown: z.string().max(2_000_000),
   baseVersion: z.coerce.number().int().min(0).optional(),
+  // Whole-note appearance, the same fields the tablet keeps in content.json.
+  font: z.enum(["body", "heading", "mono"]).optional(),
+  fontSize: z.coerce.number().min(0).max(48).optional(),
+  align: z.enum(["left", "center", "right"]).optional(),
 });
 
 export async function saveTextNote(_previous: Result, data: FormData): Promise<Result> {
   const user = await currentUser();
-  if (!user) return { error: "Musisz się zalogować." };
+  if (!user) return { error: (await currentWords()).apiMustSignIn };
 
   const parsed = textNoteForm.safeParse({
     noteId: data.get("noteId") || undefined,
     title: data.get("title") ?? "",
     markdown: data.get("markdown") ?? "",
     baseVersion: data.get("baseVersion") ?? 0,
+    font: data.get("font") || undefined,
+    fontSize: data.get("fontSize") ?? undefined,
+    align: data.get("align") || undefined,
   });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Sprawdź wpisane dane." };
+    return { error: parsed.error.issues[0]?.message ?? (await currentWords()).actCheckWhatYouTyped };
   }
 
-  const title = parsed.data.title.trim() || "Bez nazwy";
   const markdown = parsed.data.markdown;
+  /*
+    Pusty tytuł bierzemy z pierwszego wiersza treści - inaczej spis zapełniał
+    się notatkami „Bez nazwy", nie do odróżnienia od siebie. Wpisany tytuł
+    zawsze wygrywa.
+  */
+  const title = parsed.data.title.trim() || titleFromMarkdown(markdown) || "Bez nazwy";
   const existingId = parsed.data.noteId;
 
   let noteId = existingId;
@@ -88,7 +125,7 @@ export async function saveTextNote(_previous: Result, data: FormData): Promise<R
     if (!row || row.deletedAt) return { error: "Nie ma takiej notatki." };
     if (row.ownerId !== user.id) return { error: "To nie jest Twoja notatka." };
     if (row.kind !== "TEXT") {
-      return { error: "Na stronie da się na razie poprawiać tylko notatki tekstowe." };
+      return { error: (await currentWords()).actOnlyTextNotes };
     }
     existingDocument = parseExistingTextDocument(row.content);
     favorite = row.favorite;
@@ -103,6 +140,11 @@ export async function saveTextNote(_previous: Result, data: FormData): Promise<R
     id: noteId!,
     title,
     markdown,
+    appearance: {
+      font: parsed.data.font,
+      fontSize: parsed.data.fontSize,
+      align: parsed.data.align,
+    },
     existing: existingDocument,
   });
 
@@ -123,22 +165,29 @@ export async function saveTextNote(_previous: Result, data: FormData): Promise<R
     return {
       error:
         outcome.message +
-        " Odśwież stronę, żeby zobaczyć wersję z serwera, i zapisz jeszcze raz jeśli trzeba.",
+        (await currentWords()).actRefreshAfterConflict,
     };
   }
 
   revalidatePath("/library");
-  revalidatePath(`/note/${noteId}`);
+  // Przy autozapisie NIE odświeżamy ścieżki otwartej notatki: to przerysowuje
+  // całą stronę w trakcie pisania. Nagłówek z numerem wersji poczeka do
+  // najbliższego wejścia na stronę, treść i tak jest już na serwerze.
+  if (!isAutosave(data)) revalidatePath(`/note/${noteId}`);
 
-  if (!existingId) {
+  if (!existingId && !isAutosave(data)) {
     redirect(`/note/${noteId}`);
   }
 
   return {
     success:
       outcome.status === "unchanged"
-        ? "Nic się nie zmieniło."
+        ? (await currentWords()).actNothingChanged
         : `Zapisane (wersja ${outcome.version}).`,
+    // Autozapis podaje tę wersję jako baseVersion następnego zapisu —
+    // bez tego drugi zapis z rzędu wpadałby w konflikt sam ze sobą.
+    version: outcome.version,
+    noteId: existingId ? undefined : noteId,
   };
 }
 
@@ -151,7 +200,7 @@ const mindMapForm = z.object({
 
 export async function saveMindMapNote(_previous: Result, data: FormData): Promise<Result> {
   const user = await currentUser();
-  if (!user) return { error: "Musisz się zalogować." };
+  if (!user) return { error: (await currentWords()).apiMustSignIn };
 
   const parsed = mindMapForm.safeParse({
     noteId: data.get("noteId") || undefined,
@@ -160,7 +209,7 @@ export async function saveMindMapNote(_previous: Result, data: FormData): Promis
     baseVersion: data.get("baseVersion") ?? 0,
   });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Sprawdź wpisane dane." };
+    return { error: parsed.error.issues[0]?.message ?? (await currentWords()).actCheckWhatYouTyped };
   }
 
   let mapBody: {
@@ -186,10 +235,13 @@ export async function saveMindMapNote(_previous: Result, data: FormData): Promis
       zoom: raw.zoom,
     };
   } catch {
-    return { error: "Nie udało się odczytać mapy myśli." };
+    return { error: (await currentWords()).actMindMapUnreadable };
   }
 
-  const title = parsed.data.title.trim() || "Bez nazwy";
+  // Mapa bez tytułu nazywa się od pierwszego opisanego węzła - to prawie
+  // zawsze jej środek, czyli temat całej mapy.
+  const title =
+    parsed.data.title.trim() || titleFromMindMap(mapBody.nodes) || "Bez nazwy";
   const existingId = parsed.data.noteId;
 
   let noteId = existingId;
@@ -214,7 +266,7 @@ export async function saveMindMapNote(_previous: Result, data: FormData): Promis
     });
     if (!row || row.deletedAt) return { error: "Nie ma takiej notatki." };
     if (row.ownerId !== user.id) return { error: "To nie jest Twoja notatka." };
-    if (row.kind !== "MINDMAP") return { error: "To nie jest mapa myśli." };
+    if (row.kind !== "MINDMAP") return { error: (await currentWords()).actNotAMindMap };
     existingDocument = parseExistingMindMapDocument(row.content);
     favorite = row.favorite;
     tags = row.tags ? row.tags.split("|").filter(Boolean) : [];
@@ -250,19 +302,23 @@ export async function saveMindMapNote(_previous: Result, data: FormData): Promis
     return {
       error:
         outcome.message +
-        " Odśwież stronę, żeby zobaczyć wersję z serwera, i zapisz jeszcze raz jeśli trzeba.",
+        (await currentWords()).actRefreshAfterConflict,
     };
   }
 
   revalidatePath("/library");
-  revalidatePath(`/note/${noteId}`);
-  if (!existingId) redirect(`/note/${noteId}`);
+  if (!isAutosave(data)) revalidatePath(`/note/${noteId}`);
+  if (!existingId && !isAutosave(data)) redirect(`/note/${noteId}`);
 
   return {
     success:
       outcome.status === "unchanged"
-        ? "Nic się nie zmieniło."
+        ? (await currentWords()).actNothingChanged
         : `Zapisane (wersja ${outcome.version}).`,
+    // Autozapis podaje tę wersję jako baseVersion następnego zapisu —
+    // bez tego drugi zapis z rzędu wpadałby w konflikt sam ze sobą.
+    version: outcome.version,
+    noteId: existingId ? undefined : noteId,
   };
 }
 
@@ -275,7 +331,7 @@ const handwritingForm = z.object({
 
 export async function saveHandwritingNote(_previous: Result, data: FormData): Promise<Result> {
   const user = await currentUser();
-  if (!user) return { error: "Musisz się zalogować." };
+  if (!user) return { error: (await currentWords()).apiMustSignIn };
 
   const parsed = handwritingForm.safeParse({
     noteId: data.get("noteId") || undefined,
@@ -284,7 +340,7 @@ export async function saveHandwritingNote(_previous: Result, data: FormData): Pr
     baseVersion: data.get("baseVersion") ?? 0,
   });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Sprawdź wpisane dane." };
+    return { error: parsed.error.issues[0]?.message ?? (await currentWords()).actCheckWhatYouTyped };
   }
 
   let hwBody: { pageMode?: string; background?: string; pages: Page[] };
@@ -295,7 +351,7 @@ export async function saveHandwritingNote(_previous: Result, data: FormData): Pr
       pages?: Page[];
     };
     if (!Array.isArray(raw.pages) || raw.pages.length === 0) {
-      return { error: "Notatka odręczna musi mieć przynajmniej jedną stronę." };
+      return { error: (await currentWords()).actHandwritingNeedsPage };
     }
     hwBody = {
       pageMode: raw.pageMode,
@@ -303,7 +359,7 @@ export async function saveHandwritingNote(_previous: Result, data: FormData): Pr
       pages: raw.pages,
     };
   } catch {
-    return { error: "Nie udało się odczytać notatki odręcznej." };
+    return { error: (await currentWords()).actHandwritingUnreadable };
   }
 
   const title = parsed.data.title.trim() || "Bez nazwy";
@@ -331,7 +387,7 @@ export async function saveHandwritingNote(_previous: Result, data: FormData): Pr
     });
     if (!row || row.deletedAt) return { error: "Nie ma takiej notatki." };
     if (row.ownerId !== user.id) return { error: "To nie jest Twoja notatka." };
-    if (row.kind !== "HANDWRITTEN") return { error: "To nie jest notatka odręczna." };
+    if (row.kind !== "HANDWRITTEN") return { error: (await currentWords()).actNotHandwriting };
     existingDocument = parseExistingHandwritingDocument(row.content);
     favorite = row.favorite;
     tags = row.tags ? row.tags.split("|").filter(Boolean) : [];
@@ -365,19 +421,23 @@ export async function saveHandwritingNote(_previous: Result, data: FormData): Pr
     return {
       error:
         outcome.message +
-        " Odśwież stronę, żeby zobaczyć wersję z serwera, i zapisz jeszcze raz jeśli trzeba.",
+        (await currentWords()).actRefreshAfterConflict,
     };
   }
 
   revalidatePath("/library");
-  revalidatePath(`/note/${noteId}`);
-  if (!existingId) redirect(`/note/${noteId}`);
+  if (!isAutosave(data)) revalidatePath(`/note/${noteId}`);
+  if (!existingId && !isAutosave(data)) redirect(`/note/${noteId}`);
 
   return {
     success:
       outcome.status === "unchanged"
-        ? "Nic się nie zmieniło."
+        ? (await currentWords()).actNothingChanged
         : `Zapisane (wersja ${outcome.version}).`,
+    // Autozapis podaje tę wersję jako baseVersion następnego zapisu —
+    // bez tego drugi zapis z rzędu wpadałby w konflikt sam ze sobą.
+    version: outcome.version,
+    noteId: existingId ? undefined : noteId,
   };
 }
 
@@ -391,7 +451,7 @@ const codeNoteForm = z.object({
 
 export async function saveCodeNote(_previous: Result, data: FormData): Promise<Result> {
   const user = await currentUser();
-  if (!user) return { error: "Musisz się zalogować." };
+  if (!user) return { error: (await currentWords()).apiMustSignIn };
 
   const parsed = codeNoteForm.safeParse({
     noteId: data.get("noteId") || undefined,
@@ -401,12 +461,12 @@ export async function saveCodeNote(_previous: Result, data: FormData): Promise<R
     baseVersion: data.get("baseVersion") ?? 0,
   });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Sprawdź wpisane dane." };
+    return { error: parsed.error.issues[0]?.message ?? (await currentWords()).actCheckWhatYouTyped };
   }
 
   const language = parsed.data.language;
   if (!LANGUAGES.some((entry) => entry.id === language)) {
-    return { error: "Ten język nie jest obsługiwany na serwerze." };
+    return { error: (await currentWords()).actLanguageUnsupported };
   }
 
   const title =
@@ -480,20 +540,24 @@ export async function saveCodeNote(_previous: Result, data: FormData): Promise<R
     return {
       error:
         outcome.message +
-        " Odśwież stronę, żeby zobaczyć wersję z serwera, i zapisz jeszcze raz jeśli trzeba.",
+        (await currentWords()).actRefreshAfterConflict,
     };
   }
 
   revalidatePath("/library");
-  revalidatePath(`/note/${noteId}`);
+  if (!isAutosave(data)) revalidatePath(`/note/${noteId}`);
 
-  if (!existingId) redirect(`/note/${noteId}`);
+  if (!existingId && !isAutosave(data)) redirect(`/note/${noteId}`);
 
   return {
     success:
       outcome.status === "unchanged"
-        ? "Nic się nie zmieniło."
+        ? (await currentWords()).actNothingChanged
         : `Zapisane (wersja ${outcome.version}).`,
+    // Autozapis podaje tę wersję jako baseVersion następnego zapisu —
+    // bez tego drugi zapis z rzędu wpadałby w konflikt sam ze sobą.
+    version: outcome.version,
+    noteId: existingId ? undefined : noteId,
   };
 }
 
@@ -512,11 +576,11 @@ export async function runCodeAction(
   data: FormData,
 ): Promise<RunCodeResult> {
   const user = await currentUser();
-  if (!user) return { error: "Musisz się zalogować." };
+  if (!user) return { error: (await currentWords()).apiMustSignIn };
 
   if (!user.canRunCode) {
     return {
-      error: "Administrator wyłączył uruchamianie kodu na tym koncie.",
+      error: (await currentWords()).apiCodeRunningOffForAccount,
       disabled: "Konto",
     };
   }
@@ -530,13 +594,13 @@ export async function runCodeAction(
   const code = String(data.get("code") ?? data.get("source") ?? "");
   const input = String(data.get("input") ?? "");
 
-  if (!language) return { error: "Wybierz język." };
-  if (!code.trim()) return { error: "Nie ma czego uruchomić." };
+  if (!language) return { error: (await currentWords()).actPickLanguage };
+  if (!code.trim()) return { error: (await currentWords()).apiNothingToRun };
 
   const limit = checkLimit(user.id);
   if (!limit.allowed) return { error: limit.message };
 
-  const slot = takeSlot();
+  const slot = takeSlot(await currentWords());
   if (!slot.taken) return { error: slot.message };
 
   try {
@@ -555,7 +619,7 @@ export async function runCodeAction(
 
 export async function trashNote(_previous: Result, data: FormData): Promise<Result> {
   const user = await currentUser();
-  if (!user) return { error: "Musisz się zalogować." };
+  if (!user) return { error: (await currentWords()).apiMustSignIn };
 
   const noteId = String(data.get("noteId") ?? "");
   if (!noteId) return { error: "Brak identyfikatora notatki." };
@@ -571,7 +635,7 @@ export async function trashNote(_previous: Result, data: FormData): Promise<Resu
 
 export async function restoreNote(_previous: Result, data: FormData): Promise<Result> {
   const user = await currentUser();
-  if (!user) return { error: "Musisz się zalogować." };
+  if (!user) return { error: (await currentWords()).apiMustSignIn };
 
   const noteId = String(data.get("noteId") ?? "");
   if (!noteId) return { error: "Brak identyfikatora notatki." };
@@ -587,7 +651,7 @@ export async function restoreNote(_previous: Result, data: FormData): Promise<Re
 
 export async function purgeNote(_previous: Result, data: FormData): Promise<Result> {
   const user = await currentUser();
-  if (!user) return { error: "Musisz się zalogować." };
+  if (!user) return { error: (await currentWords()).apiMustSignIn };
 
   const noteId = String(data.get("noteId") ?? "");
   if (!noteId) return { error: "Brak identyfikatora notatki." };
@@ -597,12 +661,12 @@ export async function purgeNote(_previous: Result, data: FormData): Promise<Resu
 
   revalidatePath("/library");
   revalidatePath("/library/trash");
-  return { success: "Notatka skasowana na stałe." };
+  return { success: (await currentWords()).actNoteDeletedForGood };
 }
 
 export async function toggleFavorite(_previous: Result, data: FormData): Promise<Result> {
   const user = await currentUser();
-  if (!user) return { error: "Musisz się zalogować." };
+  if (!user) return { error: (await currentWords()).apiMustSignIn };
 
   const noteId = String(data.get("noteId") ?? "");
   const next = String(data.get("favorite") ?? "") === "1";
@@ -613,12 +677,12 @@ export async function toggleFavorite(_previous: Result, data: FormData): Promise
 
   revalidatePath("/library");
   revalidatePath(`/note/${noteId}`);
-  return { success: next ? "Dodano do ulubionych." : "Usunięto z ulubionych." };
+  return { success: next ? (await currentWords()).actAddedToFavorites : (await currentWords()).actRemovedFromFavorites };
 }
 
 export async function uploadAttachment(_previous: Result, data: FormData): Promise<Result> {
   const user = await currentUser();
-  if (!user) return { error: "Musisz się zalogować." };
+  if (!user) return { error: (await currentWords()).apiMustSignIn };
 
   const noteId = String(data.get("noteId") ?? "");
   const file = data.get("file");
@@ -626,7 +690,9 @@ export async function uploadAttachment(_previous: Result, data: FormData): Promi
 
   if (!noteId) return { error: "Brak identyfikatora notatki." };
   if (!(file instanceof File)) return { error: "Wybierz plik." };
-  if (!name) name = file.name || "plik";
+  // Nazwa po oczyszczeniu, bo wchodzi wprost w odnośnik `assets/...` w treści
+  // notatki - spacja albo nawias rozbiłyby go i zamiast zdjęcia zostałby tekst.
+  name = safeAttachmentName(name || file.name || "plik");
 
   const note = await prisma.note.findUnique({
     where: { id: noteId },
@@ -636,7 +702,7 @@ export async function uploadAttachment(_previous: Result, data: FormData): Promi
   if (note.ownerId !== user.id) return { error: "To nie jest Twoja notatka." };
 
   if (!mayUpload(file.type)) {
-    return { error: "Ten rodzaj pliku nie jest przyjmowany. Wolno wysyłać zdjęcia i rysunki." };
+    return { error: (await currentWords()).apiFileKindRefused };
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -644,7 +710,7 @@ export async function uploadAttachment(_previous: Result, data: FormData): Promi
   if (!mime) {
     return {
       error:
-        "Zawartość pliku nie zgadza się z zadeklarowanym rodzajem. Wolno wysyłać zdjęcia i rysunki.",
+        (await currentWords()).apiFileContentMismatch,
     };
   }
 
@@ -662,11 +728,8 @@ export async function uploadAttachment(_previous: Result, data: FormData): Promi
     stored = await storeAttachment(user.id, noteId, name, buffer);
   } catch (problem) {
     await changeUsed(user.id, -added);
-    // Błędy dysku niosą w treści pełne ścieżki serwera - do przeglądarki
-    // idzie tylko zdanie, że się nie udało, a szczegół zostaje w dzienniku.
-    console.error("[panel] attachment save", problem);
     return {
-      error: problem instanceof RefusedUpload ? problem.message : "Nie udało się zapisać pliku.",
+      error: problem instanceof Error ? problem.message : (await currentWords()).apiFileSaveFailed,
     };
   }
 
@@ -698,16 +761,16 @@ export async function uploadAttachment(_previous: Result, data: FormData): Promi
   }
 
   revalidatePath(`/note/${noteId}`);
-  return { success: `Dodano załącznik „${name}".` };
+  return { success: `Dodano załącznik „${name}".`, attachment: { name } };
 }
 
 export async function removeAttachment(_previous: Result, data: FormData): Promise<Result> {
   const user = await currentUser();
-  if (!user) return { error: "Musisz się zalogować." };
+  if (!user) return { error: (await currentWords()).apiMustSignIn };
 
   const noteId = String(data.get("noteId") ?? "");
   const name = String(data.get("name") ?? "");
-  if (!noteId || !name) return { error: "Brakuje danych załącznika." };
+  if (!noteId || !name) return { error: (await currentWords()).actAttachmentDataMissing };
 
   const note = await prisma.note.findUnique({
     where: { id: noteId },
@@ -719,7 +782,7 @@ export async function removeAttachment(_previous: Result, data: FormData): Promi
   const attachment = await prisma.attachment.findUnique({
     where: { noteId_name: { noteId, name } },
   });
-  if (!attachment) return { success: "Tego załącznika już nie ma." };
+  if (!attachment) return { success: (await currentWords()).actAttachmentGone };
 
   await deleteAttachment(attachment.path);
   await prisma.attachment.delete({ where: { id: attachment.id } });
@@ -739,7 +802,7 @@ const form = z.object({
 
 export async function share(_previous: Result, data: FormData): Promise<Result> {
   const user = await currentUser();
-  if (!user) return { error: "Musisz się zalogować." };
+  if (!user) return { error: (await currentWords()).apiMustSignIn };
 
   const parsed = form.safeParse({
     noteId: data.get("noteId"),
@@ -748,7 +811,7 @@ export async function share(_previous: Result, data: FormData): Promise<Result> 
     anonymousAllowed: data.get("anonymousAllowed") ?? "",
     validDays: data.get("validDays") ?? 0,
   });
-  if (!parsed.success) return { error: "Sprawdź wpisane dane." };
+  if (!parsed.success) return { error: (await currentWords()).actCheckWhatYouTyped };
 
   const { noteId, permission, email, anonymousAllowed, validDays } = parsed.data;
 
@@ -758,7 +821,7 @@ export async function share(_previous: Result, data: FormData): Promise<Result> 
   });
   if (!note || note.deletedAt) return { error: "Nie ma takiej notatki." };
   if (note.ownerId !== user.id) {
-    return { error: "Udostępnić można tylko własną notatkę." };
+    return { error: (await currentWords()).actOnlyOwnNote };
   }
 
   const token = await createShare({
@@ -783,19 +846,23 @@ export async function share(_previous: Result, data: FormData): Promise<Result> 
         permission === "EDIT",
       ),
     );
-    return {
-      success: sent
-        ? `Wysłaliśmy wiadomość na ${email}.`
-        : `Udostępnienie gotowe, ale maila nie udało się wysłać. Przekaż odnośnik samodzielnie: ${link}`,
-    };
+    return sent
+      ? { success: `Wysłaliśmy wiadomość na ${email}.` }
+      : {
+          success: (await currentWords()).actShareMailFailed,
+          copyable: { value: link, label: (await currentWords()).copyLink },
+        };
   }
 
-  return { success: `Odnośnik gotowy: ${link}` };
+  return {
+    success: (await currentWords()).actLinkReady,
+    copyable: { value: link, label: (await currentWords()).copyLink },
+  };
 }
 
 export async function revokeShare(_previous: Result, data: FormData): Promise<Result> {
   const user = await currentUser();
-  if (!user) return { error: "Musisz się zalogować." };
+  if (!user) return { error: (await currentWords()).apiMustSignIn };
 
   const id = String(data.get("id") ?? "");
   const existing = await prisma.share.findUnique({
@@ -803,7 +870,7 @@ export async function revokeShare(_previous: Result, data: FormData): Promise<Re
     include: { note: { select: { id: true, ownerId: true } } },
   });
 
-  if (!existing) return { success: "Tego udostępnienia już nie ma." };
+  if (!existing) return { success: (await currentWords()).actShareGone };
   if (existing.note.ownerId !== user.id) {
     return { error: "To nie jest Twoja notatka." };
   }
@@ -811,7 +878,7 @@ export async function revokeShare(_previous: Result, data: FormData): Promise<Re
   await prisma.share.delete({ where: { id } });
   revalidatePath(`/note/${existing.note.id}`);
 
-  return { success: "Udostępnienie cofnięte. Ten odnośnik przestał działać." };
+  return { success: (await currentWords()).actShareRevoked };
 }
 
 /** Used by new-code page to pick a default language from the title. */

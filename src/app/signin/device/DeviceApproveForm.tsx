@@ -2,6 +2,8 @@
 
 import { useActionState, useEffect } from "react";
 import { approveDevice, denyDevice, type DeviceResult } from "./actions";
+import { useWords } from "@/components/LanguageProvider";
+import { approveButtonLabel } from "@/lib/i18n";
 
 const empty: DeviceResult = {};
 
@@ -12,6 +14,7 @@ export function DeviceApproveForm({
   code: string;
   device: string;
 }) {
+  const words = useWords();
   const [approveState, approveAction, approvePending] = useActionState(approveDevice, empty);
   const [denyState, denyAction, denyPending] = useActionState(denyDevice, empty);
 
@@ -33,7 +36,7 @@ export function DeviceApproveForm({
         {approveState.deepLink ? (
           <p style={{ marginTop: 16 }}>
             <a className="button primary" href={approveState.deepLink}>
-              Otwórz aplikację
+              {words.openTheApp}
             </a>
           </p>
         ) : null}
@@ -48,20 +51,19 @@ export function DeviceApproveForm({
       <form action={approveAction} style={{ marginTop: 8 }}>
         <input type="hidden" name="code" value={code} />
         <button type="submit" className="primary" style={{ width: "100%" }} disabled={approvePending || denyPending}>
-          {approvePending ? "Łączę..." : `Zatwierdź „${device}"`}
+          {approvePending ? words.connecting : approveButtonLabel(words, device)}
         </button>
       </form>
 
       <form action={denyAction} style={{ marginTop: 10 }}>
         <input type="hidden" name="code" value={code} />
         <button type="submit" style={{ width: "100%" }} disabled={approvePending || denyPending}>
-          {denyPending ? "Odrzucam..." : "To nie ja — odrzuć"}
+          {denyPending ? words.denying : words.notMeDeny}
         </button>
       </form>
 
       <p className="small" style={{ marginTop: 14 }}>
-        Po zatwierdzeniu aplikacja odbierze token sama. Możesz też wrócić do Kajetu
-        przyciskiem „Otwórz aplikację”, gdy się pojawi.
+        {words.afterApprovalAbout}
       </p>
     </div>
   );

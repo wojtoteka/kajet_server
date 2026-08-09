@@ -4,9 +4,9 @@ import { settings } from "./settings";
 export type QuotaState = {
   quota: bigint;
   used: bigint;
-free: bigint | null;
+  free: bigint | null;
   unlimited: boolean;
-quotaUntil: Date | null;
+  quotaUntil: Date | null;
 };
 
 export async function quotaState(userId: string): Promise<QuotaState> {

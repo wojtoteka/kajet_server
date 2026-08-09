@@ -1,16 +1,17 @@
 import { prisma } from "./prisma";
 import { readAttachment } from "./files";
+import { apiWords } from "./language";
 
 export async function serveAttachment(noteId: string, name: string | null): Promise<Response> {
-  if (!name) return new Response("Podaj nazwę załącznika.", { status: 400 });
+  if (!name) return new Response((await apiWords()).apiGiveAttachmentName, { status: 400 });
 
   const attachment = await prisma.attachment.findUnique({
     where: { noteId_name: { noteId, name } },
   });
-  if (!attachment) return new Response("Nie ma takiego załącznika.", { status: 404 });
+  if (!attachment) return new Response((await apiWords()).apiNoSuchAttachment, { status: 404 });
 
   const data = await readAttachment(attachment.path);
-  if (!data) return new Response("Plik zniknął z dysku serwera.", { status: 404 });
+  if (!data) return new Response((await apiWords()).apiFileGoneFromDisk, { status: 404 });
 
   return new Response(new Uint8Array(data), {
     headers: {

@@ -4,10 +4,11 @@ import { prisma } from "@/lib/prisma";
 import { humanSize } from "@/lib/quota";
 import { settings, mailWorks } from "@/lib/settings";
 import { shareUrl, ownerAccess } from "@/lib/sharing";
-import { textMarkdownFromContent } from "@/lib/text-note";
+import { textAppearanceFromContent, textMarkdownFromContent } from "@/lib/text-note";
+import { WRITING_COLUMNS, readWritingSettings } from "@/lib/writing-settings";
 import { parseMindMapNote, defaultMindMapSeed } from "@/lib/mindmap-note";
 import { parseHandwritingNote } from "@/lib/handwriting-note";
-import { parseCodeNote, languageOptions, languageLabel } from "@/lib/code-note";
+import { parseCodeNote, languageOptions } from "@/lib/code-note";
 import { runnerState } from "@/lib/code-runner";
 import { KajetMark } from "@/components/KajetMark";
 import { NotePreview } from "@/components/NotePreview";
@@ -34,23 +35,34 @@ import {
   uploadAttachment,
   removeAttachment,
 } from "./actions";
+import { currentWords } from "@/lib/language";
+import type { Words } from "@/lib/i18n";
 
-const KIND_NAMES: Record<string, string> = {
-  HANDWRITTEN: "Notatka odręczna",
-  TEXT: "Notatka tekstowa",
-  MINDMAP: "Mapa myśli",
-  CODE: "Plik z kodem",
-};
+function kindName(words: Words, kind: string): string {
+  switch (kind) {
+    case "HANDWRITTEN":
+      return words.noteHandwritten;
+    case "TEXT":
+      return words.noteTextKind;
+    case "MINDMAP":
+      return words.mindMap;
+    case "CODE":
+      return words.noteCodeKind;
+    default:
+      return kind;
+  }
+}
 
 export default async function NotePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const words = await currentWords();
   const access = await ownerAccess(id);
 
-  // Soft-deleted notes are hidden from ownerAccess — look them up for trash view.
+  // Soft-deleted notes are hidden from ownerAccess - look them up for trash view.
   if (!access.ok) {
     const sessionNote = await loadTrashedOwnNote(id);
     if (!sessionNote) notFound();
-    return <TrashedNoteView note={sessionNote} />;
+    return <TrashedNoteView note={sessionNote} words={words} />;
   }
 
   const note = access.access.note;
@@ -69,18 +81,20 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
 
   const userCanRun =
     settings.code.enabled && runState.works && Boolean(access.access.userId);
-  // Re-check canRunCode from DB via owner session user id.
+  // Re-check canRunCode from DB via owner session user id. Przy okazji bierzemy
+  // ustawienia pisania z „Moje konto" - autozapis i grube pismo w edytorze.
   const owner = access.access.userId
     ? await prisma.user.findUnique({
         where: { id: access.access.userId },
-        select: { canRunCode: true },
+        select: { canRunCode: true, ...WRITING_COLUMNS },
       })
     : null;
+  const writing = readWritingSettings(owner);
   const canRun = Boolean(userCanRun && owner?.canRunCode);
   const runnerHint = !settings.code.enabled
-    ? "Uruchamianie kodu jest wyłączone na tym serwerze (CODE_ENABLED)."
+    ? words.codeDisabledHere
     : !owner?.canRunCode
-      ? "Administrator wyłączył uruchamianie kodu na tym koncie."
+      ? words.codeDisabledForAccount
       : runState.description;
 
   const codeBody = note.kind === "CODE" ? parseCodeNote(note.content) : null;
@@ -97,12 +111,12 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
 
       <div className="row-spread" style={{ marginBottom: 18 }}>
         <div>
-          <p className="eyebrow">{KIND_NAMES[note.kind] ?? note.kind}</p>
-          <h1 style={{ marginBottom: 4 }}>{note.title || "Bez nazwy"}</h1>
+          <p className="eyebrow">{kindName(words, note.kind)}</p>
+          <h1 style={{ marginBottom: 4 }}>{note.title || words.untitled}</h1>
           <p className="small" style={{ margin: 0 }}>
-            Zmieniona {note.updatedAt.toLocaleString("pl-PL")} · wersja {note.version} ·{" "}
-            {humanSize(note.sizeBytes)}
-            {note.favorite ? " · ulubiona" : ""}
+            {words.changedWord} {note.updatedAt.toLocaleString(words.locale)} ·{" "}
+            {words.versionWord} {note.version} · {humanSize(note.sizeBytes)}
+            {note.favorite ? ` · ${words.favoriteWord}` : ""}
           </p>
         </div>
         <div className="row" style={{ flexWrap: "wrap", alignItems: "flex-start" }}>
@@ -115,7 +129,7 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
             favoriteAction={toggleFavorite}
           />
           <Link className="button compact" href="/library">
-            Wróć do listy
+            {words.backToList}
           </Link>
         </div>
       </div>
@@ -124,15 +138,19 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
         {note.kind === "TEXT" ? (
           <section>
             <p className="eyebrow" style={{ marginBottom: 10 }}>
-              Edycja
+              {words.editing}
             </p>
             <TextNoteEditor
               action={saveTextNote}
+              uploadAction={uploadAttachment}
               noteId={note.id}
               version={note.version}
               title={note.title}
               markdown={textMarkdownFromContent(note.content)}
-              submitLabel="Zapisz"
+              appearance={textAppearanceFromContent(note.content)}
+              autoSave={writing.autoSave}
+              bold={writing.bold}
+              submitLabel={words.save}
             />
           </section>
         ) : null}
@@ -140,7 +158,7 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
         {note.kind === "MINDMAP" && mindMapBody ? (
           <section>
             <p className="eyebrow" style={{ marginBottom: 10 }}>
-              Edycja mapy myśli
+              {words.editingMindMap}
             </p>
             <MindMapEditor
               action={saveMindMapNote}
@@ -148,7 +166,8 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
               version={note.version}
               title={note.title}
               initial={mindMapBody}
-              submitLabel="Zapisz"
+              autoSave={writing.autoSave}
+              submitLabel={words.save}
             />
           </section>
         ) : null}
@@ -157,22 +176,24 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
           handwritingBody ? (
             <section>
               <p className="eyebrow" style={{ marginBottom: 10 }}>
-                Edycja odręczna
+                {words.editingHandwriting}
               </p>
               <HandwritingEditor
                 action={saveHandwritingNote}
+                uploadAction={uploadAttachment}
                 noteId={note.id}
                 version={note.version}
                 title={note.title}
                 initial={handwritingBody}
-                submitLabel="Zapisz"
+                autoSave={writing.autoSave}
+                submitLabel={words.save}
+                attachments={attachments}
               />
             </section>
           ) : (
             <section>
               <p className="error">
-                Nie udało się odczytać notatki odręcznej. Podgląd niedostępny — nie zapisuj, żeby nic
-                nie nadpisać.
+                {words.handwritingUnreadable}
               </p>
             </section>
           )
@@ -191,12 +212,12 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
               languages={languageOptions()}
               canRun={canRun}
               runnerHint={runnerHint}
-              submitLabel="Zapisz"
+              autoSave={writing.autoSave}
+              submitLabel={words.save}
             />
             {!codeBody ? (
               <p className="error" style={{ marginTop: 12 }}>
-                Nie udało się odczytać treści pliku z kodem
-                {note.title ? ` (${languageLabel("python")})` : ""}.
+                {words.codeUnreadable}
               </p>
             ) : null}
           </section>
@@ -219,14 +240,14 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
         />
 
         <section className="sheet-ruled" style={{ paddingBlock: 24, paddingInlineEnd: 26 }}>
-          <p className="eyebrow">Udostępnianie</p>
-          <h2 style={{ marginBottom: 8 }}>Udostępnij tę notatkę</h2>
+          <p className="eyebrow">{words.sharingEyebrow}</p>
+          <h2 style={{ marginBottom: 8 }}>{words.shareThisNote}</h2>
           <p className="lead">
-            Odnośnik działa dla każdego, kto go dostanie, także bez konta. Udostępnienie na adres
+            {words.shareAbout}
             e-mail działa imiennie: otworzy je tylko osoba zalogowana tym adresem.
           </p>
 
-          <ActionForm action={share} label="Udostępnij" busyLabel="Przygotowuję..." primary>
+          <ActionForm action={share} label={words.shareButton} busyLabel={words.sharePreparing} primary>
             <input type="hidden" name="noteId" value={note.id} />
 
             <div
@@ -238,16 +259,16 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
               }}
             >
               <div>
-                <label htmlFor="permission">Co wolno drugiej osobie</label>
+                <label htmlFor="permission">{words.whatTheyMayDo}</label>
                 <select id="permission" name="permission" defaultValue="READ">
-                  <option value="READ">Tylko czytać</option>
-                  <option value="EDIT">Czytać i poprawiać</option>
+                  <option value="READ">{words.readOnly}</option>
+                  <option value="EDIT">{words.readAndEdit}</option>
                 </select>
               </div>
 
               <div>
-                <label htmlFor="email">Adres e-mail (możesz zostawić pusty)</label>
-                <input id="email" name="email" type="email" placeholder="albo sam odnośnik" />
+                <label htmlFor="email">{words.emailOptional}</label>
+                <input id="email" name="email" type="email" placeholder={words.orJustTheLink} />
                 {!mailWorks() ? (
                   <p className="small" style={{ marginTop: 4 }}>
                     Poczta nie jest ustawiona, więc wiadomość nie wyjdzie. Odnośnik skopiujesz
@@ -257,10 +278,10 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
               </div>
 
               <div>
-                <label htmlFor="validDays">Ważne przez (dni)</label>
+                <label htmlFor="validDays">{words.validForDays}</label>
                 <input id="validDays" name="validDays" type="number" min={0} defaultValue={0} />
                 <p className="small" style={{ marginTop: 4 }}>
-                  Zero oznacza bez terminu.
+                  {words.zeroMeansForever}
                 </p>
               </div>
             </div>
@@ -272,21 +293,21 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
                 defaultChecked
                 style={{ width: "auto" }}
               />
-              <span>Pozwól otworzyć bez zakładania konta</span>
+              <span>{words.allowWithoutAccount}</span>
             </label>
           </ActionForm>
 
           {shares.length > 0 ? (
             <>
               <hr className="divider" />
-              <p className="eyebrow">Już udostępnione</p>
+              <p className="eyebrow">{words.alreadyShared}</p>
               <div className="table-scroll">
                 <table>
                   <thead>
                     <tr>
-                      <th>Komu</th>
-                      <th style={{ width: 120 }}>Prawa</th>
-                      <th style={{ width: 140 }}>Ważne do</th>
+                      <th>{words.columnWho}</th>
+                      <th style={{ width: 120 }}>{words.columnRights}</th>
+                      <th style={{ width: 140 }}>{words.columnValidUntil}</th>
                       <th />
                     </tr>
                   </thead>
@@ -300,12 +321,12 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
                               <>
                                 <strong>{entry.email}</strong>
                                 <p className="small" style={{ margin: "2px 0 0 0" }}>
-                                  imiennie, wymaga zalogowania
+                                  {words.byNameNeedsSignIn}
                                 </p>
                               </>
                             ) : (
                               <>
-                                <span className="tag">odnośnik</span>
+                                <span className="tag">{words.linkWord}</span>
                                 {!expired ? (
                                   <CopyableLink url={shareUrl(settings.baseUrl, entry.token)} />
                                 ) : null}
@@ -316,26 +337,26 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
                             <span
                               className={entry.permission === "EDIT" ? "tag accent" : "tag"}
                             >
-                              {entry.permission === "EDIT" ? "poprawianie" : "czytanie"}
+                              {entry.permission === "EDIT" ? words.rightEdit : words.rightRead}
                             </span>
                           </td>
                           <td className="small">
                             {entry.expiresAt
-                              ? `${entry.expiresAt.toLocaleDateString("pl-PL")}${expired ? " (minęło)" : ""}`
-                              : "bez terminu"}
+                              ? `${entry.expiresAt.toLocaleDateString(words.locale)}${expired ? words.expiredMark : ""}`
+                              : words.noDeadline}
                             {entry.lastUsedAt ? (
                               <p style={{ margin: "2px 0 0 0" }}>
-                                otwarte {entry.lastUsedAt.toLocaleDateString("pl-PL")}
+                                {words.openedWord} {entry.lastUsedAt.toLocaleDateString(words.locale)}
                               </p>
                             ) : null}
                           </td>
                           <td>
                             <ActionForm
                               action={revokeShare}
-                              label="Cofnij"
+                              label={words.revoke}
                               compact
                               danger
-                              confirmation="Cofnąć to udostępnienie? Odnośnik przestanie działać."
+                              confirmation={words.confirmRevoke}
                             >
                               <input type="hidden" name="id" value={entry.id} />
                             </ActionForm>
@@ -375,6 +396,7 @@ async function loadTrashedOwnNote(id: string) {
 
 function TrashedNoteView({
   note,
+  words,
 }: {
   note: {
     id: string;
@@ -386,17 +408,21 @@ function TrashedNoteView({
     updatedAt: Date;
     deletedAt: Date | null;
   };
+  words: Words;
 }) {
   return (
     <main className="page wide">
       <KajetMark />
       <div className="row-spread" style={{ marginBottom: 18 }}>
         <div>
-          <p className="eyebrow">W koszu · {KIND_NAMES[note.kind] ?? note.kind}</p>
-          <h1 style={{ marginBottom: 4 }}>{note.title || "Bez nazwy"}</h1>
+          <p className="eyebrow">
+            {words.inTrashWord} · {kindName(words, note.kind)}
+          </p>
+          <h1 style={{ marginBottom: 4 }}>{note.title || words.untitled}</h1>
           <p className="small" style={{ margin: 0 }}>
-            Wyrzucona {(note.deletedAt ?? note.updatedAt).toLocaleString("pl-PL")} · wersja{" "}
-            {note.version} · {humanSize(note.sizeBytes)}
+            {words.trashedWord}{" "}
+            {(note.deletedAt ?? note.updatedAt).toLocaleString(words.locale)} ·{" "}
+            {words.versionWord} {note.version} · {humanSize(note.sizeBytes)}
           </p>
         </div>
         <div className="row">
@@ -410,13 +436,13 @@ function TrashedNoteView({
             favoriteAction={toggleFavorite}
           />
           <Link className="button compact" href="/library/trash">
-            Kosz
+            {words.trash}
           </Link>
         </div>
       </div>
       <div className="sheet-ruled" style={{ paddingBlock: 24, paddingInlineEnd: 26 }}>
         <p className="lead" style={{ margin: 0 }}>
-          Ta notatka jest w koszu. Przywróć ją, żeby znów edytować, albo skasuj na stałe.
+          {words.noteInTrashAbout}
         </p>
       </div>
     </main>

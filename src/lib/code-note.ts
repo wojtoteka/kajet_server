@@ -65,15 +65,35 @@ export function parseCodeNote(content: string): CodeNoteBody | null {
   return null;
 }
 
-export function languageOptions(): { id: string; namePl: string }[] {
-  return LANGUAGES.map(({ id, namePl }) => ({ id, namePl }));
+export function languageOptions(): {
+  id: string;
+  namePl: string;
+  nameEn?: string;
+  preview?: boolean;
+}[] {
+  return LANGUAGES.map(({ id, namePl, nameEn, preview }) => ({ id, namePl, nameEn, preview }));
 }
+
+/**
+ * Rozszerzenia, które znaczą to samo co główne. Aplikacja zna ich więcej
+ * (CodeLanguage.kt), tu stoją te, po których strona ma poznać język pliku.
+ */
+const EXTRA_EXTENSIONS: Record<string, string> = {
+  htm: "html",
+  mjs: "javascript",
+  cc: "c++",
+  cxx: "c++",
+  hpp: "c++",
+  h: "c",
+  bash: "bash",
+};
 
 export function guessLanguageFromTitle(title: string): string | null {
   const ext = title.includes(".") ? title.split(".").pop()?.toLowerCase() : "";
   if (!ext) return null;
   const match = LANGUAGES.find((language) => language.extension === ext);
-  return match?.id ?? null;
+  if (match) return match.id;
+  return EXTRA_EXTENSIONS[ext] ?? null;
 }
 
 export function languageLabel(id: string): string {

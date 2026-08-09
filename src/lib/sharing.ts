@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import type { Note, Permission } from "@prisma/client";
 import { prisma } from "./prisma";
 import { auth } from "./auth";
+import { apiWords } from "./language";
 
 export type Access = {
   note: Note;
@@ -15,12 +16,12 @@ export type AccessResult = { ok: true; access: Access } | { ok: false; reason: s
 
 export async function ownerAccess(noteId: string): Promise<AccessResult> {
   const session = await auth();
-  if (!session?.user?.id) return { ok: false, reason: "Musisz się zalogować." };
+  if (!session?.user?.id) return { ok: false, reason: (await apiWords()).apiMustSignIn };
 
   const note = await prisma.note.findUnique({ where: { id: noteId } });
   if (!note || note.deletedAt) return { ok: false, reason: "Nie ma takiej notatki." };
   if (note.ownerId !== session.user.id) {
-    return { ok: false, reason: "Ta notatka należy do kogoś innego." };
+    return { ok: false, reason: (await apiWords()).apiNoteNotYours };
   }
 
   return {
@@ -29,7 +30,7 @@ export async function ownerAccess(noteId: string): Promise<AccessResult> {
       note,
       canEdit: true,
       isOwner: true,
-      writerName: session.user.login ?? session.user.name ?? "Właściciel",
+      writerName: session.user.login ?? session.user.name ?? (await apiWords()).ownerWord,
       userId: session.user.id,
     },
   };
@@ -42,10 +43,10 @@ export async function tokenAccess(token: string): Promise<AccessResult> {
   });
 
   if (!share || share.note.deletedAt) {
-    return { ok: false, reason: "Ten odnośnik już nie działa albo notatka została skasowana." };
+    return { ok: false, reason: (await apiWords()).apiLinkDead };
   }
   if (share.expiresAt && share.expiresAt < new Date()) {
-    return { ok: false, reason: "Ten odnośnik wygasł. Poproś o nowy." };
+    return { ok: false, reason: (await apiWords()).apiLinkExpired };
   }
 
   const session = await auth();
@@ -60,7 +61,7 @@ export async function tokenAccess(token: string): Promise<AccessResult> {
         note: share.note,
         canEdit: true,
         isOwner: true,
-        writerName: session?.user?.login ?? "Właściciel",
+        writerName: session?.user?.login ?? (await apiWords()).ownerWord,
         userId,
       },
     };
@@ -74,17 +75,17 @@ export async function tokenAccess(token: string): Promise<AccessResult> {
       return {
         ok: false,
         reason:
-          "Ta notatka jest udostępniona imiennie. Zaloguj się adresem, na który dostałeś wiadomość.",
+          (await apiWords()).apiSharedByName,
       };
     }
     if (sessionAddress !== share.email.toLowerCase()) {
       return {
         ok: false,
-        reason: "Ta notatka jest udostępniona komuś innemu. Zaloguj się właściwym adresem.",
+        reason: (await apiWords()).apiSharedToSomeoneElse,
       };
     }
   } else if (!share.anonymousAllowed && !userId) {
-    return { ok: false, reason: "Żeby otworzyć tę notatkę, musisz się zalogować." };
+    return { ok: false, reason: (await apiWords()).apiSignInToOpen };
   }
 
   void prisma.share
@@ -97,7 +98,7 @@ export async function tokenAccess(token: string): Promise<AccessResult> {
       note: share.note,
       canEdit: share.permission === "EDIT",
       isOwner: false,
-      writerName: session?.user?.login ?? session?.user?.name ?? "Gość",
+      writerName: session?.user?.login ?? session?.user?.name ?? (await apiWords()).guestWord,
       userId,
     },
   };

@@ -10,18 +10,65 @@ import {
   trashNoteFromLibrary,
   toggleFavoriteFromLibrary,
   createFolder,
+  deleteFolder,
+  renameFolder,
+  setFolderLook,
   moveNoteToFolder,
 } from "./actions";
 import { FolderMoveForm } from "@/components/FolderMoveForm";
+import { FolderList } from "@/components/FolderList";
+import { Icon } from "@/components/Icon";
+import { currentWords } from "@/lib/language";
+import { attachmentsCount, notesCount, type Words } from "@/lib/i18n";
 
-export const metadata = { title: "Moje notatki — Kajet" };
+export async function generateMetadata() {
+  return { title: (await currentWords()).libraryTitle };
+}
 
-const KIND_NAMES: Record<string, string> = {
-  HANDWRITTEN: "Odręczna",
-  TEXT: "Tekstowa",
-  MINDMAP: "Mapa myśli",
-  CODE: "Kod",
+/** Nazwa miejsca, w którym stoimy - jak nazwa folderu na górze spisu. */
+function placeName(
+  words: Words,
+  favoritesOnly: boolean,
+  folderFilter: string,
+  folders: { id: string; name: string }[],
+): string {
+  if (favoritesOnly) return words.favorites;
+  if (folderFilter === "__none") return words.noFolder;
+  if (folderFilter) {
+    return folders.find((folder) => folder.id === folderFilter)?.name ?? words.folder;
+  }
+  return words.myNotes;
+}
+
+function kindName(words: Words, kind: string): string {
+  switch (kind) {
+    case "HANDWRITTEN":
+      return words.handwritten;
+    case "TEXT":
+      return words.kindText;
+    case "MINDMAP":
+      return words.mindMap;
+    case "CODE":
+      return words.kindCode;
+    default:
+      return kind;
+  }
+}
+
+/** Ikony rodzajów notatek - nazwy prosto z fonts.google.com/icons. */
+const KIND_ICONS: Record<string, string> = {
+  HANDWRITTEN: "draw",
+  TEXT: "article",
+  MINDMAP: "account_tree",
+  CODE: "code",
 };
+
+/**
+ * Ile notatek na jednej stronie spisu. Wcześniej spis brał sztywno 300 i nic
+ * nie mówił o reszcie: przy większej bibliotece notatki po prostu znikały ze
+ * strony, choć leżały na serwerze i były widoczne w aplikacji.
+ */
+const PAGE_SIZE = 100;
 
 export default async function LibraryPage({
   searchParams,
@@ -31,16 +78,19 @@ export default async function LibraryPage({
     folder?: string;
     favorites?: string;
     kind?: string;
+    page?: string;
   }>;
 }) {
   const user = await currentUser();
   if (!user) redirect("/signin?next=/library");
 
   const params = await searchParams;
+  const words = await currentWords();
   const query = (params.q ?? "").trim();
   const folderFilter = params.folder ?? "";
   const favoritesOnly = params.favorites === "1";
   const kindFilter = params.kind ?? "";
+  const page = Math.max(1, Math.floor(Number(params.page) || 1));
 
   const where: Prisma.NoteWhereInput = {
     ownerId: user.id,
@@ -63,123 +113,185 @@ export default async function LibraryPage({
     ];
   }
 
-  const [notes, storage, folders, trashCount] = await Promise.all([
-    prisma.note.findMany({
-      where,
-      orderBy: [{ favorite: "desc" }, { updatedAt: "desc" }],
-      select: {
-        id: true,
-        title: true,
-        kind: true,
-        favorite: true,
-        sizeBytes: true,
-        updatedAt: true,
-        version: true,
-        folderId: true,
-        _count: { select: { attachments: true, shares: true } },
-      },
-      take: 300,
-    }),
-    quotaState(user.id),
-    prisma.folder.findMany({
-      where: { ownerId: user.id },
-      orderBy: { name: "asc" },
-      select: { id: true, name: true, _count: { select: { notes: true } } },
-    }),
-    prisma.note.count({ where: { ownerId: user.id, deletedAt: { not: null } } }),
-  ]);
+  const [notes, total, storage, folders, trashCount, favoriteCount, appAvailable] =
+    await Promise.all([
+      prisma.note.findMany({
+        where,
+        orderBy: [{ favorite: "desc" }, { updatedAt: "desc" }],
+        select: {
+          id: true,
+          title: true,
+          kind: true,
+          favorite: true,
+          sizeBytes: true,
+          updatedAt: true,
+          version: true,
+          folderId: true,
+          _count: { select: { attachments: true, shares: true } },
+        },
+        take: PAGE_SIZE,
+        skip: (page - 1) * PAGE_SIZE,
+      }),
+      prisma.note.count({ where }),
+      quotaState(user.id),
+      prisma.folder.findMany({
+        where: { ownerId: user.id },
+        orderBy: { name: "asc" },
+        select: {
+          id: true,
+          name: true,
+          colorId: true,
+          iconId: true,
+          _count: { select: { notes: true } },
+        },
+      }),
+      prisma.note.count({ where: { ownerId: user.id, deletedAt: { not: null } } }),
+      // Licznik przy „Ulubionych" w spisie folderów - z całej biblioteki,
+      // niezależnie od tego, po czym akurat filtrujemy.
+      prisma.note.count({
+        where: { ownerId: user.id, deletedAt: null, favorite: true },
+      }),
+      prisma.appRelease.count({ where: { current: true } }),
+    ]);
 
   const percent =
     storage.unlimited || storage.quota === 0n
       ? 0
       : Math.min(100, Math.round((Number(storage.used) / Number(storage.quota)) * 100));
 
-  const folderName = (id: string | null) =>
-    id ? (folders.find((folder) => folder.id === id)?.name ?? "Folder") : null;
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const here = placeName(words, favoritesOnly, folderFilter, folders);
+
+  /** Adres tej samej biblioteki, z tymi samymi filtrami, na innej stronie. */
+  function pageLink(target: number): string {
+    const search = new URLSearchParams();
+    if (query) search.set("q", query);
+    if (folderFilter) search.set("folder", folderFilter);
+    if (favoritesOnly) search.set("favorites", "1");
+    if (kindFilter) search.set("kind", kindFilter);
+    if (target > 1) search.set("page", String(target));
+    const text = search.toString();
+    return text ? `/library?${text}` : "/library";
+  }
+
+  // Spis do wyboru folderu przy notatce - bez licznika, za to z barwą i ikoną.
+  const folderChoices = folders.map((folder) => ({
+    id: folder.id,
+    name: folder.name,
+    colorId: folder.colorId,
+    iconId: folder.iconId,
+  }));
 
   return (
     <main className="page wide">
       <KajetMark caption={user.login} />
 
-      <div className="row-spread" style={{ marginBottom: 20 }}>
+      <div className="row-spread" style={{ alignItems: "flex-end", marginBottom: 12 }}>
         <div>
-          <h1 style={{ marginBottom: 4 }}>Moje notatki</h1>
+          <h1 style={{ marginBottom: 4 }}>
+            {favoritesOnly ? (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+                <Icon name="star" size={28} filled />
+                {words.favorites}
+              </span>
+            ) : (
+              here
+            )}
+          </h1>
           <p className="small" style={{ margin: 0 }}>
-            {notes.length === 0
-              ? query || favoritesOnly || folderFilter || kindFilter
-                ? "Nic nie pasuje do filtrów."
-                : "Nic tu jeszcze nie ma."
-              : `${notes.length} notatek`}
-            {trashCount > 0 ? ` · ${trashCount} w koszu` : ""}
+            {total === 0
+              ? query || folderFilter || kindFilter
+                ? words.nothingMatchesFilters
+                : favoritesOnly
+                  ? words.noFavoritesYet
+                  : words.nothingHereYet
+              : notesCount(words, total)}
+            {pages > 1
+              ? ` · ${words.pageWord.toLowerCase()} ${Math.min(page, pages)} ${words.ofWord} ${pages}`
+              : ""}
+            {trashCount > 0 ? ` · ${trashCount} ${words.inTrash}` : ""}
           </p>
         </div>
 
         <div style={{ minWidth: 220 }}>
-          <p className="small" style={{ margin: "0 0 4px 0" }}>
-            {humanSize(storage.used)} z{" "}
-            {storage.unlimited ? "bez limitu" : humanSize(storage.quota)}
+          <p className="small" style={{ margin: "0 0 4px 0", textAlign: "right" }}>
+            {humanSize(storage.used)} {words.ofWord}{" "}
+            {storage.unlimited ? words.noLimit : humanSize(storage.quota)}
             {storage.quotaUntil
-              ? ` (do ${storage.quotaUntil.toLocaleDateString("pl-PL")})`
+              ? ` (${words.until} ${storage.quotaUntil.toLocaleDateString(words.locale)})`
               : ""}
           </p>
           <div className={`storage-bar${percent >= 90 ? " full" : ""}`}>
             <span style={{ width: `${storage.unlimited ? 4 : percent}%` }} />
           </div>
         </div>
+      </div>
 
-        <div className="row library-actions" style={{ flexWrap: "wrap" }}>
+      <div className="row-spread" style={{ marginBottom: 20 }}>
+        <div className="row" style={{ flexWrap: "wrap" }}>
           <Link className="button compact primary" href="/note/new">
-            Nowa tekstowa
+            <Icon name="post_add" size={18} />
+            {words.newText}
           </Link>
           <Link className="button compact" href="/note/new/mindmap">
-            Mapa myśli
+            <Icon name="account_tree" size={18} />
+            {words.mindMap}
           </Link>
           <Link className="button compact" href="/note/new/handwriting">
-            Odręczna
+            <Icon name="draw" size={18} />
+            {words.handwritten}
           </Link>
           <Link className="button compact" href="/note/new/code">
-            Nowy kod
+            <Icon name="code" size={18} />
+            {words.newCode}
           </Link>
           <Link className="button compact" href="/library/trash">
-            Kosz{trashCount > 0 ? ` (${trashCount})` : ""}
+            <Icon name="delete" size={18} />
+            {words.trash}
+            {trashCount > 0 ? ` (${trashCount})` : ""}
           </Link>
           <Link className="button compact" href="/account">
-            Konto
+            <Icon name="account_circle" size={18} />
+            {words.account}
           </Link>
+          {appAvailable > 0 ? (
+            <Link className="button compact" href="/download">
+              <Icon name="install_mobile" size={18} />
+              {words.app}
+            </Link>
+          ) : null}
           {user.role === "ADMIN" ? (
             <Link className="button compact" href="/admin">
-              Admin
+              <Icon name="shield_person" size={18} />
+              {words.admin}
             </Link>
           ) : null}
         </div>
       </div>
 
       <section className="sheet" style={{ padding: "16px 18px", marginBottom: 16 }}>
-        {/*
-          Zwijane na telefonie (sam CSS, patrz .filter-toggle w globals.css):
-          karta filtrów zabierała pół ekranu, zanim było widać notatki.
-          Na szerokim ekranie ta para znaczników jest niewidoczna.
-        */}
-        <input type="checkbox" id="filter-fold" className="filter-toggle" />
-        <label htmlFor="filter-fold" className="filter-summary">
-          Filtry
-        </label>
         <form method="get" className="library-filters">
+          {/*
+            W Ulubionych szukanie i rodzaj mają zawężać ulubione, a nie
+            wyrzucać człowieka z powrotem do całej biblioteki - dlatego
+            miejsce jedzie z formularzem po cichu.
+          */}
+          {favoritesOnly ? <input type="hidden" name="favorites" value="1" /> : null}
           <div className="field field-search">
-            <label htmlFor="q">Szukaj</label>
+            <label htmlFor="q">{words.search}</label>
             <input
               id="q"
               name="q"
               type="search"
               defaultValue={query}
-              placeholder="Tytuł lub tag…"
+              placeholder={words.searchPlaceholder}
             />
           </div>
           <div className="field field-folder">
-            <label htmlFor="folder">Folder</label>
+            <label htmlFor="folder">{words.folder}</label>
             <select id="folder" name="folder" defaultValue={folderFilter}>
-              <option value="">Wszystkie</option>
-              <option value="__none">Bez folderu</option>
+              <option value="">{words.all}</option>
+              <option value="__none">{words.noFolder}</option>
               {folders.map((folder) => (
                 <option key={folder.id} value={folder.id}>
                   {folder.name} ({folder._count.notes})
@@ -188,32 +300,28 @@ export default async function LibraryPage({
             </select>
           </div>
           <div className="field field-kind">
-            <label htmlFor="kind">Rodzaj</label>
+            <label htmlFor="kind">{words.kind}</label>
             <select id="kind" name="kind" defaultValue={kindFilter}>
-              <option value="">Wszystkie</option>
-              <option value="TEXT">Tekstowe</option>
-              <option value="CODE">Kod</option>
-              <option value="HANDWRITTEN">Odręczne</option>
-              <option value="MINDMAP">Mapy myśli</option>
+              <option value="">{words.all}</option>
+              <option value="TEXT">{words.kindText}</option>
+              <option value="CODE">{words.kindCode}</option>
+              <option value="HANDWRITTEN">{words.kindHandwritten}</option>
+              <option value="MINDMAP">{words.kindMindMaps}</option>
             </select>
           </div>
-          <label className="filter-check" htmlFor="favorites">
-            <input
-              id="favorites"
-              type="checkbox"
-              name="favorites"
-              value="1"
-              defaultChecked={favoritesOnly}
-            />
-            Tylko ulubione
-          </label>
           <div className="filter-actions">
             <button type="submit" className="compact primary">
-              Filtruj
+              {words.filterButton}
             </button>
-            {query || folderFilter || favoritesOnly || kindFilter ? (
+            {/*
+              Jeden przycisk wyjścia, wszędzie ten sam: wraca do całego spisu.
+              „Wyczyść" mówiło o formularzu, „Wszystkie" mówi o miejscu - tak
+              samo jak wiersz na górze spisu folderów.
+            */}
+            {query || kindFilter || folderFilter || favoritesOnly ? (
               <Link className="button compact" href="/library">
-                Wyczyść
+                <Icon name="inbox" size={18} />
+                {words.all}
               </Link>
             ) : null}
           </div>
@@ -222,87 +330,78 @@ export default async function LibraryPage({
 
       <div className="library-layout">
         <aside className="sheet" style={{ padding: "16px 18px" }}>
-          <p className="eyebrow">Foldery</p>
-          <ul style={{ listStyle: "none", padding: 0, margin: "0 0 14px 0" }}>
-            <li style={{ marginBottom: 6 }}>
-              <Link
-                href="/library"
-                style={{
-                  fontWeight: !folderFilter ? 600 : 400,
-                  color: "inherit",
-                  textDecoration: "none",
-                }}
-              >
-                Wszystkie
-              </Link>
-            </li>
-            <li style={{ marginBottom: 6 }}>
-              <Link
-                href="/library?folder=__none"
-                style={{
-                  fontWeight: folderFilter === "__none" ? 600 : 400,
-                  color: "inherit",
-                  textDecoration: "none",
-                }}
-              >
-                Bez folderu
-              </Link>
-            </li>
-            {folders.map((folder) => (
-              <li key={folder.id} style={{ marginBottom: 6 }}>
-                <Link
-                  href={`/library?folder=${folder.id}`}
-                  style={{
-                    fontWeight: folderFilter === folder.id ? 600 : 400,
-                    color: "inherit",
-                    textDecoration: "none",
-                  }}
-                >
-                  {folder.name}
-                  <span className="small" style={{ marginLeft: 6 }}>
-                    {folder._count.notes}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-
-          <ActionForm action={createFolder} label="Nowy folder" compact>
-            <div className="field" style={{ marginBottom: 8 }}>
-              <input name="name" type="text" placeholder="Nazwa folderu" required maxLength={120} />
-            </div>
-          </ActionForm>
+          <FolderList
+            current={folderFilter}
+            favorites={favoritesOnly}
+            favoriteCount={favoriteCount}
+            folders={folders.map((folder) => ({
+              id: folder.id,
+              name: folder.name,
+              colorId: folder.colorId,
+              iconId: folder.iconId,
+              count: folder._count.notes,
+            }))}
+            createAction={createFolder}
+            renameAction={renameFolder}
+            lookAction={setFolderLook}
+            deleteAction={deleteFolder}
+          />
         </aside>
 
         <div>
-          {notes.length === 0 ? (
+          {notes.length === 0 && total > 0 ? (
+            // Strona za ostatnią - na przykład po wyrzuceniu notatek do kosza
+            // albo po wejściu ze starego odnośnika z numerem strony.
             <div className="sheet-ruled" style={{ paddingBlock: 28, paddingInlineEnd: 26 }}>
-              <p className="eyebrow">Pusto</p>
-              <h2 style={{ marginBottom: 8 }}>Jeszcze nic tu nie ma</h2>
+              <p className="eyebrow">{words.emptyPageTitle}</p>
+              <h2 style={{ marginBottom: 8 }}>{words.emptyPageHeading}</h2>
               <p className="lead" style={{ margin: "0 0 16px 0", maxWidth: 520 }}>
-                Napisz notatkę tekstową albo plik z kodem na komputerze — albo zsynchronizuj
-                notatki z aplikacji mobilnej tym samym kontem.
+                {notesCount(words, total)} · {words.pageWord} {page} {words.ofWord} {pages}.
+              </p>
+              <Link className="button primary" href={pageLink(1)}>
+                {words.backToStart}
+              </Link>
+            </div>
+          ) : notes.length === 0 && favoritesOnly ? (
+            <div className="sheet-ruled" style={{ paddingBlock: 28, paddingInlineEnd: 26 }}>
+              <p className="eyebrow">{words.favorites}</p>
+              <h2 style={{ marginBottom: 8 }}>{words.favoritesEmptyHeading}</h2>
+              <p className="lead" style={{ margin: "0 0 16px 0", maxWidth: 520 }}>
+                {words.favoritesEmptyAbout}
+              </p>
+              <Link className="button primary" href="/library">
+                {words.all}
+              </Link>
+            </div>
+          ) : notes.length === 0 ? (
+            <div className="sheet-ruled" style={{ paddingBlock: 28, paddingInlineEnd: 26 }}>
+              <p className="eyebrow">{words.emptyEyebrow}</p>
+              <h2 style={{ marginBottom: 8 }}>{words.emptyHeading}</h2>
+              <p className="lead" style={{ margin: "0 0 16px 0", maxWidth: 520 }}>
+                {words.emptyAbout}
               </p>
               <div className="row">
                 <Link className="button primary" href="/note/new">
-                  Notatka tekstowa
+                  {words.textNote}
                 </Link>
                 <Link className="button" href="/note/new/code">
-                  Plik z kodem
+                  {words.codeFile}
                 </Link>
               </div>
             </div>
           ) : (
             <div className="sheet table-scroll">
-              <table className="notes-table">
+              <table>
                 <thead>
                   <tr>
-                    <th>Notatka</th>
-                    <th style={{ width: 110 }}>Rodzaj</th>
-                    <th style={{ width: 120 }}>Folder</th>
-                    <th style={{ width: 90 }}>Rozmiar</th>
-                    <th style={{ width: 150 }}>Zmiana</th>
-                    <th style={{ width: 160 }} />
+                    <th>{words.columnNote}</th>
+                    <th style={{ width: 120 }}>{words.columnKind}</th>
+                    <th style={{ width: 170 }}>{words.columnFolder}</th>
+                    <th style={{ width: 90 }}>{words.columnSize}</th>
+                    <th style={{ width: 150 }}>{words.columnChanged}</th>
+                    <th style={{ width: 132, textAlign: "right" }}>
+                      <span className="visually-hidden">{words.columnActions}</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -310,37 +409,64 @@ export default async function LibraryPage({
                     <tr key={note.id}>
                       <td>
                         <Link href={`/note/${note.id}`}>
-                          <strong>{note.title || "Bez nazwy"}</strong>
+                          <strong>{note.title || words.untitled}</strong>
                         </Link>
                         {note.favorite ? (
                           <span className="tag accent" style={{ marginLeft: 8 }}>
-                            ulubiona
+                            {words.tagFavorite}
                           </span>
                         ) : null}
                         {note._count.shares > 0 ? (
                           <span className="tag" style={{ marginLeft: 8 }}>
-                            udostępniona
+                            {words.tagShared}
                           </span>
                         ) : null}
                         {note._count.attachments > 0 ? (
                           <p className="small" style={{ margin: "4px 0 0 0" }}>
-                            {note._count.attachments} załączników
+                            {attachmentsCount(words, note._count.attachments)}
                           </p>
                         ) : null}
                       </td>
-                      <td className="small">{KIND_NAMES[note.kind] ?? note.kind}</td>
-                      <td className="small">{folderName(note.folderId) ?? "—"}</td>
+                      <td className="small">
+                        <span
+                          style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                        >
+                          <Icon name={KIND_ICONS[note.kind] ?? "note"} size={16} />
+                          {kindName(words, note.kind)}
+                        </span>
+                      </td>
+                      <td className="small">
+                        <FolderMoveForm
+                          noteId={note.id}
+                          folderId={note.folderId}
+                          folders={folderChoices}
+                          action={moveNoteToFolder}
+                        />
+                      </td>
                       <td className="small">{humanSize(note.sizeBytes)}</td>
                       <td className="small">
-                        {note.updatedAt.toLocaleString("pl-PL")}
-                        <span className="note-version">wersja {note.version}</span>
+                        {note.updatedAt.toLocaleString(words.locale)}
+                        <br />
+                        {words.versionWord} {note.version}
                       </td>
-                      <td>
-                        <div className="row" style={{ flexWrap: "wrap", gap: 4 }}>
+                      <td className="cell-actions">
+                        <div className="row-actions">
+                          <Link
+                            className="button compact icon-only"
+                            href={`/note/${note.id}`}
+                            title={words.openNote}
+                            aria-label={words.openNote}
+                          >
+                            <Icon name="edit" />
+                          </Link>
                           <ActionForm
                             action={toggleFavoriteFromLibrary}
-                            label={note.favorite ? "★" : "☆"}
+                            label={note.favorite ? words.unstarIt : words.starIt}
+                            icon="star"
+                            iconOnly
+                            on={note.favorite}
                             compact
+                            quiet
                           >
                             <input type="hidden" name="noteId" value={note.id} />
                             <input
@@ -351,24 +477,17 @@ export default async function LibraryPage({
                           </ActionForm>
                           <ActionForm
                             action={trashNoteFromLibrary}
-                            label="Kosz"
+                            label={words.moveToTrash}
+                            icon="delete"
+                            iconOnly
                             compact
                             danger
-                            confirmation="Wyrzucić do kosza?"
+                            quiet
+                            confirmation={words.confirmTrash}
                           >
                             <input type="hidden" name="noteId" value={note.id} />
                           </ActionForm>
                         </div>
-                        {folders.length > 0 ? (
-                          <div style={{ marginTop: 6 }}>
-                            <FolderMoveForm
-                              noteId={note.id}
-                              folderId={note.folderId}
-                              folders={folders}
-                              action={moveNoteToFolder}
-                            />
-                          </div>
-                        ) : null}
                       </td>
                     </tr>
                   ))}
@@ -376,6 +495,30 @@ export default async function LibraryPage({
               </table>
             </div>
           )}
+
+          {pages > 1 ? (
+            <nav className="pager" aria-label={words.pagerLabel}>
+              {page > 1 ? (
+                <Link className="button compact" href={pageLink(page - 1)}>
+                  <Icon name="chevron_left" size={18} />
+                  {words.earlier}
+                </Link>
+              ) : (
+                <span />
+              )}
+              <span className="small">
+                {words.pageWord} {Math.min(page, pages)} {words.ofWord} {pages}
+              </span>
+              {page < pages ? (
+                <Link className="button compact" href={pageLink(page + 1)}>
+                  {words.next}
+                  <Icon name="chevron_right" size={18} />
+                </Link>
+              ) : (
+                <span />
+              )}
+            </nav>
+          ) : null}
         </div>
       </div>
     </main>

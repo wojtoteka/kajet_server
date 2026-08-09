@@ -8,12 +8,15 @@ import {
   setNoteFavoriteForUser,
   purgeNoteForUser,
 } from "@/lib/note-write";
+import { FOLDER_COLOURS, FOLDER_ICONS } from "@/lib/folder-look";
+import { currentWords } from "@/lib/language";
+import { folderDeletedMsg } from "@/lib/i18n";
 
 export type Result = { error?: string; success?: string };
 
 export async function trashNoteFromLibrary(_previous: Result, data: FormData): Promise<Result> {
   const user = await currentUser();
-  if (!user) return { error: "Musisz się zalogować." };
+  if (!user) return { error: (await currentWords()).apiMustSignIn };
   const noteId = String(data.get("noteId") ?? "");
   if (!noteId) return { error: "Brak identyfikatora." };
 
@@ -27,7 +30,7 @@ export async function trashNoteFromLibrary(_previous: Result, data: FormData): P
 
 export async function restoreNoteFromTrash(_previous: Result, data: FormData): Promise<Result> {
   const user = await currentUser();
-  if (!user) return { error: "Musisz się zalogować." };
+  if (!user) return { error: (await currentWords()).apiMustSignIn };
   const noteId = String(data.get("noteId") ?? "");
   if (!noteId) return { error: "Brak identyfikatora." };
 
@@ -36,12 +39,12 @@ export async function restoreNoteFromTrash(_previous: Result, data: FormData): P
 
   revalidatePath("/library");
   revalidatePath("/library/trash");
-  return { success: "Przywrócono." };
+  return { success: (await currentWords()).actRestored };
 }
 
 export async function purgeNoteFromTrash(_previous: Result, data: FormData): Promise<Result> {
   const user = await currentUser();
-  if (!user) return { error: "Musisz się zalogować." };
+  if (!user) return { error: (await currentWords()).apiMustSignIn };
   const noteId = String(data.get("noteId") ?? "");
   if (!noteId) return { error: "Brak identyfikatora." };
 
@@ -50,12 +53,12 @@ export async function purgeNoteFromTrash(_previous: Result, data: FormData): Pro
 
   revalidatePath("/library");
   revalidatePath("/library/trash");
-  return { success: "Skasowano na stałe." };
+  return { success: (await currentWords()).actDeletedForGood };
 }
 
 export async function emptyTrash(_previous: Result, _data: FormData): Promise<Result> {
   const user = await currentUser();
-  if (!user) return { error: "Musisz się zalogować." };
+  if (!user) return { error: (await currentWords()).apiMustSignIn };
 
   const trashed = await prisma.note.findMany({
     where: { ownerId: user.id, deletedAt: { not: null } },
@@ -85,7 +88,7 @@ export async function toggleFavoriteFromLibrary(
   data: FormData,
 ): Promise<Result> {
   const user = await currentUser();
-  if (!user) return { error: "Musisz się zalogować." };
+  if (!user) return { error: (await currentWords()).apiMustSignIn };
   const noteId = String(data.get("noteId") ?? "");
   const next = String(data.get("favorite") ?? "") === "1";
   if (!noteId) return { error: "Brak identyfikatora." };
@@ -95,12 +98,14 @@ export async function toggleFavoriteFromLibrary(
 
   revalidatePath("/library");
   revalidatePath(`/note/${noteId}`);
-  return { success: next ? "Ulubiona." : "Bez gwiazdki." };
+  // Bez słowa w odpowiedzi: wynik widać po samej gwiazdce, a napis pod
+  // przyciskiem tylko rozpychał wiersz w spisie.
+  return {};
 }
 
 export async function moveNoteToFolder(_previous: Result, data: FormData): Promise<Result> {
   const user = await currentUser();
-  if (!user) return { error: "Musisz się zalogować." };
+  if (!user) return { error: (await currentWords()).apiMustSignIn };
 
   const noteId = String(data.get("noteId") ?? "");
   const folderRaw = String(data.get("folderId") ?? "");
@@ -131,25 +136,112 @@ export async function moveNoteToFolder(_previous: Result, data: FormData): Promi
 
   revalidatePath("/library");
   revalidatePath(`/note/${noteId}`);
-  return { success: folderId ? "Przeniesiono do folderu." : "Wyjęto z folderu." };
+  return { success: folderId ? (await currentWords()).actMovedToFolder : (await currentWords()).actTakenOutOfFolder };
 }
 
 export async function createFolder(_previous: Result, data: FormData): Promise<Result> {
   const user = await currentUser();
-  if (!user) return { error: "Musisz się zalogować." };
+  if (!user) return { error: (await currentWords()).apiMustSignIn };
 
   const name = String(data.get("name") ?? "").trim();
-  if (!name) return { error: "Podaj nazwę folderu." };
-  if (name.length > 120) return { error: "Nazwa folderu jest za długa." };
+  if (!name) return { error: (await currentWords()).actGiveFolderName };
+  if (name.length > 120) return { error: (await currentWords()).actFolderNameTooLong };
 
   await prisma.folder.create({
     data: {
       ownerId: user.id,
       name,
       parentId: null,
+      colorId: pickColour(data.get("colorId")),
+      iconId: pickIcon(data.get("iconId")),
     },
   });
 
   revalidatePath("/library");
   return { success: `Folder „${name}" utworzony.` };
+}
+
+/** Barwa i ikona muszą być ze spisu - inaczej tablet nie wiedziałby, co narysować. */
+function pickColour(raw: FormDataEntryValue | null): string {
+  const id = String(raw ?? "");
+  return FOLDER_COLOURS.some((entry) => entry.id === id) ? id : "grafit";
+}
+
+function pickIcon(raw: FormDataEntryValue | null): string {
+  const id = String(raw ?? "");
+  return FOLDER_ICONS.some((entry) => entry.id === id) ? id : "folder";
+}
+
+/** Sprawdza, że folder istnieje i należy do tej osoby. */
+async function ownFolder(userId: string, folderId: string) {
+  if (!folderId) return null;
+  const folder = await prisma.folder.findUnique({
+    where: { id: folderId },
+    select: { id: true, ownerId: true, name: true },
+  });
+  if (!folder || folder.ownerId !== userId) return null;
+  return folder;
+}
+
+export async function renameFolder(_previous: Result, data: FormData): Promise<Result> {
+  const user = await currentUser();
+  if (!user) return { error: (await currentWords()).apiMustSignIn };
+
+  const folder = await ownFolder(user.id, String(data.get("folderId") ?? ""));
+  if (!folder) return { error: "Nie ma takiego folderu." };
+
+  const name = String(data.get("name") ?? "").trim();
+  if (!name) return { error: (await currentWords()).actGiveFolderName };
+  if (name.length > 120) return { error: (await currentWords()).actFolderNameTooLong };
+
+  await prisma.folder.update({ where: { id: folder.id }, data: { name } });
+  revalidatePath("/library");
+  return { success: `Nazwa zmieniona na „${name}".` };
+}
+
+export async function setFolderLook(_previous: Result, data: FormData): Promise<Result> {
+  const user = await currentUser();
+  if (!user) return { error: (await currentWords()).apiMustSignIn };
+
+  const folder = await ownFolder(user.id, String(data.get("folderId") ?? ""));
+  if (!folder) return { error: "Nie ma takiego folderu." };
+
+  await prisma.folder.update({
+    where: { id: folder.id },
+    data: {
+      colorId: pickColour(data.get("colorId")),
+      iconId: pickIcon(data.get("iconId")),
+    },
+  });
+
+  revalidatePath("/library");
+  return { success: (await currentWords()).actLookChanged };
+}
+
+/**
+ * Kasuje folder, zostawiając notatki w spokoju.
+ *
+ * Notatka wskazuje folder przez `onDelete: SetNull`, więc po skasowaniu
+ * po prostu przestaje leżeć w folderze - nic nie idzie do kosza ani nie ginie.
+ * Foldery w środku (na razie zakłada je tylko aplikacja) znikają razem
+ * z rodzicem, a ich notatki tak samo zostają.
+ */
+export async function deleteFolder(_previous: Result, data: FormData): Promise<Result> {
+  const user = await currentUser();
+  if (!user) return { error: (await currentWords()).apiMustSignIn };
+
+  const folder = await ownFolder(user.id, String(data.get("folderId") ?? ""));
+  if (!folder) return { error: "Nie ma takiego folderu." };
+
+  const [inside, subfolders] = await Promise.all([
+    prisma.note.count({ where: { ownerId: user.id, folderId: folder.id } }),
+    prisma.folder.count({ where: { ownerId: user.id, parentId: folder.id } }),
+  ]);
+
+  await prisma.folder.delete({ where: { id: folder.id } });
+
+  revalidatePath("/library");
+  return {
+    success: folderDeletedMsg(await currentWords(), folder.name, inside, subfolders),
+  };
 }

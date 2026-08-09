@@ -51,8 +51,27 @@ model User {
   /// sum up every note each time a quota is checked.
   usedBytes     BigInt    @default(0)
 
+  /// Ustawienia pisania w panelu WWW. Autozapis zapisuje notatkę sam po
+  /// pauzie w pisaniu; wyłączony zostawia zapis przyciskowi (i Ctrl+S).
+  autoSave      Boolean   @default(true)
+  /// Domyślny wygląd NOWEJ notatki tekstowej: krój, rozmiar (0 = domyślny)
+  /// i wyrównanie. Te trzy jadą do pliku notatki, więc zna je też aplikacja.
+  textFont      String    @default("body")
+  textSize      Int       @default(0)
+  textAlign     String    @default("left")
+  /// Grube pismo w polu do pisania. Zostaje na stronie - plik notatki nie ma
+  /// na to miejsca, a nie chcemy dopisywać do niego pól, których aplikacja
+  /// na tablecie nie zna.
+  textBold      Boolean   @default(false)
+
   createdAt     DateTime  @default(now())
   lastSignInAt  DateTime?
+
+  /// Moment wylogowania ze wszystkich urządzeń. Sesje strony to podpisane
+  /// ciasteczka (JWT), więc nie da się ich skasować w bazie — zamiast tego
+  /// odrzucamy każdą wydaną wcześniej niż ten znacznik. Ustawia się przy
+  /// „Wyloguj wszędzie" i przy zmianie hasła.
+  sessionsRevokedAt DateTime?
 
   accounts      Account[]
   sessions      Session[]
@@ -63,6 +82,7 @@ model User {
   issuedCodes   InviteCode[] @relation("IssuedCodes")
   usedCode      InviteCode?  @relation("UsedCode")
   shares        Share[]      @relation("SharedBy")
+  releases      AppRelease[] @relation("UploadedReleases")
 
   @@index([email])
   @@map("users")
@@ -247,6 +267,8 @@ model Note {
   changes     LiveChange[]
 
   @@index([ownerId, updatedAt])
+  /// Bin: listing and counting a user's deleted notes.
+  @@index([ownerId, deletedAt])
   @@index([folderId])
   @@map("notes")
 }
@@ -326,6 +348,45 @@ model LiveChange {
 
   @@index([noteId, id])
   @@map("live_changes")
+}
+
+// --- Android application ---
+
+/// One release of the mobile application, put up by an administrator.
+///
+/// The APK itself lies on disk, in the directory set by APP_DIR, under a name
+/// made from its hash — the same idea as with attachments, so the database
+/// does not swell up with tens of megabytes. Exactly one release is `current`:
+/// that is the one the download page hands out and the one the application
+/// compares itself against.
+model AppRelease {
+  id          String   @id @default(cuid())
+  /// Version as people see it, for example 1.4.2.
+  version     String
+  /// versionCode from the APK. A plain number, because that is what the
+  /// application compares to know whether it is behind.
+  versionCode Int
+  /// What changed in this version. Shown on the download page.
+  notes       String?  @db.Text
+  /// Name the file gets when downloaded, for example kajet-1.4.2.apk.
+  fileName    String
+  /// Hash of the file, and at the same time its name on disk: <hash>.apk.
+  hash        String   @db.VarChar(64)
+  sizeBytes   Int
+  /// The version handed out now. Only one release has this set.
+  current     Boolean  @default(false)
+  /// How many times the file has been downloaded.
+  downloads   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  /// Empty once the account of the administrator who put it up is gone.
+  uploadedById String?
+  uploadedBy   User?   @relation("UploadedReleases", fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@unique([versionCode])
+  @@index([current])
+  @@index([createdAt])
+  @@map("app_releases")
 }
 
 // --- Administrator audit log ---

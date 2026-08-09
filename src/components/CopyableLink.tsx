@@ -1,28 +1,45 @@
 "use client";
 
 import { useState } from "react";
+import { useWords } from "@/components/LanguageProvider";
 
-export function CopyableLink({ url }: { url: string }) {
+/** A compact button that puts the given text in the clipboard. */
+export function CopyButton({
+  value,
+  label,
+  copiedLabel,
+}: {
+  value: string;
+  label?: string;
+  copiedLabel?: string;
+}) {
   const [copied, setCopied] = useState(false);
 
   return (
+    <button
+      type="button"
+      className="compact"
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(value);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2500);
+        } catch {
+          // The clipboard is sometimes blocked. The value stays visible on the page.
+          setCopied(false);
+        }
+      }}
+    >
+      {copied ? copiedLabel : label}
+    </button>
+  );
+}
+
+export function CopyableLink({ url }: { url: string }) {
+  const words = useWords();
+  return (
     <div style={{ marginTop: 6 }}>
-      <button
-        type="button"
-        className="compact"
-        onClick={async () => {
-          try {
-            await navigator.clipboard.writeText(url);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2500);
-          } catch {
-            // The clipboard is sometimes blocked. The address is still visible below.
-            setCopied(false);
-          }
-        }}
-      >
-        {copied ? "Skopiowany" : "Kopiuj odnośnik"}
-      </button>
+      <CopyButton value={url} label={words.copyLink} copiedLabel={words.linkCopied} />
       <p className="small" style={{ margin: "4px 0 0 0", wordBreak: "break-all" }}>
         {url}
       </p>

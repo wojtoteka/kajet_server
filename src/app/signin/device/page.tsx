@@ -4,8 +4,12 @@ import { currentUser } from "@/lib/auth";
 import { findChallengeByCode } from "@/lib/login-challenge";
 import { KajetMark } from "@/components/KajetMark";
 import { DeviceApproveForm } from "./DeviceApproveForm";
+import { currentWords } from "@/lib/language";
+import { deviceAlreadyApproved, deviceAsksForAccess } from "@/lib/i18n";
 
-export const metadata = { title: "Połącz urządzenie — Kajet" };
+export async function generateMetadata() {
+  return { title: (await currentWords()).metaConnectDevice };
+}
 
 export default async function DeviceSignInPage({
   searchParams,
@@ -13,6 +17,7 @@ export default async function DeviceSignInPage({
   searchParams: Promise<{ code?: string }>;
 }) {
   const params = await searchParams;
+  const words = await currentWords();
   const code = (params.code ?? "").trim();
 
   if (!code) {
@@ -20,14 +25,13 @@ export default async function DeviceSignInPage({
       <main className="page" style={{ maxWidth: 460 }}>
         <KajetMark />
         <div className="sheet-ruled" style={{ paddingBlock: 32, paddingInlineEnd: 28 }}>
-          <p className="eyebrow">Aplikacja</p>
-          <h1 style={{ marginBottom: 8 }}>Brak kodu</h1>
+          <p className="eyebrow">{words.appEyebrow}</p>
+          <h1 style={{ marginBottom: 8 }}>{words.noCodeHeading}</h1>
           <p className="lead">
-            Otwórz tę stronę z aplikacji Kajet przyciskiem „Zaloguj przez Google”.
-            Bez kodu z aplikacji nie da się połączyć urządzenia.
+            {words.noCodeAbout}
           </p>
           <p className="small" style={{ marginTop: 18 }}>
-            <Link href="/signin">Zwykłe logowanie do panelu</Link>
+            <Link href="/signin">{words.ordinarySignIn}</Link>
           </p>
         </div>
       </main>
@@ -53,49 +57,45 @@ export default async function DeviceSignInPage({
       <KajetMark caption={user.login} />
 
       <div className="sheet-ruled" style={{ paddingBlock: 32, paddingInlineEnd: 28 }}>
-        <p className="eyebrow">Aplikacja mobilna</p>
-        <h1 style={{ marginBottom: 8 }}>Połącz urządzenie</h1>
+        <p className="eyebrow">{words.mobileAppEyebrow}</p>
+        <h1 style={{ marginBottom: 8 }}>{words.connectDeviceHeading}</h1>
 
         {expired ? (
           <>
             <p className="lead">
-              Ten kod logowania wygasł albo został już użyty. Wróć do aplikacji i
-              uruchom logowanie jeszcze raz.
+              {words.codeExpiredAbout}
             </p>
             <p className="small" style={{ marginTop: 18 }}>
-              <Link href="/library">Moje notatki</Link>
+              <Link href="/library">{words.myNotes}</Link>
             </p>
           </>
         ) : denied ? (
           <>
-            <p className="lead">To logowanie zostało wcześniej odrzucone.</p>
+            <p className="lead">{words.signInDenied}</p>
             <p className="small" style={{ marginTop: 18 }}>
-              <Link href="/library">Moje notatki</Link>
+              <Link href="/library">{words.myNotes}</Link>
             </p>
           </>
         ) : alreadyApproved ? (
           <>
             <p className="lead">
-              Urządzenie „{challenge.device}” jest już zatwierdzone. Wróć do
-              aplikacji Kajet — powinna się zalogować sama.
+              {deviceAlreadyApproved(words, challenge.device)}
             </p>
             <p style={{ marginTop: 16 }}>
               <a className="button primary" href={`kajet://auth?code=${encodeURIComponent(code)}`}>
-                Otwórz aplikację
+                {words.openTheApp}
               </a>
             </p>
             <p className="small" style={{ marginTop: 18 }}>
-              <Link href="/library">Albo zostań w panelu</Link>
+              <Link href="/library">{words.orStayInPanel}</Link>
             </p>
           </>
         ) : (
           <>
             <p className="lead">
-              Aplikacja Kajet na urządzeniu „{challenge?.device ?? "…"}” prosi o
-              dostęp do Twojego konta <strong>{user.login}</strong> ({user.email}).
-              Potwierdź, jeśli to Ty uruchomiłeś logowanie.
+              {deviceAsksForAccess(words, challenge?.device ?? "…", user.login, user.email)}
             </p>
-            <DeviceApproveForm code={code} device={challenge?.device ?? "Urządzenie"} />
+            <DeviceApproveForm code={code} device={challenge?.device ?? words.deviceFallback} />
           </>
         )}
       </div>

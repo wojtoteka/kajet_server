@@ -1,4 +1,4 @@
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import type { NextAuthConfig } from "next-auth";
 import type { Adapter } from "next-auth/adapters";
 import Credentials from "next-auth/providers/credentials";
@@ -6,28 +6,58 @@ import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
+import { apiWords } from "./language";
+import { forgetInvite, inviteFromCookie } from "./invite";
 import { googleWorks } from "./settings";
+import {
+  callerAddress,
+  clearFailedSignIns,
+  noteFailedSignIn,
+  signInAllowed,
+} from "./signin-limits";
+
+/**
+ * Logowanie zamknięte po pięciu nieudanych próbach. Auth.js przepuszcza
+ * `code` do adresu strony logowania, więc da się tam powiedzieć wprost, że to
+ * nie jest złe hasło, tylko zapora.
+ */
+class TooManySignIns extends CredentialsSignin {
+  code = "too-many-attempts";
+}
 
 const providers: NextAuthConfig["providers"] = [
   Credentials({
-    name: "Hasło",
+    name: "Kajet",
     credentials: {
       email: { label: "Adres e-mail", type: "email" },
-      password: { label: "Hasło", type: "password" },
+      password: { label: "password", type: "password" },
     },
-    async authorize(data) {
+    async authorize(data, request) {
       const email = String(data?.email ?? "").trim().toLowerCase();
       const password = String(data?.password ?? "");
       if (!email || !password) return null;
 
+      const from = request instanceof Request ? callerAddress(request) : null;
+
+      const gate = signInAllowed(email, from, await apiWords());
+      if (!gate.allowed) throw new TooManySignIns();
+
       const user = await prisma.user.findUnique({ where: { email } });
       // An account created through Google only has no password and cannot be
       // entered this way.
-      if (!user?.passwordHash) return null;
+      if (!user?.passwordHash) {
+        noteFailedSignIn(email, from);
+        return null;
+      }
       if (user.blocked) return null;
 
       const matches = await bcrypt.compare(password, user.passwordHash);
-      if (!matches) return null;
+      if (!matches) {
+        noteFailedSignIn(email, from);
+        return null;
+      }
+
+      clearFailedSignIns(email, from);
 
       await prisma.user.update({
         where: { id: user.id },
@@ -56,9 +86,9 @@ if (googleWorks()) {
 
 /**
  * Prisma User.login is required and has no DB default. Auth.js's stock
- * createUser only sends email/name/image — new Google accounts then fail
+ * createUser only sends email/name/image - new Google accounts then fail
  * mid-callback with an empty [auth][details] blob. We set login (and the
- * parked invite quota) here before the row is written.
+ * quota from the invite code) here before the row is written.
  */
 function kajetAdapter(): Adapter {
   const base = PrismaAdapter(prisma) as Adapter;
@@ -68,36 +98,46 @@ function kajetAdapter(): Adapter {
     async createUser(data) {
       const email = data.email?.toLowerCase();
       if (!email) {
-        throw new Error("Google nie zwróciło adresu e-mail.");
+        throw new Error((await apiWords()).apiGoogleNoEmail);
       }
 
-      const code = await findParkedCode(email);
+      // Kod przyjechał w ciasteczku ustawionym na stronie zakładania konta.
+      // Callback signIn sprawdził go już raz - tutaj jest ostatnia bramka,
+      // żeby konto nie powstało bez kodu.
+      const code = await inviteFromCookie();
+      if (!code) {
+        throw new Error((await apiWords()).apiNoInviteForGoogle);
+      }
+
       const login = await freeLogin(email);
 
-      const user = await prisma.user.create({
-        data: {
-          email,
-          emailVerified: data.emailVerified ?? new Date(),
-          name: data.name ?? null,
-          image: data.image ?? null,
-          login,
-          quotaBytes: code?.quotaBytes ?? undefined,
-          permanentQuotaBytes: code?.quotaBytes ?? undefined,
-        },
-      });
+      // Konto i zużycie miejsca w kodzie w jednej transakcji, tak samo jak
+      // przy zakładaniu konta na hasło.
+      const user = await prisma.$transaction(async (tx) => {
+        const created = await tx.user.create({
+          data: {
+            email,
+            emailVerified: data.emailVerified ?? new Date(),
+            name: data.name ?? null,
+            image: data.image ?? null,
+            login,
+            quotaBytes: code.quotaBytes ?? undefined,
+            permanentQuotaBytes: code.quotaBytes ?? undefined,
+          },
+        });
 
-      if (code) {
-        await prisma.inviteCode.update({
+        await tx.inviteCode.update({
           where: { id: code.id },
           data: {
             usedSeats: { increment: 1 },
-            usedById: code.seats === 1 ? user.id : undefined,
+            usedById: code.seats === 1 ? created.id : undefined,
           },
         });
-        await prisma.verificationToken.deleteMany({
-          where: { identifier: `code:${email}` },
-        });
-      }
+
+        return created;
+      });
+
+      await forgetInvite();
 
       return {
         id: user.id,
@@ -139,9 +179,9 @@ export const authConfig: NextAuthConfig = {
         return true;
       }
 
-      // A new address. An account is created only when the user started from
-      // the registration page and a code is already parked for this address.
-      const code = await findParkedCode(email);
+      // Nowy adres. Konto powstaje tylko wtedy, gdy użytkownik zaczął od
+      // strony zakładania konta i wpisał tam ważny kod.
+      const code = await inviteFromCookie();
       if (!code) return "/signin?error=code-required";
       return true;
     },
@@ -158,12 +198,27 @@ export const authConfig: NextAuthConfig = {
           blocked: true,
           quotaBytes: true,
           usedBytes: true,
+          sessionsRevokedAt: true,
         },
       });
 
       if (!account || account.blocked) {
         token.blocked = true;
         return token;
+      }
+
+      /*
+        Wylogowanie ze wszystkich urządzeń. Sesja strony to podpisane
+        ciasteczko, którego nie da się cofnąć w bazie, więc porównujemy moment
+        jego wydania (iat, w sekundach) ze znacznikiem przy koncie. Ciasteczko
+        starsze od znacznika przestaje działać przy pierwszym zapytaniu.
+      */
+      if (account.sessionsRevokedAt && typeof token.iat === "number") {
+        const revokedAt = Math.floor(account.sessionsRevokedAt.getTime() / 1000);
+        if (token.iat < revokedAt) {
+          token.blocked = true;
+          return token;
+        }
       }
 
       token.login = account.login;
@@ -211,19 +266,6 @@ export const authConfig: NextAuthConfig = {
 };
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
-
-async function findParkedCode(email: string) {
-  const parked = await prisma.verificationToken.findFirst({
-    where: { identifier: `code:${email}`, expires: { gt: new Date() } },
-  });
-  if (!parked) return null;
-
-  const code = await prisma.inviteCode.findUnique({ where: { code: parked.token } });
-  if (!code) return null;
-  if (code.expiresAt && code.expiresAt < new Date()) return null;
-  if (code.usedSeats >= code.seats) return null;
-  return code;
-}
 
 export async function freeLogin(email: string): Promise<string> {
   const base =

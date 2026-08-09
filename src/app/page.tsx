@@ -1,9 +1,14 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
+import { currentRelease } from "@/lib/app-release";
+import { humanSize } from "@/lib/quota";
 import { KajetMark } from "@/components/KajetMark";
+import { currentWords } from "@/lib/language";
 
 export default async function HomePage() {
   const session = await auth();
+  const release = await currentRelease();
+  const words = await currentWords();
 
   return (
     <main className="page">
@@ -13,30 +18,39 @@ export default async function HomePage() {
         className="sheet-ruled"
         style={{ paddingBlock: 34, paddingInlineEnd: 30, marginBottom: 24 }}
       >
-        <p className="eyebrow">Notatnik</p>
-        <h1 style={{ marginBottom: 12 }}>Jeden Kajet — telefon, tablet i komputer</h1>
+        <p className="eyebrow">{words.homeEyebrow}</p>
+        <h1 style={{ marginBottom: 12 }}>{words.homeHeading}</h1>
         <p className="lead" style={{ maxWidth: 560 }}>
-          Kajet to notatnik z pismem odręcznym, tekstem, mapami myśli i kodem. Panel na stronie
-          to pełny klient: te same notatki, kosz, udostępnianie i uruchamianie programów — gdy
-          serwer na to pozwala. Aplikacja mobilna i WWW dzielą jedno konto.
+          {words.homeLead}
         </p>
 
         <div className="row" style={{ marginTop: 22 }}>
           {session?.user?.id ? (
             <Link className="button primary" href="/library">
-              Moje notatki
+              {words.myNotes}
             </Link>
           ) : (
             <>
               <Link className="button primary" href="/signin">
-                Zaloguj się
+                {words.signIn}
               </Link>
               <Link className="button" href="/register">
-                Mam kod zaproszenia
+                {words.haveInviteCode}
               </Link>
             </>
           )}
+          {release ? (
+            <Link className="button" href="/download">
+              {words.downloadForAndroid}
+            </Link>
+          ) : null}
         </div>
+
+        {release ? (
+          <p className="small" style={{ marginTop: 14, marginBottom: 0 }}>
+            {words.latestRelease}: {release.version}, {humanSize(release.sizeBytes)}.
+          </p>
+        ) : null}
       </div>
 
       <div
@@ -47,25 +61,24 @@ export default async function HomePage() {
         }}
       >
         <Tile
-          eyebrow="Bez konta"
-          heading="Tylko urządzenie"
-          body="Aplikacja działa bez logowania. Notatki leżą wtedy wyłącznie lokalnie, w katalogu, który sam wskazujesz."
+          eyebrow={words.tileNoAccountEyebrow}
+          heading={words.tileNoAccountHeading}
+          body={words.tileNoAccountBody}
         />
         <Tile
-          eyebrow="Z kontem"
-          heading="Wszędzie to samo"
-          body="Po zalogowaniu notatki idą na serwer. Otworzysz je w panelu WWW i w aplikacji — i odzyskasz po zmianie telefonu czy tabletu."
+          eyebrow={words.tileAccountEyebrow}
+          heading={words.tileAccountHeading}
+          body={words.tileAccountBody}
         />
         <Tile
-          eyebrow="Razem"
-          heading="Udostępnianie i kod"
-          body="Notatkę dasz odnośnikiem albo na e-mail. Pliki z kodem uruchomisz na serwerze z panelu albo z aplikacji."
+          eyebrow={words.tileTogetherEyebrow}
+          heading={words.tileTogetherHeading}
+          body={words.tileTogetherBody}
         />
       </div>
 
       <p className="small" style={{ marginTop: 28 }}>
-        Konto zakłada się na kod od administratora. Jeśli go nie masz, poproś osobę, która
-        prowadzi ten serwer.
+        {words.inviteCodeNote}
       </p>
     </main>
   );

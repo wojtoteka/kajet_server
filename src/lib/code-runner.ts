@@ -4,13 +4,22 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { randomBytes } from "node:crypto";
 import { settings } from "./settings";
+import { apiWords } from "./language";
+import type { Words } from "./i18n";
 
 export type Language = {
   id: string;
   namePl: string;
+  /** Nazwa po angielsku, gdy różni się od polskiej. Języki mają nazwy własne. */
+  nameEn?: string;
   extension: string;
-command: string[];
-executableTmp?: boolean;
+  command: string[];
+  executableTmp?: boolean;
+  /**
+   * Język, którego się nie uruchamia, tylko ogląda - na razie sam HTML.
+   * Strona pokazuje wtedy podgląd zamiast przycisku „Uruchom”.
+   */
+  preview?: boolean;
 };
 
 export const LANGUAGES: Language[] = [
@@ -37,6 +46,7 @@ export const LANGUAGES: Language[] = [
   {
     id: "bash",
     namePl: "Powłoka",
+    nameEn: "Shell",
     extension: "sh",
     command: ["bash", "%s"],
   },
@@ -72,7 +82,27 @@ export const LANGUAGES: Language[] = [
     extension: "sql",
     command: ["bash", "-c", "sqlite3 :memory: < %s"],
   },
+  /*
+    HTML nie jest programem do policzenia - to strona do obejrzenia. Docker nie
+    ma tu nic do roboty, więc zamiast przycisku „Uruchom" edytor pokazuje
+    podgląd, tak samo jak edytor kodu w aplikacji. Wpis stoi w tym samym spisie,
+    żeby plik `.html` z tabletu miał na serwerze swój język i nie wracał jako
+    „nieznany".
+  */
+  {
+    id: "html",
+    namePl: "HTML",
+    extension: "html",
+    command: [],
+    preview: true,
+  },
 ];
+
+/** Czy ten język da się w ogóle uruchomić na serwerze. */
+export function runnableLanguage(id: string): boolean {
+  const language = findLanguage(id);
+  return Boolean(language) && !language?.preview;
+}
 
 export function findLanguage(id: string): Language | null {
   return LANGUAGES.find((language) => language.id === id) ?? null;
@@ -87,13 +117,20 @@ interrupted: boolean;
 };
 
 export async function run(languageId: string, code: string, input = ""): Promise<RunResult> {
+  const words = await apiWords();
   const language = findLanguage(languageId);
   if (!language) {
-    return refusal(`Nie umiem uruchomić języka „${languageId}" na tym serwerze.`);
+    return refusal(words.apiCannotRunLanguage);
+  }
+
+  if (language.preview) {
+    return refusal(
+      `${language.namePl} ${words.apiNotAProgram} ${words.apiPreviewBelow}`,
+    );
   }
 
   if (!settings.code.enabled) {
-    return refusal("Uruchamianie kodu jest na tym serwerze wyłączone.");
+    return refusal(words.apiRunningOff);
   }
 
   const directory = await mkdtemp(path.join(tmpdir(), "kajet-code-"));
@@ -113,14 +150,11 @@ export async function run(languageId: string, code: string, input = ""): Promise
     await chmod(directory, 0o755);
     await chmod(path.join(directory, fileName), 0o644);
 
-    return await execute(language, directory, fileName, containerName, input, startedAt);
+    return await execute(language, directory, fileName, containerName, input, startedAt, words);
   } catch (problem) {
-    // Failures here come from mkdtemp/writeFile/chmod and carry server paths
-    // in the message - the client only hears that the run failed.
-    console.error("[code-runner]", problem);
     return {
       output: "",
-      errors: "Nie udało się uruchomić programu.",
+      errors: problem instanceof Error ? problem.message : words.apiRunFailed,
       exitCode: null,
       interrupted: false,
       timeMs: Date.now() - startedAt,
@@ -141,6 +175,7 @@ function execute(
   containerName: string,
   input: string,
   startedAt: number,
+  words: Words,
 ): Promise<RunResult> {
   const command = language.command.map((part) => part.replaceAll("%s", `/code/${fileName}`));
 
@@ -209,7 +244,7 @@ function execute(
           output: truncate(output),
           errors: interrupted
             ? `Program działał dłużej niż ${settings.code.timeoutSeconds} s i został przerwany.`
-            : truncate(errors) || (problem ? readableError(problem, errors) : ""),
+            : truncate(errors) || (problem ? readableError(problem, errors, words) : ""),
           exitCode: interrupted ? null : ((problem as { code?: number } | null)?.code ?? 0),
           interrupted,
           timeMs: Date.now() - startedAt,
@@ -262,13 +297,13 @@ function truncate(text: string): string {
   return `${text.slice(0, limit)}\n\n[...] Wynik był dłuższy niż ${limit} znaków i reszta została ucięta.`;
 }
 
-function readableError(problem: Error, dockerErrors: string): string {
+function readableError(problem: Error, dockerErrors: string, words: Words): string {
   const code = (problem as { code?: string | number }).code;
 
   if (code === "ENOENT") {
     return (
       "Na tym serwerze nie ma Dockera, a bez niego nie uruchamiamy cudzego kodu. " +
-      "Zainstaluj Dockera albo wyłącz uruchamianie w ustawieniach serwera."
+      words.apiInstallDocker
     );
   }
   if (dockerErrors.includes("Unable to find image") || dockerErrors.includes("pull access denied")) {
@@ -279,20 +314,17 @@ function readableError(problem: Error, dockerErrors: string): string {
   }
   if (dockerErrors.includes("permission denied") && dockerErrors.includes("docker.sock")) {
     return (
-      "Użytkownik, na którym chodzi Kajet, nie ma prawa rozmawiać z Dockerem. " +
+      words.apiNoDockerRights +
       "Dodaj go do grupy docker i uruchom serwer ponownie."
     );
   }
-  // An unrecognised failure of execFile has the whole docker command line in
-  // the message - host paths, mounted directories, limits. The client gets a
-  // plain sentence and the detail stays in the server log.
-  console.error("[code-runner]", problem, dockerErrors);
-  return "Uruchamianie kodu na tym serwerze nie działa. Szczegóły są w dzienniku serwera.";
+  return problem.message;
 }
 
 export async function runnerState(): Promise<{ works: boolean; description: string }> {
+  const words = await apiWords();
   if (!settings.code.enabled) {
-    return { works: false, description: "Wyłączone w ustawieniach serwera." };
+    return { works: false, description: words.apiOffInServerSettings };
   }
 
   return new Promise((done) => {
@@ -301,7 +333,7 @@ export async function runnerState(): Promise<{ works: boolean; description: stri
         done({ works: true, description: `Gotowe, obraz ${settings.code.image}.` });
         return;
       }
-      done({ works: false, description: readableError(problem, errors) });
+      done({ works: false, description: readableError(problem, errors, words) });
     });
   });
 }

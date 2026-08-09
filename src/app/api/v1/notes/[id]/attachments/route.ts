@@ -7,8 +7,8 @@ import {
   resolveUploadMime,
   deleteAttachment,
   storeAttachment,
-  RefusedUpload,
 } from "@/lib/files";
+import { apiWords } from "@/lib/language";
 
 export { OPTIONS } from "@/lib/api";
 
@@ -24,14 +24,14 @@ export const POST = wrapApi(async (request: Request, { params }: { params: Promi
   });
   if (!note) return error("no-note", "Nie ma takiej notatki na serwerze.", 404);
   if (note.ownerId !== user.id) {
-    return error("not-yours", "Ta notatka należy do kogoś innego.", 403);
+    return error("not-yours", (await apiWords()).apiNoteNotYours, 403);
   }
 
   let form: FormData;
   try {
     form = await request.formData();
   } catch {
-    return error("bad-request", "Nie udało się odczytać wysyłanego pliku.", 400);
+    return error("bad-request", (await apiWords()).apiUploadUnreadable, 400);
   }
 
   const file = form.get("file");
@@ -43,7 +43,7 @@ export const POST = wrapApi(async (request: Request, { params }: { params: Promi
   if (!mayUpload(file.type)) {
     return error(
       "bad-type",
-      "Ten rodzaj pliku nie jest przyjmowany. Wolno wysyłać zdjęcia i rysunki.",
+      (await apiWords()).apiFileKindRefused,
       415,
     );
   }
@@ -53,7 +53,7 @@ export const POST = wrapApi(async (request: Request, { params }: { params: Promi
   if (!mime) {
     return error(
       "bad-type",
-      "Zawartość pliku nie zgadza się z zadeklarowanym rodzajem. Wolno wysyłać zdjęcia i rysunki.",
+      (await apiWords()).apiFileContentMismatch,
       415,
     );
   }
@@ -72,12 +72,9 @@ export const POST = wrapApi(async (request: Request, { params }: { params: Promi
     stored = await storeAttachment(user.id, noteId, name, data);
   } catch (problem) {
     await changeUsed(user.id, -added);
-    // Disk errors carry absolute server paths in the message - the client
-    // only hears that the save failed, the detail stays in the log.
-    console.error("[api/v1] attachment save", problem);
     return error(
       "save-failed",
-      problem instanceof RefusedUpload ? problem.message : "Nie udało się zapisać pliku.",
+      problem instanceof Error ? problem.message : (await apiWords()).apiFileSaveFailed,
       400,
     );
   }
@@ -130,7 +127,7 @@ export const GET = wrapApi(async (request: Request, { params }: { params: Promis
   });
   if (!note) return error("no-note", "Nie ma takiej notatki na serwerze.", 404);
   if (note.ownerId !== result.user.id) {
-    return error("not-yours", "Ta notatka należy do kogoś innego.", 403);
+    return error("not-yours", (await apiWords()).apiNoteNotYours, 403);
   }
 
   const name = new URL(request.url).searchParams.get("name");
@@ -146,7 +143,7 @@ export const GET = wrapApi(async (request: Request, { params }: { params: Promis
   const attachment = await prisma.attachment.findUnique({
     where: { noteId_name: { noteId, name } },
   });
-  if (!attachment) return error("no-file", "Nie ma takiego załącznika.", 404);
+  if (!attachment) return error("no-file", (await apiWords()).apiNoSuchAttachment, 404);
 
   const etag = `"${attachment.hash}"`;
   const cacheControl = "private, max-age=0, must-revalidate";
@@ -165,7 +162,7 @@ export const GET = wrapApi(async (request: Request, { params }: { params: Promis
   }
 
   const data = await readAttachment(attachment.path);
-  if (!data) return error("no-file", "Plik zniknął z dysku serwera.", 404);
+  if (!data) return error("no-file", (await apiWords()).apiFileGoneFromDisk, 404);
 
   return new Response(new Uint8Array(data), {
     headers: {
@@ -173,7 +170,7 @@ export const GET = wrapApi(async (request: Request, { params }: { params: Promis
       "content-length": String(attachment.sizeBytes),
       // Content hash as a version marker. Thanks to it the app and the browser
       // can avoid downloading the same photo twice. The URL itself has no hash,
-      // so we do not mark the response immutable — clients revalidate via ETag.
+      // so we do not mark the response immutable - clients revalidate via ETag.
       etag,
       "cache-control": cacheControl,
     },
@@ -189,7 +186,7 @@ export const DELETE = wrapApi(async (
 
   const { id: noteId } = await params;
   const name = new URL(request.url).searchParams.get("name");
-  if (!name) return error("bad-request", "Podaj nazwę załącznika do skasowania.", 400);
+  if (!name) return error("bad-request", (await apiWords()).apiGiveAttachmentToDelete, 400);
 
   const attachment = await prisma.attachment.findUnique({
     where: { noteId_name: { noteId, name } },
@@ -198,7 +195,7 @@ export const DELETE = wrapApi(async (
 
   if (!attachment) return new Response(null, { status: 204 });
   if (attachment.note.ownerId !== result.user.id) {
-    return error("not-yours", "Ta notatka należy do kogoś innego.", 403);
+    return error("not-yours", (await apiWords()).apiNoteNotYours, 403);
   }
 
   await deleteAttachment(attachment.path);

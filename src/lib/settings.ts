@@ -48,6 +48,13 @@ export const settings = {
     default: number("DEFAULT_QUOTA_BYTES", 524_288_000),
   },
 
+  // Releases of the Android application. They belong to the server, not to any
+  // account, so they lie apart from user files and count towards nobody's quota.
+  app: {
+    directory: process.env.APP_DIR ?? "./data/app",
+    maxBytes: number("MAX_APP_BYTES", 314_572_800),
+  },
+
   code: {
 enabled: process.env.CODE_ENABLED === "true",
     docker: process.env.CODE_DOCKER ?? "docker",

@@ -1,27 +1,34 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { parkCodeForGoogle, register, type RegistrationResult } from "./actions";
+import { register, startGoogleWithCode, type RegistrationResult } from "./actions";
+import { useWords } from "@/components/LanguageProvider";
 
 const empty: RegistrationResult = {};
 
-export function RegistrationForm({ codeFromLink }: { codeFromLink: string }) {
+export function RegistrationForm({
+  codeFromLink,
+  googleAvailable,
+}: {
+  codeFromLink: string;
+  googleAvailable: boolean;
+}) {
+  const words = useWords();
   const [state, submitForm, busy] = useActionState(register, empty);
   const [viaGoogle, setViaGoogle] = useState(false);
-  const [googleState, setGoogleState] = useState<RegistrationResult>({});
 
   return (
     <>
       {state.error ? <p className="error">{state.error}</p> : null}
       {state.success ? (
         <p className="success">
-          {state.success} <a href="/signin">Przejdź do logowania</a>
+          {state.success} <a href="/signin">{words.goToSignIn}</a>
         </p>
       ) : null}
 
       <form action={submitForm}>
         <div className="field">
-          <label htmlFor="code">Kod zaproszenia</label>
+          <label htmlFor="code">{words.inviteCode}</label>
           <input
             id="code"
             name="code"
@@ -29,36 +36,36 @@ export function RegistrationForm({ codeFromLink }: { codeFromLink: string }) {
             required
             defaultValue={codeFromLink}
             autoComplete="off"
-            placeholder="np. KAJET-7QX2-9MB4"
+            placeholder={words.inviteCodePlaceholder}
           />
           {codeFromLink ? (
             <p className="small" style={{ marginTop: 4 }}>
-              Kod wpisał się sam z odnośnika, który dostałeś.
+              {words.codeCameFromLink}
             </p>
           ) : null}
         </div>
 
         <div className="field">
-          <label htmlFor="email">Adres e-mail</label>
+          <label htmlFor="email">{words.emailAddress}</label>
           <input id="email" name="email" type="email" required autoComplete="email" />
         </div>
 
         <div className="field">
-          <label htmlFor="login">Login (możesz zostawić pusty)</label>
+          <label htmlFor="login">{words.loginOptional}</label>
           <input
             id="login"
             name="login"
             type="text"
             autoComplete="username"
-            placeholder="wymyślimy go z adresu"
+            placeholder={words.loginPlaceholder}
           />
           <p className="small" style={{ marginTop: 4 }}>
-            Login widzą osoby, którym udostępnisz notatkę.
+            {words.loginIsVisible}
           </p>
         </div>
 
         <div className="field">
-          <label htmlFor="password">Hasło</label>
+          <label htmlFor="password">{words.password}</label>
           <input
             id="password"
             name="password"
@@ -67,11 +74,11 @@ export function RegistrationForm({ codeFromLink }: { codeFromLink: string }) {
             minLength={8}
             autoComplete="new-password"
           />
-          <p className="small" style={{ marginTop: 4 }}>Co najmniej osiem znaków.</p>
+          <p className="small" style={{ marginTop: 4 }}>{words.atLeastEightChars}</p>
         </div>
 
         <div className="field">
-          <label htmlFor="passwordRepeat">Powtórz hasło</label>
+          <label htmlFor="passwordRepeat">{words.repeatPassword}</label>
           <input
             id="passwordRepeat"
             name="passwordRepeat"
@@ -82,79 +89,57 @@ export function RegistrationForm({ codeFromLink }: { codeFromLink: string }) {
         </div>
 
         <button type="submit" className="primary" disabled={busy} style={{ width: "100%" }}>
-          {busy ? "Zakładam konto..." : "Załóż konto"}
+          {busy ? words.creatingAccount : words.createAccountButton}
         </button>
       </form>
 
-      <hr className="divider" />
+      {googleAvailable ? (
+        <>
+          <hr className="divider" />
 
-      {!viaGoogle ? (
-        <button type="button" onClick={() => setViaGoogle(true)} style={{ width: "100%" }}>
-          Wolę konto Google
-        </button>
-      ) : (
-        <GoogleForm codeFromLink={codeFromLink} state={googleState} setState={setGoogleState} />
-      )}
+          {!viaGoogle ? (
+            <button type="button" onClick={() => setViaGoogle(true)} style={{ width: "100%" }}>
+              {words.preferGoogle}
+            </button>
+          ) : (
+            <GoogleForm codeFromLink={codeFromLink} />
+          )}
+        </>
+      ) : null}
     </>
   );
 }
 
-function GoogleForm({
-  codeFromLink,
-  state,
-  setState,
-}: {
-  codeFromLink: string;
-  state: RegistrationResult;
-  setState: (result: RegistrationResult) => void;
-}) {
-  const [busy, setBusy] = useState(false);
+function GoogleForm({ codeFromLink }: { codeFromLink: string }) {
+  const words = useWords();
+  const [state, submitForm, busy] = useActionState(startGoogleWithCode, empty);
 
   return (
     <div>
-      <p className="eyebrow">Konto Google</p>
+      <p className="eyebrow">{words.googleAccountEyebrow}</p>
       <p className="small" style={{ marginBottom: 12 }}>
-        Podaj kod i adres, na który masz konto Google. Potem zaloguj się przyciskiem Google.
+        {words.googleAccountAbout}
       </p>
 
       {state.error ? <p className="error">{state.error}</p> : null}
-      {state.success ? <p className="success">{state.success}</p> : null}
 
-      <form
-        onSubmit={async (event) => {
-          event.preventDefault();
-          setBusy(true);
-          const data = new FormData(event.currentTarget);
-          const result = await parkCodeForGoogle(
-            String(data.get("code") ?? ""),
-            String(data.get("email") ?? ""),
-          );
-          setState(result);
-          setBusy(false);
-        }}
-      >
+      <form action={submitForm}>
         <div className="field">
-          <label htmlFor="googleCode">Kod zaproszenia</label>
-          <input id="googleCode" name="code" type="text" required defaultValue={codeFromLink} />
+          <label htmlFor="googleCode">{words.inviteCode}</label>
+          <input
+            id="googleCode"
+            name="code"
+            type="text"
+            required
+            defaultValue={codeFromLink}
+            autoComplete="off"
+            placeholder={words.inviteCodePlaceholder}
+          />
         </div>
-        <div className="field">
-          <label htmlFor="googleEmail">Adres konta Google</label>
-          <input id="googleEmail" name="email" type="email" required />
-        </div>
-        <button type="submit" disabled={busy} style={{ width: "100%" }}>
-          {busy ? "Zapisuję kod..." : "Przyjmij kod"}
+        <button type="submit" className="primary" disabled={busy} style={{ width: "100%" }}>
+          {busy ? words.checkingCode : words.onWithGoogle}
         </button>
       </form>
-
-      {state.success ? (
-        <a
-          href="/api/auth/signin/google"
-          className="button primary"
-          style={{ width: "100%", marginTop: 12 }}
-        >
-          Zaloguj się przez Google
-        </a>
-      ) : null}
     </div>
   );
 }

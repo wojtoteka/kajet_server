@@ -8,8 +8,12 @@ build/
 .env.local
 .env*.local
 
-# Notatki i zalaczniki uzytkownikow.
+# Notatki i zalaczniki uzytkownikow, oraz wydania aplikacji na Androida.
 dane/
+data/
+
+# Paczka zrodel do wgrania na serwer (tworzona lokalnie, nie do repo).
+kajet-aktualizacja.tar.gz
 
 *.tsbuildinfo
 next-env.d.ts

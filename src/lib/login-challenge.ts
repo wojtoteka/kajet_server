@@ -4,6 +4,7 @@ import { hashToken, issueToken } from "./app-token";
 import { prisma } from "./prisma";
 import { quotaState } from "./quota";
 import { settings } from "./settings";
+import { apiWords } from "./language";
 
 export const CHALLENGE_TTL_SECONDS = 10 * 60;
 export const POLL_INTERVAL_SECONDS = 2;
@@ -39,13 +40,20 @@ export type ChallengePollResult =
     };
 
 export async function createLoginChallenge(device: string): Promise<ChallengeCreateResult> {
+  // Every attempt to sign in from the app leaves a row behind. Sweep the ones
+  // that expired over a day ago here, so the table does not grow forever and
+  // no separate cron job is needed.
+  await prisma.loginChallenge.deleteMany({
+    where: { expiresAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
+  });
+
   const code = randomBytes(CODE_BYTES).toString("base64url");
   const expiresAt = new Date(Date.now() + CHALLENGE_TTL_SECONDS * 1000);
 
   await prisma.loginChallenge.create({
     data: {
       codeHash: hashToken(code),
-      device: device.slice(0, 120) || "Urządzenie",
+      device: device.slice(0, 120) || (await apiWords()).deviceFallback,
       expiresAt,
     },
   });
@@ -79,23 +87,23 @@ export async function approveLoginChallenge(
       ok: false,
       reason: user.blockReason
         ? `To konto zostało zablokowane: ${user.blockReason}`
-        : "To konto zostało zablokowane. Napisz do administratora.",
+        : (await apiWords()).apiAccountBlocked,
     };
   }
 
   const challenge = await findChallengeByCode(code);
-  if (!challenge) return { ok: false, reason: "Ten kod logowania nie istnieje albo już wygasł." };
+  if (!challenge) return { ok: false, reason: (await apiWords()).apiChallengeGone };
   if (isExpired(challenge) || challenge.status === "REDEEMED") {
-    return { ok: false, reason: "Ten kod logowania wygasł. Poproś aplikację o nowy." };
+    return { ok: false, reason: (await apiWords()).apiChallengeExpiredAskApp };
   }
   if (challenge.status === "DENIED") {
-    return { ok: false, reason: "To logowanie zostało odrzucone." };
+    return { ok: false, reason: (await apiWords()).apiChallengeDenied };
   }
   if (challenge.status === "APPROVED") {
     if (challenge.userId === user.id) {
       return { ok: true, device: challenge.device };
     }
-    return { ok: false, reason: "Ten kod został już zatwierdzony na innym koncie." };
+    return { ok: false, reason: (await apiWords()).apiChallengeOtherAccount };
   }
 
   await prisma.loginChallenge.update({
@@ -115,12 +123,12 @@ export async function denyLoginChallenge(
   user: User,
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
   const challenge = await findChallengeByCode(code);
-  if (!challenge) return { ok: false, reason: "Ten kod logowania nie istnieje albo już wygasł." };
+  if (!challenge) return { ok: false, reason: (await apiWords()).apiChallengeGone };
   if (isExpired(challenge) || challenge.status === "REDEEMED") {
-    return { ok: false, reason: "Ten kod logowania wygasł." };
+    return { ok: false, reason: (await apiWords()).apiChallengeExpired };
   }
   if (challenge.status === "APPROVED" && challenge.userId && challenge.userId !== user.id) {
-    return { ok: false, reason: "Ten kod należy do innego konta." };
+    return { ok: false, reason: (await apiWords()).apiChallengeWrongAccount };
   }
 
   await prisma.loginChallenge.update({

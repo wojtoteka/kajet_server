@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import type { User } from "@prisma/client";
 import { prisma } from "./prisma";
+import { apiWords } from "./language";
 
 const TOKEN_LENGTH = 48;
 
@@ -18,7 +19,7 @@ export async function issueToken(
     data: {
       userId,
       tokenHash: hashToken(token),
-      device: device.slice(0, 120) || "Nieznane urządzenie",
+      device: device.slice(0, 120) || (await apiWords()).unknownDeviceWord,
     },
     select: { id: true },
   });

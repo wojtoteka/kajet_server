@@ -4,8 +4,13 @@ import { humanSize } from "@/lib/quota";
 import { googleWorks, mailWorks, settings } from "@/lib/settings";
 import { runnerState } from "@/lib/code-runner";
 import { currentlyRunning } from "@/lib/run-limits";
+import { currentRelease } from "@/lib/app-release";
+import { currentWords } from "@/lib/language";
+import { blockedOfWhich, releaseFileHint, releaseWithDownloads } from "@/lib/i18n";
 
 export default async function AdminOverviewPage() {
+  const release = await currentRelease();
+
   const [accounts, blocked, notes, freeCodes, totals] = await Promise.all([
     prisma.user.count(),
     prisma.user.count({ where: { blocked: true } }),
@@ -24,11 +29,12 @@ export default async function AdminOverviewPage() {
   const codeWorks = codeState.works;
   const codeDescription = codeState.description;
   const runningNow = currentlyRunning();
+  const words = await currentWords();
 
   return (
     <>
       <div className="sheet" style={{ padding: "22px 24px", marginBottom: 20 }}>
-        <p className="eyebrow">Stan serwera</p>
+        <p className="eyebrow">{words.serverState}</p>
         <div
           style={{
             display: "grid",
@@ -36,55 +42,75 @@ export default async function AdminOverviewPage() {
             gap: 20,
           }}
         >
-          <Stat name="Konta" value={String(accounts)} note={`w tym ${blocked} zablokowanych`} />
-          <Stat name="Notatki" value={String(notes)} note="poza koszem" />
           <Stat
-            name="Zajęte miejsce"
-            value={humanSize(used)}
-            note="razem na wszystkich kontach"
+            name={words.statAccounts}
+            value={String(accounts)}
+            note={blockedOfWhich(words, blocked)}
           />
-          <Stat name="Wolne kody" value={String(freeCodes)} note="jeszcze ważne" />
+          <Stat name={words.statNotes} value={String(notes)} note={words.statNotesNote} />
+          <Stat
+            name={words.statSpace}
+            value={humanSize(used)}
+            note={words.statSpaceNote}
+          />
+          <Stat
+            name={words.statFreeCodes}
+            value={String(freeCodes)}
+            note={words.statFreeCodesNote}
+          />
         </div>
       </div>
 
       <div className="sheet" style={{ padding: "22px 24px", marginBottom: 20 }}>
-        <p className="eyebrow">Ustawienia</p>
+        <p className="eyebrow">{words.settingsEyebrow}</p>
         <table>
           <tbody>
-            <Row name="Adres strony" value={settings.baseUrl} />
-            <Row name="Port" value={String(settings.port)} />
+            <Row name={words.rowSiteAddress} value={settings.baseUrl} />
+            <Row name={words.rowPort} value={String(settings.port)} />
             <Row
-              name="Poczta wychodząca"
-              value={mailWorks() ? `${settings.mail.host}:${settings.mail.port}` : "nie ustawiona"}
+              name={words.rowOutgoingMail}
+              value={mailWorks() ? `${settings.mail.host}:${settings.mail.port}` : words.notSetUp}
               warning={!mailWorks()}
               hint={
                 mailWorks()
                   ? undefined
-                  : "Bez SMTP nie wysyłamy zaproszeń, potwierdzeń ani powiadomień o udostępnieniu. Odnośniki nadal da się kopiować ze strony."
+                  : words.noSmtpHint
               }
             />
             <Row
-              name="Logowanie przez Google"
-              value={googleWorks() ? "włączone" : "wyłączone"}
+              name={words.rowGoogleSignIn}
+              value={googleWorks() ? words.enabledWord : words.disabledWord}
               warning={!googleWorks()}
               hint={
                 googleWorks()
                   ? undefined
-                  : "Uzupełnij AUTH_GOOGLE_ID i AUTH_GOOGLE_SECRET w pliku .env."
+                  : words.googleEnvHint
               }
             />
             <Row
-              name="Domyślny limit nowego konta"
+              name={words.rowDefaultQuota}
               value={humanSize(settings.quotas.default)}
             />
             <Row
-              name="Największy pojedynczy plik"
+              name={words.rowLargestFile}
               value={humanSize(settings.files.maxFileBytes)}
             />
-            <Row name="Katalog z plikami" value={settings.files.directory} />
+            <Row name={words.rowFilesDirectory} value={settings.files.directory} />
             <Row
-              name="Uruchamianie kodu"
-              value={codeWorks ? "w kontenerze Dockera" : "nie działa"}
+              name={words.rowAndroidApp}
+              value={
+                release ? releaseWithDownloads(words, release.version, release.downloads) : words.notPublished
+              }
+              warning={!release}
+              hint={
+                release
+                  ? releaseFileHint(words, humanSize(release.sizeBytes))
+                  : words.noReleaseHint
+              }
+            />
+            <Row
+              name={words.rowRunningCode}
+              value={codeWorks ? words.inDockerContainer : words.notWorking}
               warning={!codeWorks}
               hint={
                 codeWorks
@@ -92,7 +118,7 @@ export default async function AdminOverviewPage() {
                     `Naraz liczy się najwyżej ${settings.code.maxConcurrent} programów, czyli w szczycie ` +
                     `${humanSize(settings.code.maxConcurrent * settings.code.memoryMb * 1024 * 1024)} pamięci. ` +
                     `Teraz liczy się ${runningNow}.`
-                  : `${codeDescription} Dopóki to nie działa, aplikacja mówi użytkownikom wprost, że uruchamianie jest niedostępne. Kod nadal da się pisać i zapisywać.`
+                  : `${codeDescription} ${words.codeOffHint}`
               }
             />
           </tbody>
@@ -101,10 +127,13 @@ export default async function AdminOverviewPage() {
 
       <div className="row">
         <Link className="button primary" href="/admin/codes">
-          Wydaj kod zaproszenia
+          {words.issueInviteCode}
         </Link>
         <Link className="button" href="/admin/accounts">
-          Zarządzaj kontami
+          {words.manageAccounts}
+        </Link>
+        <Link className="button" href="/admin/app">
+          {words.publishApp}
         </Link>
       </div>
     </>

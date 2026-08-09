@@ -4,6 +4,13 @@ import { error, json, wrapApi } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { issueToken } from "@/lib/app-token";
 import { quotaState } from "@/lib/quota";
+import {
+  callerAddress,
+  clearFailedSignIns,
+  noteFailedSignIn,
+  signInAllowed,
+} from "@/lib/signin-limits";
+import { apiWords } from "@/lib/language";
 
 export { OPTIONS } from "@/lib/api";
 
@@ -18,21 +25,33 @@ export const POST = wrapApi(async (request: Request) => {
   try {
     data = await request.json();
   } catch {
-    return error("bad-request", "Nie udało się odczytać zapytania.", 400);
+    return error("bad-request", (await apiWords()).apiBadRequest, 400);
   }
 
   const parsed = form.safeParse(data);
   if (!parsed.success) {
-    return error("bad-request", "Podaj adres e-mail i hasło.", 400);
+    return error("bad-request", (await apiWords()).apiGiveEmailAndPassword, 400);
   }
 
   const { email, password, device } = parsed.data;
+  const from = callerAddress(request);
+
+  // Pięć nieudanych prób pod rząd zamyka logowanie na kwadrans - żeby nie dało
+  // się zgadywać hasła w nieskończoność.
+  const gate = signInAllowed(email, from, await apiWords());
+  if (!gate.allowed) {
+    return error("too-many-attempts", gate.message, 429, {
+      "Retry-After": String(gate.retryInSeconds),
+    });
+  }
+
   const user = await prisma.user.findUnique({ where: { email } });
 
   // The same answer for a wrong address and a wrong password. Otherwise it
   // would be possible to check which addresses have accounts.
   if (!user?.passwordHash || !(await bcrypt.compare(password, user.passwordHash))) {
-    return error("bad-credentials", "Zły adres albo złe hasło.", 401);
+    noteFailedSignIn(email, from);
+    return error("bad-credentials", (await apiWords()).apiWrongCredentials, 401);
   }
 
   if (user.blocked) {
@@ -40,14 +59,16 @@ export const POST = wrapApi(async (request: Request) => {
       "blocked",
       user.blockReason
         ? `To konto zostało zablokowane: ${user.blockReason}`
-        : "To konto zostało zablokowane. Napisz do administratora.",
+        : (await apiWords()).apiAccountBlocked,
       403,
     );
   }
 
+  clearFailedSignIns(email, from);
+
   const { token, id } = await issueToken(
     user.id,
-    device ?? request.headers.get("x-kajet-device") ?? "Urządzenie",
+    device ?? request.headers.get("x-kajet-device") ?? (await apiWords()).deviceFallback,
   );
 
   await prisma.user.update({

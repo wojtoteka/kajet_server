@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { KajetMark } from "@/components/KajetMark";
+import { currentWords } from "@/lib/language";
+import { addressConfirmedBody, type Words } from "@/lib/i18n";
 
-export const metadata = { title: "Potwierdzenie adresu — Kajet" };
+export async function generateMetadata() {
+  return { title: (await currentWords()).metaConfirm };
+}
 
 const KEY = "confirm:";
 
@@ -12,19 +16,20 @@ export default async function ConfirmPage({
   searchParams: Promise<{ token?: string }>;
 }) {
   const { token } = await searchParams;
-  const result = await confirm(token);
+  const words = await currentWords();
+  const result = await confirm(token, words);
 
   return (
     <main className="page" style={{ maxWidth: 480 }}>
       <KajetMark />
 
       <div className="sheet-ruled" style={{ paddingBlock: 32, paddingInlineEnd: 28 }}>
-        <p className="eyebrow">Adres e-mail</p>
+        <p className="eyebrow">{words.emailAddressEyebrow}</p>
         <h1 style={{ marginBottom: 12 }}>{result.heading}</h1>
         <p className="lead">{result.body}</p>
 
         <Link className="button primary" href={result.ok ? "/signin" : "/register"}>
-          {result.ok ? "Przejdź do logowania" : "Wróć do rejestracji"}
+          {result.ok ? words.goToSignIn : words.backToRegister}
         </Link>
       </div>
     </main>
@@ -33,12 +38,12 @@ export default async function ConfirmPage({
 
 type ConfirmResult = { ok: boolean; heading: string; body: string };
 
-async function confirm(token: string | undefined): Promise<ConfirmResult> {
+async function confirm(token: string | undefined, words: Words): Promise<ConfirmResult> {
   if (!token) {
     return {
       ok: false,
-      heading: "Brak odnośnika",
-      body: "Ten adres nie zawiera tokenu. Otwórz odnośnik prosto z wiadomości, którą dostałeś.",
+      heading: words.noLinkHeading,
+      body: words.noLinkBody,
     };
   }
 
@@ -47,8 +52,8 @@ async function confirm(token: string | undefined): Promise<ConfirmResult> {
   if (!entry || !entry.identifier.startsWith(KEY)) {
     return {
       ok: false,
-      heading: "Odnośnik już nie działa",
-      body: "Ten odnośnik został już użyty albo jest nieprawidłowy. Jeśli konto działa, po prostu się zaloguj.",
+      heading: words.linkDeadHeading,
+      body: words.linkDeadBody,
     };
   }
 
@@ -56,8 +61,8 @@ async function confirm(token: string | undefined): Promise<ConfirmResult> {
     await prisma.verificationToken.delete({ where: { token } });
     return {
       ok: false,
-      heading: "Odnośnik wygasł",
-      body: "Odnośnik był ważny przez dobę. Zaloguj się i poproś o nowe potwierdzenie w ustawieniach konta.",
+      heading: words.linkExpiredHeading,
+      body: words.linkExpiredBody,
     };
   }
 
@@ -73,7 +78,7 @@ async function confirm(token: string | undefined): Promise<ConfirmResult> {
 
   return {
     ok: true,
-    heading: "Adres potwierdzony",
-    body: `Adres ${email} jest już potwierdzony. Możesz się zalogować tutaj i w aplikacji na tablecie.`,
+    heading: words.addressConfirmed,
+    body: addressConfirmedBody(words, email),
   };
 }

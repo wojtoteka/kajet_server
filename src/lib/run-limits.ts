@@ -1,4 +1,5 @@
 import { settings } from "./settings";
+import type { Words } from "./i18n";
 
 type Window = { start: number; count: number };
 
@@ -55,15 +56,13 @@ let runningNow = 0;
 
 export type Slot = { taken: true; release: () => void } | { taken: false; message: string };
 
-export function takeSlot(): Slot {
+export function takeSlot(words: Words): Slot {
   const most = settings.code.maxConcurrent;
 
   if (runningNow >= most) {
     return {
       taken: false,
-      message:
-        `Serwer liczy teraz ${most} programów naraz i to jest tyle, ile na niego ustalono. ` +
-        "Spróbuj za kilka sekund.",
+      message: `${words.apiServerBusy} ${words.apiTryInSeconds}`,
     };
   }
 

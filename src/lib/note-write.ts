@@ -2,19 +2,29 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { reserveBytes, changeUsed } from "@/lib/quota";
 import { contentHash, deleteAttachment, deleteNoteDirectory } from "@/lib/files";
+import { apiWords } from "./language";
 
-/** Kinds the tablet sync API understands. CODE notes stay on the web only. */
+/**
+ * Kinds every tablet app version understands. Old apps choke on CODE content
+ * (it is not a NoteDocument), so GET keeps this narrow list unless the app
+ * asks for more with ?kinds=all.
+ */
 export const SYNC_KINDS = ["HANDWRITTEN", "TEXT", "MINDMAP"] as const;
 export type SyncNoteKind = (typeof SYNC_KINDS)[number];
+
+/** Kinds the PUT endpoint accepts. New apps sync code files as CODE notes. */
+export const PUT_KINDS = [...SYNC_KINDS, "CODE"] as const;
 
 export const outgoingNoteSchema = z.object({
   id: z.string().min(1).max(64),
   title: z.string().max(300),
-  kind: z.enum(SYNC_KINDS),
+  kind: z.enum(PUT_KINDS),
   favorite: z.boolean().optional(),
   tags: z.array(z.string()).optional(),
   folderId: z.string().nullable().optional(),
-  content: z.string(),
+  // A tombstone (deleted: true) carries no content; every other write must.
+  // The route checks that, because zod alone cannot see the pair.
+  content: z.string().optional(),
   baseVersion: z.number().int().min(0),
   deleted: z.boolean().optional(),
 });
@@ -30,16 +40,20 @@ export type NoteOnServer = {
   content: string;
   version: number;
   updatedAt: number;
+  /** ms since epoch; set when the server copy sits in the bin. */
+  deletedAt: number | null;
 };
 
 export type UpsertNoteResult =
   | { status: "unchanged"; version: number }
   | { status: "conflict"; message: string; onServer: NoteOnServer }
   | { status: "saved" | "created"; version: number; updatedAt: number }
+  /** The note was purged here; the client should bin its copy, not recreate. */
+  | { status: "gone"; version: number }
   | { status: "error"; code: string; message: string; httpStatus: number };
 
 const CONFLICT_MESSAGE =
-  "Ta notatka zmieniła się także gdzie indziej. Zapisz swoją wersję obok, żeby nic nie przepadło.";
+  (await apiWords()).apiConflict;
 
 export type ExistingNoteSnapshot = {
   id: string;
@@ -50,7 +64,30 @@ export type ExistingNoteSnapshot = {
   /** Soft-delete marker; null means the note is active. */
   deletedAt: Date | null;
   favorite: boolean;
+  /** Folder the note sits in; optional so older tests keep compiling. */
+  folderId?: string | null;
 };
+
+/**
+ * Maps the folder field of an incoming note onto what the database can hold.
+ * The tablet sends "" for the root (its serializer drops nulls), a real id for
+ * a folder, and nothing at all for "leave the note where it is". A folder this
+ * account does not own also means "leave it" - moving the note to the root
+ * over a typo would be worse.
+ */
+export async function resolveFolderId(
+  userId: string,
+  folderId: string | null | undefined,
+): Promise<string | null | undefined> {
+  if (folderId === undefined) return undefined;
+  if (!folderId) return null;
+  const folder = await prisma.folder.findUnique({
+    where: { id: folderId },
+    select: { ownerId: true },
+  });
+  if (!folder || folder.ownerId !== userId) return undefined;
+  return folderId;
+}
 
 /**
  * Pure decision used by both the API route and tests: given what we know about
@@ -61,10 +98,13 @@ export function planNoteUpsert(
   note: OutgoingNote,
   hash: string,
   ownerId: string,
+  /** Folder already resolved by {@link resolveFolderId}; undefined = leave. */
+  folderId?: string | null,
 ):
   | { action: "unchanged"; version: number }
   | { action: "conflict" }
   | { action: "forbidden" }
+  | { action: "delete" }
   | { action: "write"; addedBytes: number } {
   if (existing && existing.ownerId !== ownerId) {
     return { action: "forbidden" };
@@ -72,11 +112,27 @@ export function planNoteUpsert(
 
   const wantDeleted = note.deleted ?? false;
   const isDeleted = existing?.deletedAt != null;
+
+  // Deleting wins over version conflicts: it only moves the note to the bin,
+  // so nothing is lost, and the app has no way to resolve a conflict on a note
+  // the user just threw away. Content is untouched - a tombstone has none.
+  if (wantDeleted) {
+    if (!existing) return { action: "unchanged", version: 0 };
+    if (isDeleted) return { action: "unchanged", version: existing.version };
+    return { action: "delete" };
+  }
+
   const wantFavorite = note.favorite ?? existing?.favorite ?? false;
   const favoriteSame = existing ? wantFavorite === existing.favorite : true;
 
-  // Same content is not enough: soft-delete / restore / favorite must still write.
-  if (existing && existing.hash === hash && wantDeleted === isDeleted && favoriteSame) {
+  // A move between folders changes no content, yet it must still write -
+  // otherwise the note never leaves its old folder on the other devices.
+  const folderSame =
+    folderId === undefined || !existing || folderId === (existing.folderId ?? null);
+
+  // Same content is not enough: soft-delete / restore / favorite / folder
+  // must still write.
+  if (existing && existing.hash === hash && wantDeleted === isDeleted && favoriteSame && folderSame) {
     return { action: "unchanged", version: existing.version };
   }
 
@@ -86,20 +142,30 @@ export function planNoteUpsert(
 
   return {
     action: "write",
-    addedBytes: Buffer.byteLength(note.content, "utf8") - (existing?.sizeBytes ?? 0),
+    addedBytes: Buffer.byteLength(note.content ?? "", "utf8") - (existing?.sizeBytes ?? 0),
   };
 }
 
 /**
  * Single write path for tablet sync and (later) web editor server actions.
- * Conflict is a normal result — callers map it to HTTP 200 with status:"conflict".
+ * Conflict is a normal result - callers map it to HTTP 200 with status:"conflict".
  */
 export async function upsertNoteForUser(
   userId: string,
   note: OutgoingNote,
 ): Promise<UpsertNoteResult> {
-  const size = Buffer.byteLength(note.content, "utf8");
-  const hash = contentHash(note.content);
+  if (!note.deleted && typeof note.content !== "string") {
+    return {
+      status: "error",
+      code: "bad-request",
+      message: (await apiWords()).apiNoteWithoutBody,
+      httpStatus: 400,
+    };
+  }
+
+  const content = note.content ?? "";
+  const size = Buffer.byteLength(content, "utf8");
+  const hash = contentHash(content);
 
   const existing = await prisma.note.findUnique({
     where: { id: note.id },
@@ -111,22 +177,46 @@ export async function upsertNoteForUser(
       hash: true,
       deletedAt: true,
       favorite: true,
+      folderId: true,
     },
   });
 
-  const plan = planNoteUpsert(existing, note, hash, userId);
+  // A baseVersion above zero says the server once acknowledged this note, yet
+  // the row is missing - so it was purged (from the panel or another device).
+  // Recreating it would resurrect a deliberately destroyed note; the client
+  // moves its copy to the bin instead. Deletions fall through to the regular
+  // path, which answers "unchanged" for a missing row.
+  if (!existing && !note.deleted && note.baseVersion > 0) {
+    return { status: "gone", version: 0 };
+  }
+
+  const folderId = await resolveFolderId(userId, note.folderId);
+  const plan = planNoteUpsert(existing, note, hash, userId, folderId);
 
   if (plan.action === "forbidden") {
     return {
       status: "error",
       code: "not-yours",
-      message: "Ta notatka należy do kogoś innego.",
+      message: (await apiWords()).apiNoteNotYours,
       httpStatus: 403,
     };
   }
 
   if (plan.action === "unchanged") {
     return { status: "unchanged", version: plan.version };
+  }
+
+  if (plan.action === "delete") {
+    const saved = await prisma.note.update({
+      where: { id: note.id },
+      data: { deletedAt: new Date(), version: { increment: 1 } },
+      select: { version: true, updatedAt: true },
+    });
+    return {
+      status: "saved",
+      version: saved.version,
+      updatedAt: saved.updatedAt.getTime(),
+    };
   }
 
   if (plan.action === "conflict") {
@@ -141,6 +231,7 @@ export async function upsertNoteForUser(
         content: true,
         version: true,
         updatedAt: true,
+        deletedAt: true,
       },
     });
     return {
@@ -149,6 +240,7 @@ export async function upsertNoteForUser(
       onServer: {
         ...full,
         updatedAt: full.updatedAt.getTime(),
+        deletedAt: full.deletedAt?.getTime() ?? null,
       },
     };
   }
@@ -169,27 +261,32 @@ export async function upsertNoteForUser(
       create: {
         id: note.id,
         ownerId: userId,
-        folderId: note.folderId ?? null,
+        folderId: folderId ?? null,
         title: note.title,
         kind: note.kind,
         favorite: note.favorite ?? false,
         tags: (note.tags ?? []).join("|"),
-        content: note.content,
+        content,
         sizeBytes: size,
         hash,
         version: 1,
-        deletedAt: note.deleted ? new Date() : null,
+        deletedAt: null,
       },
       update: {
-        folderId: note.folderId ?? null,
+        // An absent field leaves the note where it is; "" (root) and unknown
+        // folders are already straightened out by resolveFolderId.
+        folderId: folderId === undefined ? undefined : folderId,
         title: note.title,
         favorite: note.favorite ?? false,
         tags: (note.tags ?? []).join("|"),
-        content: note.content,
+        content,
         sizeBytes: size,
         hash,
         version: { increment: 1 },
-        deletedAt: note.deleted ? new Date() : null,
+        // Deletions never reach this branch (they are the "delete" plan), so a
+        // write always means the note is alive - also when it climbs out of
+        // the bin after a restore on the device.
+        deletedAt: null,
       },
       select: { version: true, updatedAt: true },
     });
@@ -290,7 +387,7 @@ export async function upsertCodeNoteForUser(
     deleted?: boolean;
   },
 ): Promise<UpsertNoteResult> {
-  // Reuse the sync planner with a synthetic TEXT kind — kind is not part of
+  // Reuse the sync planner with a synthetic TEXT kind - kind is not part of
   // conflict/quota logic; we force CODE on the actual Prisma write below.
   const asSync: OutgoingNote = {
     id: note.id,
@@ -318,6 +415,7 @@ export async function upsertCodeNoteForUser(
       deletedAt: true,
       favorite: true,
       kind: true,
+      folderId: true,
     },
   });
 
@@ -330,18 +428,31 @@ export async function upsertCodeNoteForUser(
     };
   }
 
-  const plan = planNoteUpsert(existing, asSync, hash, userId);
+  const folderId = await resolveFolderId(userId, note.folderId);
+  const plan = planNoteUpsert(existing, asSync, hash, userId, folderId);
 
   if (plan.action === "forbidden") {
     return {
       status: "error",
       code: "not-yours",
-      message: "Ta notatka należy do kogoś innego.",
+      message: (await apiWords()).apiNoteNotYours,
       httpStatus: 403,
     };
   }
   if (plan.action === "unchanged") {
     return { status: "unchanged", version: plan.version };
+  }
+  if (plan.action === "delete") {
+    const saved = await prisma.note.update({
+      where: { id: note.id },
+      data: { deletedAt: new Date(), version: { increment: 1 } },
+      select: { version: true, updatedAt: true },
+    });
+    return {
+      status: "saved",
+      version: saved.version,
+      updatedAt: saved.updatedAt.getTime(),
+    };
   }
   if (plan.action === "conflict") {
     const full = await prisma.note.findUniqueOrThrow({
@@ -355,12 +466,17 @@ export async function upsertCodeNoteForUser(
         content: true,
         version: true,
         updatedAt: true,
+        deletedAt: true,
       },
     });
     return {
       status: "conflict",
       message: CONFLICT_MESSAGE,
-      onServer: { ...full, updatedAt: full.updatedAt.getTime() },
+      onServer: {
+        ...full,
+        updatedAt: full.updatedAt.getTime(),
+        deletedAt: full.deletedAt?.getTime() ?? null,
+      },
     };
   }
 
@@ -380,7 +496,7 @@ export async function upsertCodeNoteForUser(
       create: {
         id: note.id,
         ownerId: userId,
-        folderId: note.folderId ?? null,
+        folderId: folderId ?? null,
         title: note.title,
         kind: "CODE",
         favorite: note.favorite ?? false,
@@ -392,7 +508,9 @@ export async function upsertCodeNoteForUser(
         deletedAt: note.deleted ? new Date() : null,
       },
       update: {
-        folderId: note.folderId ?? null,
+        // Same rule as in upsertNoteForUser: an absent folderId leaves the
+        // note in its folder, "" and unknown folders are resolved above.
+        folderId: folderId === undefined ? undefined : folderId,
         title: note.title,
         favorite: note.favorite ?? false,
         tags: (note.tags ?? []).join("|"),
@@ -441,7 +559,7 @@ export async function purgeNoteForUser(
   if (!existing.deletedAt) {
     return {
       status: "error",
-      message: "Najpierw wyrzuć notatkę do kosza, potem możesz ją skasować na stałe.",
+      message: (await apiWords()).apiTrashFirst,
     };
   }
 

@@ -4,8 +4,12 @@ import { mailWorks } from "@/lib/settings";
 import { KajetMark } from "@/components/KajetMark";
 import { ActionForm } from "@/components/ActionForm";
 import { requestLink, setNewPassword } from "./actions";
+import { currentWords } from "@/lib/language";
+import type { Words } from "@/lib/i18n";
 
-export const metadata = { title: "Nowe hasło — Kajet" };
+export async function generateMetadata() {
+  return { title: (await currentWords()).metaNewPassword };
+}
 
 export default async function PasswordPage({
   searchParams,
@@ -13,6 +17,7 @@ export default async function PasswordPage({
   searchParams: Promise<{ token?: string }>;
 }) {
   const { token } = await searchParams;
+  const words = await currentWords();
   const valid = token ? await isTokenValid(token) : false;
 
   return (
@@ -22,22 +27,21 @@ export default async function PasswordPage({
       <div className="sheet-ruled" style={{ paddingBlock: 32, paddingInlineEnd: 28 }}>
         {token && valid ? (
           <>
-            <p className="eyebrow">Nowe hasło</p>
-            <h1 style={{ marginBottom: 8 }}>Ustaw nowe hasło</h1>
+            <p className="eyebrow">{words.newPasswordEyebrow}</p>
+            <h1 style={{ marginBottom: 8 }}>{words.setNewPasswordHeading}</h1>
             <p className="lead">
-              Po zmianie wylogujemy wszystkie urządzenia, więc zaloguj się na nowo także
-              w aplikacji na tablecie.
+              {words.newPasswordAbout}
             </p>
 
             <ActionForm
               action={setNewPassword}
-              label="Zapisz nowe hasło"
-              busyLabel="Zapisuję..."
+              label={words.saveNewPassword}
+              busyLabel={words.savingWord}
               primary
             >
               <input type="hidden" name="token" value={token} />
               <div className="field">
-                <label htmlFor="password">Nowe hasło</label>
+                <label htmlFor="password">{words.newPasswordLabel}</label>
                 <input
                   id="password"
                   name="password"
@@ -46,10 +50,10 @@ export default async function PasswordPage({
                   minLength={8}
                   autoComplete="new-password"
                 />
-                <p className="small" style={{ marginTop: 4 }}>Co najmniej osiem znaków.</p>
+                <p className="small" style={{ marginTop: 4 }}>{words.atLeastEightChars}</p>
               </div>
               <div className="field">
-                <label htmlFor="passwordRepeat">Powtórz hasło</label>
+                <label htmlFor="passwordRepeat">{words.repeatPassword}</label>
                 <input
                   id="passwordRepeat"
                   name="passwordRepeat"
@@ -62,44 +66,42 @@ export default async function PasswordPage({
           </>
         ) : token ? (
           <>
-            <p className="eyebrow">Odnośnik</p>
-            <h1 style={{ marginBottom: 8 }}>Ten odnośnik już nie działa</h1>
+            <p className="eyebrow">{words.linkEyebrow}</p>
+            <h1 style={{ marginBottom: 8 }}>{words.linkDeadHeading2}</h1>
             <p className="lead">
-              Odnośnik jest ważny przez godzinę i działa jeden raz. Poproś o nowy formularzem
-              poniżej.
+              {words.linkOneHourAbout}
             </p>
-            <LinkForm />
+            <LinkForm words={words} />
           </>
         ) : (
           <>
-            <p className="eyebrow">Hasło</p>
-            <h1 style={{ marginBottom: 8 }}>Nie pamiętam hasła</h1>
+            <p className="eyebrow">{words.passwordEyebrow}</p>
+            <h1 style={{ marginBottom: 8 }}>{words.forgotPasswordHeading}</h1>
             <p className="lead">
-              Podaj adres, na który masz konto. Wyślemy odnośnik do ustawienia nowego hasła.
+              {words.forgotPasswordAbout}
             </p>
             {!mailWorks() ? (
               <p className="error">
-                Poczta na tym serwerze nie jest ustawiona, więc wiadomość nie wyjdzie. Poproś
-                administratora o pomoc.
+                {words.mailNotSetHere}
               </p>
             ) : null}
-            <LinkForm />
+            <LinkForm words={words} />
           </>
         )}
       </div>
 
       <p className="small" style={{ marginTop: 20, textAlign: "center" }}>
-        <Link href="/signin">Wróć do logowania</Link>
+        <Link href="/signin">{words.backToSignIn}</Link>
       </p>
     </main>
   );
 }
 
-function LinkForm() {
+function LinkForm({ words }: { words: Words }) {
   return (
-    <ActionForm action={requestLink} label="Wyślij odnośnik" busyLabel="Wysyłam..." primary>
+    <ActionForm action={requestLink} label={words.sendLinkButton} busyLabel={words.sendingWord} primary>
       <div className="field">
-        <label htmlFor="email">Adres e-mail</label>
+        <label htmlFor="email">{words.emailAddress}</label>
         <input id="email" name="email" type="email" required autoComplete="email" />
       </div>
     </ActionForm>

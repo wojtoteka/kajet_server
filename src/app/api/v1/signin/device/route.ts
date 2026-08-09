@@ -4,6 +4,7 @@ import {
   createLoginChallenge,
   pollLoginChallenge,
 } from "@/lib/login-challenge";
+import { apiWords } from "@/lib/language";
 
 export { OPTIONS } from "@/lib/api";
 
@@ -14,8 +15,8 @@ const createForm = z.object({
 /**
  * Device login for the mobile app.
  *
- * POST — create a one-time challenge and return the URL the app should open.
- * GET  — poll with ?code=… until the user approved in the browser; then issue
+ * POST - create a one-time challenge and return the URL the app should open.
+ * GET  - poll with ?code=… until the user approved in the browser; then issue
  *        an AppToken once (same shape as POST /api/v1/signin).
  */
 export const POST = wrapApi(async (request: Request) => {
@@ -24,16 +25,16 @@ export const POST = wrapApi(async (request: Request) => {
     const text = await request.text();
     if (text.trim()) data = JSON.parse(text);
   } catch {
-    return error("bad-request", "Nie udało się odczytać zapytania.", 400);
+    return error("bad-request", (await apiWords()).apiBadRequest, 400);
   }
 
   const parsed = createForm.safeParse(data);
   if (!parsed.success) {
-    return error("bad-request", "Podaj nazwę urządzenia.", 400);
+    return error("bad-request", (await apiWords()).apiGiveDeviceName, 400);
   }
 
   const created = await createLoginChallenge(
-    parsed.data.device ?? request.headers.get("x-kajet-device") ?? "Urządzenie",
+    parsed.data.device ?? request.headers.get("x-kajet-device") ?? (await apiWords()).deviceFallback,
   );
 
   return json(created);
@@ -51,12 +52,12 @@ export const GET = wrapApi(async (request: Request) => {
     return json({ status: "pending" }, 202);
   }
   if (result.status === "denied") {
-    return error("denied", "Logowanie zostało odrzucone na stronie.", 403);
+    return error("denied", (await apiWords()).apiSignInDenied, 403);
   }
   if (result.status === "expired") {
     return error(
       "expired",
-      "Kod logowania wygasł albo został już użyty. Spróbuj jeszcze raz w aplikacji.",
+      (await apiWords()).apiCodeExpiredOrUsed,
       410,
     );
   }
