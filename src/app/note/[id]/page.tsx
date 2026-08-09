@@ -16,6 +16,9 @@ import { TextNoteEditor } from "@/components/TextNoteEditor";
 import { MindMapEditor } from "@/components/MindMapEditor";
 import { HandwritingEditor } from "@/components/HandwritingEditor";
 import { CodeNotePanel } from "@/components/CodeNotePanel";
+import { AiPanel } from "@/components/AiPanel";
+import { aiVisibleFor } from "@/lib/ai/access";
+import { aiHandles } from "@/lib/ai/tools";
 import { AttachmentsPanel } from "@/components/AttachmentsPanel";
 import { NoteActionsBar } from "@/components/NoteActionsBar";
 import { ActionForm } from "@/components/ActionForm";
@@ -34,6 +37,10 @@ import {
   toggleFavorite,
   uploadAttachment,
   removeAttachment,
+  askAssistant,
+  undoAssistant,
+  readAiConversation,
+  clearAiConversation,
 } from "./actions";
 import { currentWords } from "@/lib/language";
 import type { Words } from "@/lib/i18n";
@@ -86,11 +93,14 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
   const owner = access.access.userId
     ? await prisma.user.findUnique({
         where: { id: access.access.userId },
-        select: { canRunCode: true, ...WRITING_COLUMNS },
+        select: { canRunCode: true, canUseAi: true, aiConsentAt: true, ...WRITING_COLUMNS },
       })
     : null;
   const writing = readWritingSettings(owner);
   const canRun = Boolean(userCanRun && owner?.canRunCode);
+  // Asystent pokazuje się właścicielowi z uprawnieniem, i tylko przy rodzajach
+  // notatek, przy których w ogóle działa. Przy odręcznej nie ma czego czytać.
+  const assistantHere = Boolean(owner && aiVisibleFor(owner) && aiHandles(note.kind));
   const runnerHint = !settings.code.enabled
     ? words.codeDisabledHere
     : !owner?.canRunCode
@@ -133,6 +143,25 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
           </Link>
         </div>
       </div>
+
+      {/*
+        Asystent stoi NAD edytorami, wspólny dla trzech rodzajów notatki.
+        Przy odręcznej nie ma go wcale - nie ma tam czego czytać.
+      */}
+      {assistantHere ? (
+        <div style={{ marginBottom: 20 }}>
+          <AiPanel
+            noteId={note.id}
+            version={note.version}
+            contentBefore={note.content}
+            consented={owner?.aiConsentAt != null}
+            askAction={askAssistant}
+            undoAction={undoAssistant}
+            historyAction={readAiConversation}
+            clearAction={clearAiConversation}
+          />
+        </div>
+      ) : null}
 
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 24 }}>
         {note.kind === "TEXT" ? (

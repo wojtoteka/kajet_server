@@ -20,6 +20,8 @@ import {
 } from "@/lib/deletion-code";
 import { writingColumns, writingSettingsFromForm } from "@/lib/writing-settings";
 import { currentWords } from "@/lib/language";
+import { aiVisibleFor } from "@/lib/ai/access";
+import { setAiConsent } from "@/lib/ai/consent";
 import { tokensRevokedMsg, type Words } from "@/lib/i18n";
 
 export type Result = {
@@ -293,4 +295,25 @@ export async function changeOwnLogin(_previous: Result, data: FormData): Promise
   await prisma.user.update({ where: { id: user.id }, data: { login } });
   revalidatePath("/account");
   return { success: `Login zmieniony na ${login}.` };
+}
+
+/**
+ * Zgoda na wysyłanie treści notatek do Google - udzielenie i wycofanie.
+ *
+ * Ta sama droga, co punkt dla aplikacji: zgoda siedzi przy koncie, a jej
+ * wycofanie kasuje przy okazji rozmowy z asystentem.
+ */
+export async function changeAiConsent(_previous: Result, data: FormData): Promise<Result> {
+  const user = await currentUser();
+  const words = await currentWords();
+  if (!user) return { error: words.apiNotSignedIn };
+  // Konto bez uprawnienia nie ma się na co zgadzać - i nie ma się dowiedzieć,
+  // że jest czego odmawiać.
+  if (!aiVisibleFor(user)) return { error: words.apiUnknownAddress };
+
+  const consented = String(data.get("consented") ?? "") === "1";
+  await setAiConsent(user.id, consented);
+
+  revalidatePath("/account");
+  return { success: consented ? words.aiConsentGiven : words.aiConsentWithdrawn };
 }

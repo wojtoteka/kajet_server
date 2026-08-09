@@ -31,6 +31,9 @@ import type { MindEdge, MindNode, Page } from "@/lib/document";
 import { LANGUAGES, run, runnerState } from "@/lib/code-runner";
 import { checkLimit, takeSlot } from "@/lib/run-limits";
 import { currentWords } from "@/lib/language";
+import { aiVisibleFor } from "@/lib/ai/access";
+import { runAiEdit } from "@/lib/ai/run";
+import { forgetTurns, recentTurns } from "@/lib/ai/history";
 import {
   mayUpload,
   resolveUploadMime,
@@ -892,4 +895,125 @@ export async function revokeShare(_previous: Result, data: FormData): Promise<Re
 /** Used by new-code page to pick a default language from the title. */
 export async function suggestLanguageFromTitle(title: string): Promise<string | null> {
   return guessLanguageFromTitle(title);
+}
+
+// --- Asystent KajetAI ---
+//
+// Panel WWW chodzi tą samą drogą co aplikacja (lib/ai/run.ts). Różnica jest
+// jedna: tu tożsamość bierze się z ciasteczka sesji, a nie z tokenu
+// urządzenia. Reszta - bramka, limity, walidacja, zapis - jest wspólna.
+
+export type AiAnswer =
+  | { status: "zmieniono"; opis: string; version: number }
+  | { status: "pytanie"; pytanie: string }
+  | { status: "konflikt" }
+  | { status: "blad"; message: string };
+
+export async function askAssistant(
+  noteId: string,
+  instruction: string,
+  baseVersion: number,
+): Promise<AiAnswer> {
+  const user = await currentUser();
+  const words = await currentWords();
+  // Brak konta i brak uprawnienia dają to samo zdanie. Panel i tak nie
+  // pokazuje się nikomu bez uprawnienia, więc to tylko druga bramka.
+  if (!user) return { status: "blad", message: words.apiNotSignedIn };
+
+  const outcome = await runAiEdit({ user, noteId, instruction, baseVersion, words });
+
+  if (outcome.status === "ukryte") {
+    return { status: "blad", message: words.apiUnknownAddress };
+  }
+  if (outcome.status === "blad") return { status: "blad", message: outcome.message };
+  if (outcome.status === "konflikt") return { status: "konflikt" };
+  if (outcome.status === "pytanie") return { status: "pytanie", pytanie: outcome.pytanie };
+
+  revalidatePath(`/note/${noteId}`);
+  return { status: "zmieniono", opis: outcome.opis, version: outcome.version };
+}
+
+/**
+ * Cofnięcie zmiany asystenta.
+ *
+ * Zwykły zapis poprzedniej treści, nie osobna droga: stara wersja wraca jako
+ * kolejna wersja notatki, więc trafia też na pozostałe urządzenia.
+ */
+export async function undoAssistant(
+  noteId: string,
+  content: string,
+  baseVersion: number,
+): Promise<AiAnswer> {
+  const user = await currentUser();
+  const words = await currentWords();
+  if (!user) return { status: "blad", message: words.apiNotSignedIn };
+  if (!aiVisibleFor(user)) return { status: "blad", message: words.apiUnknownAddress };
+
+  const note = await prisma.note.findUnique({
+    where: { id: noteId },
+    select: { ownerId: true, title: true, kind: true, favorite: true, tags: true },
+  });
+  if (!note || note.ownerId !== user.id) {
+    return { status: "blad", message: words.apiNoteNotYours };
+  }
+
+  const tags = note.tags ? note.tags.split("|") : [];
+  const saved =
+    note.kind === "CODE"
+      ? await upsertCodeNoteForUser(user.id, {
+          id: noteId,
+          title: note.title,
+          content,
+          baseVersion,
+          favorite: note.favorite,
+          tags,
+        })
+      : await upsertNoteForUser(user.id, {
+          id: noteId,
+          title: note.title,
+          kind: note.kind as "TEXT" | "MINDMAP",
+          content,
+          baseVersion,
+          favorite: note.favorite,
+          tags,
+        });
+
+  if (saved.status === "error") return { status: "blad", message: saved.message };
+  if (saved.status === "conflict") return { status: "konflikt" };
+
+  revalidatePath(`/note/${noteId}`);
+  return {
+    status: "zmieniono",
+    opis: words.aiUndone,
+    version: "version" in saved ? saved.version : baseVersion,
+  };
+}
+
+export async function readAiConversation(noteId: string): Promise<
+  { request: string; reply: string }[]
+> {
+  const user = await currentUser();
+  if (!user || !aiVisibleFor(user)) return [];
+
+  const note = await prisma.note.findUnique({
+    where: { id: noteId },
+    select: { ownerId: true },
+  });
+  if (note?.ownerId !== user.id) return [];
+
+  return recentTurns(user.id, noteId);
+}
+
+export async function clearAiConversation(noteId: string): Promise<boolean> {
+  const user = await currentUser();
+  if (!user || !aiVisibleFor(user)) return false;
+
+  const note = await prisma.note.findUnique({
+    where: { id: noteId },
+    select: { ownerId: true },
+  });
+  if (note?.ownerId !== user.id) return false;
+
+  await forgetTurns(user.id, noteId);
+  return true;
 }

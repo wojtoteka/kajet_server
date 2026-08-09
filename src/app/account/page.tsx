@@ -7,6 +7,7 @@ import { KajetMark } from "@/components/KajetMark";
 import { ActionForm } from "@/components/ActionForm";
 import { Icon } from "@/components/Icon";
 import { currentWords } from "@/lib/language";
+import { aiVisibleFor } from "@/lib/ai/access";
 import { deviceNameLabel, notesCount } from "@/lib/i18n";
 import { TEXT_DEFAULT_SIZE, TEXT_FONTS, TEXT_LARGEST_SIZE, TEXT_SMALLEST_SIZE } from "@/lib/text-note";
 import { TEXT_ALIGNMENTS, readWritingSettings } from "@/lib/writing-settings";
@@ -20,6 +21,7 @@ import {
   logOut,
   logOutEverywhere,
   saveWritingSettings,
+  changeAiConsent,
   sendDeletionCode,
   deleteOwnAccount,
 } from "./actions";
@@ -144,6 +146,45 @@ export default async function AccountPage() {
           </p>
         ) : null}
       </section>
+
+      {/*
+        Zgoda na asystenta. Widoczna WYŁĄCZNIE dla konta z uprawnieniem -
+        kto go nie ma, nie ma się na co zgadzać i nie ma się dowiedzieć,
+        że jest czego odmawiać. Kotwica #asystent, bo prowadzi tu odnośnik
+        z panelu asystenta przy notatce.
+      */}
+      {aiVisibleFor(user) ? (
+        <section
+          id="asystent"
+          className="sheet"
+          style={{ padding: "22px 24px", marginBottom: 20 }}
+        >
+          <p className="eyebrow">{words.aiConsentSection}</p>
+          <p className="lead" style={{ margin: "6px 0 10px 0" }}>
+            {words.aiConsentWhatHappens}
+          </p>
+          <div className="legal-note legal-note-warning" style={{ marginBottom: 10 }}>
+            <p style={{ margin: 0 }}>{words.aiConsentTraining}</p>
+          </div>
+          <p className="small" style={{ marginBottom: 12 }}>
+            {words.aiConsentVoluntary}{" "}
+            <Link href="/privacy#sek3">{words.footerPrivacy}</Link>
+          </p>
+
+          {user.aiConsentAt ? (
+            <>
+              <p style={{ marginBottom: 10 }}>{words.aiConsentGiven}</p>
+              <ActionForm action={changeAiConsent} label={words.aiConsentWithdraw} compact danger>
+                <input type="hidden" name="consented" value="0" />
+              </ActionForm>
+            </>
+          ) : (
+            <ActionForm action={changeAiConsent} label={words.aiConsentAgree} compact primary>
+              <input type="hidden" name="consented" value="1" />
+            </ActionForm>
+          )}
+        </section>
+      ) : null}
 
       <section className="sheet" style={{ padding: "22px 24px", marginBottom: 20 }}>
         <p className="eyebrow">{words.writingEyebrow}</p>

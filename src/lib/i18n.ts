@@ -914,6 +914,26 @@ export type Words = {
   apiAiBroken: string;
   apiAiNoAnswer: string;
   apiAiHistoryCleared: string;
+  aiTitle: string;
+  aiHint: string;
+  aiAsk: string;
+  aiWorking: string;
+  aiUndo: string;
+  aiUndone: string;
+  aiQuestionLabel: string;
+  aiHistoryTitle: string;
+  aiHistoryEmpty: string;
+  aiForgetHistory: string;
+  aiNeedsConsent: string;
+  aiGoToAccount: string;
+  aiConsentSection: string;
+  aiConsentWhatHappens: string;
+  aiConsentTraining: string;
+  aiConsentVoluntary: string;
+  aiConsentGiven: string;
+  aiConsentAgree: string;
+  aiConsentWithdraw: string;
+  aiConsentWithdrawn: string;
 
 
   apiServerBusy: string;
@@ -2103,6 +2123,34 @@ const pl: Words = {
   apiAiNoAnswer:
     "Asystent nie zaproponował żadnej zmiany. Spróbuj napisać polecenie inaczej.",
   apiAiHistoryCleared: "Rozmowa z asystentem przy tej notatce została wyczyszczona.",
+  aiTitle: "Asystent",
+  aiHint: "Co zmienić w tej notatce?",
+  aiAsk: "Poproś",
+  aiWorking: "Asystent pracuje nad notatką…",
+  aiUndo: "Cofnij zmianę",
+  aiUndone: "Zmiana cofnięta.",
+  aiQuestionLabel: "Asystent pyta",
+  aiHistoryTitle: "Wcześniejsze polecenia",
+  aiHistoryEmpty: "Przy tej notatce jeszcze o nic nie proszono.",
+  aiForgetHistory: "Wyczyść rozmowę",
+  aiNeedsConsent:
+    "Zanim asystent ruszy, trzeba potwierdzić zgodę na wysyłanie treści notatki do Google.",
+  aiGoToAccount: "Przejdź do ustawień konta",
+  aiConsentSection: "Asystent AI",
+  aiConsentWhatHappens:
+    "Treść notatki – cały tekst, kod albo napisy w węzłach mapy – jest wysyłana do Google, " +
+    "bo to jego model wprowadza zmiany. Pismo odręczne i zdjęcia nie są wysyłane.",
+  aiConsentTraining:
+    "Kajet korzysta z darmowego poziomu tej usługi, a to znaczy, że Google wykorzystuje wysłaną " +
+    "treść do rozwoju swoich produktów, w tym do uczenia modeli, i że mogą ją przeczytać jego " +
+    "pracownicy. Nie wysyłaj tą drogą notatek, które mają zostać prywatne.",
+  aiConsentVoluntary:
+    "Zgoda jest dobrowolna i możesz ją wycofać w każdej chwili. Bez niej asystent nie działa, " +
+    "a cała reszta Kajetu działa tak samo jak dotąd.",
+  aiConsentGiven: "Zgoda udzielona.",
+  aiConsentAgree: "Zgadzam się",
+  aiConsentWithdraw: "Wycofaj zgodę",
+  aiConsentWithdrawn: "Zgoda wycofana. Rozmowy z asystentem zostały skasowane.",
 
   apiServerBusy: "Serwer uruchamia już tyle programów naraz, ile może.",
   apiTryInSeconds: "Spróbuj za kilka sekund.",
@@ -3312,6 +3360,35 @@ const en: Words = {
   apiAiNoAnswer:
     "The assistant proposed no change at all. Try putting the instruction differently.",
   apiAiHistoryCleared: "The conversation with the assistant about this note has been cleared.",
+  aiTitle: "Assistant",
+  aiHint: "What should change in this note?",
+  aiAsk: "Ask",
+  aiWorking: "The assistant is working on the note...",
+  aiUndo: "Undo the change",
+  aiUndone: "Change undone.",
+  aiQuestionLabel: "The assistant asks",
+  aiHistoryTitle: "Earlier instructions",
+  aiHistoryEmpty: "Nothing has been asked about this note yet.",
+  aiForgetHistory: "Clear the conversation",
+  aiNeedsConsent:
+    "Before the assistant will work, consent to sending note content to Google has to be confirmed.",
+  aiGoToAccount: "Go to account settings",
+  aiConsentSection: "AI assistant",
+  aiConsentWhatHappens:
+    "The content of the note – all the text, the code, or the labels in the map nodes – is sent " +
+    "to Google, because it is their model that makes the change. Handwriting and photographs " +
+    "are not sent.",
+  aiConsentTraining:
+    "Kajet uses the free tier of that service, which means Google uses what is sent to develop " +
+    "its products, including training models, and its staff may read it. Do not send notes this " +
+    "way if they are meant to stay private.",
+  aiConsentVoluntary:
+    "The consent is voluntary and you can withdraw it at any time. Without it the assistant does " +
+    "not work, and the rest of Kajet works exactly as before.",
+  aiConsentGiven: "Consent given.",
+  aiConsentAgree: "I agree",
+  aiConsentWithdraw: "Withdraw consent",
+  aiConsentWithdrawn: "Consent withdrawn. Conversations with the assistant have been deleted.",
 
   apiServerBusy: "The server is already running as many programs at once as it can.",
   apiTryInSeconds: "Try again in a few seconds.",
