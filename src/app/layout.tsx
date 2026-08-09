@@ -38,8 +38,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           Zapisany wybór motywu stawiamy przed pierwszym rysowaniem strony -
           inaczej mrugnęłaby motywem systemu, zanim React zdąży cokolwiek
           zrobić. Skrypt jest krótki i nie ściąga niczego z sieci.
+
+          `data-cfasync="false"` to prośba do Cloudflare'a, żeby trzymał się od
+          tego skryptu z daleka. Rocket Loader podmienia `type` każdemu
+          skryptowi na stronie i uruchamia je dopiero po przeczytaniu całego
+          dokumentu - a wtedy nie ma już czego ratować: na krótkiej stronie
+          nikt tego nie widzi, ale regulamin i polityka prywatności to
+          kilkadziesiąt ekranów tekstu i przez ten czas świeci motyw systemu.
         */}
-        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+        <script data-cfasync="false" dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         {/*

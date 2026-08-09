@@ -37,6 +37,9 @@ export function knownTheme(value: string | null | undefined): ThemeChoice {
   Skrypt wczytywany w <head>, przed pierwszym rysowaniem strony. Bez niego
   strona mrugnęłaby systemowym motywem, zanim React zdąży postawić atrybut.
   Dlatego jest to goły tekst wstrzykiwany do <script>, a nie komponent.
+
+  Znacznik w layout.tsx ma `data-cfasync="false"` - bez tego Cloudflare
+  odkłada ten skrypt na po przeczytaniu całego dokumentu i mrugnięcie wraca.
 */
 export const THEME_BOOT_SCRIPT = `(function(){try{var c=localStorage.getItem(${JSON.stringify(
   THEME_STORAGE_KEY,
