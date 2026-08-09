@@ -19,8 +19,10 @@ import { buildCodeNoteContent } from "@/lib/code-note";
 import { buildMindMapNoteContent } from "@/lib/mindmap-note";
 import { readDocument } from "@/lib/document";
 import type { MindEdge, MindNode } from "@/lib/document";
+import { words } from "@/lib/i18n";
 
 const NOTE_ID = "n1";
+const PL = words("pl");
 
 /** Notatka tekstowa ze zdjęciem w środku i rysunkiem w polu drawings. */
 function textNote(markdown: string): string {
@@ -54,6 +56,7 @@ describe("notatka tekstowa", () => {
       title: "Zakupy",
       content,
       toolName: "zmien_tekst",
+      words: PL,
       args: {
         markdown: "# Zakupy\n\n- mleko\n- chleb\n\n![paragon|60%](assets/paragon.png)",
         opis: "Dopisano chleb.",
@@ -79,6 +82,7 @@ describe("notatka tekstowa", () => {
       title: "Zakupy",
       content,
       toolName: "zmien_tekst",
+      words: PL,
       args: { markdown: "# Zakupy", opis: "Wyśrodkowano.", align: "center", font: "mono" },
     });
 
@@ -96,6 +100,7 @@ describe("notatka tekstowa", () => {
       title: "Zakupy",
       content,
       toolName: "zmien_tekst",
+      words: PL,
       args: { markdown: "cokolwiek", opis: "   " },
     });
     expect(bezOpisu.kind).toBe("blad");
@@ -106,6 +111,7 @@ describe("notatka tekstowa", () => {
       title: "Zakupy",
       content,
       toolName: "zmien_tekst",
+      words: PL,
       args: { markdown: "cokolwiek", opis: "Powiększono.", fontSize: 900 },
     });
     expect(zaDuze.kind).toBe("blad");
@@ -118,6 +124,7 @@ describe("notatka tekstowa", () => {
       title: "Zakupy",
       content,
       toolName: "zmien_tekst",
+      words: PL,
       args: {
         markdown: "# Zakupy\n\n- mleko\n\n![paragon|60%](assets/paragon.png)",
         opis: "Poprawiono.",
@@ -140,6 +147,7 @@ describe("notatka z kodem", () => {
       title: "analiza.py",
       content,
       toolName: "zmien_kod",
+      words: PL,
       args: { source: "print('cześć')\n", opis: "Poprawiono polskie znaki." },
     });
 
@@ -157,6 +165,7 @@ describe("notatka z kodem", () => {
       title: "analiza.py",
       content,
       toolName: "zmien_tekst",
+      words: PL,
       args: { markdown: "wszystko jedno", opis: "Coś." },
     });
 
@@ -179,6 +188,7 @@ describe("mapa myśli", () => {
       title: "Mapa",
       content,
       toolName: "zmien_mape",
+      words: PL,
       args: {
         operacje: [{ rodzaj: "dodaj", id: "n1", text: "Drugi punkt", rodzicId: "a" }],
         opis: "Dodano drugi punkt.",
@@ -201,6 +211,7 @@ describe("mapa myśli", () => {
       title: "Mapa",
       content,
       toolName: "zmien_mape",
+      words: PL,
       args: {
         operacje: [
           { rodzaj: "zmien_tekst", id: "b", text: "Zmieniony" },
@@ -222,6 +233,7 @@ describe("dopytanie", () => {
       title: "Zakupy",
       content: textNote("cokolwiek"),
       toolName: "dopytaj",
+      words: PL,
       args: { pytanie: "Który akapit mam skrócić?" },
     });
 
@@ -235,6 +247,7 @@ describe("dopytanie", () => {
       title: "Zakupy",
       content: textNote("cokolwiek"),
       toolName: "dopytaj",
+      words: PL,
       args: { pytanie: "" },
     });
 
@@ -244,7 +257,7 @@ describe("dopytanie", () => {
 
 describe("co widzi model", () => {
   it("z notatki tekstowej sam markdown", () => {
-    const view = viewForModel("TEXT", textNote("# Tytuł\n\ntreść"));
+    const view = viewForModel("TEXT", textNote("# Tytuł\n\ntreść"), PL);
     expect(view).toEqual({ ok: true, material: "# Tytuł\n\ntreść", chars: 14 });
   });
 
@@ -262,6 +275,7 @@ describe("co widzi model", () => {
           { id: "e2", fromId: "b", toId: "c" },
         ],
       ),
+      PL,
     );
 
     expect(view.ok).toBe(true);
@@ -283,6 +297,7 @@ describe("co widzi model", () => {
         ],
         [],
       ),
+      PL,
     );
 
     expect(view.ok).toBe(true);

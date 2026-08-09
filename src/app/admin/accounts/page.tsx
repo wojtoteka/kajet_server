@@ -20,7 +20,18 @@ import {
   deleteUser,
 } from "../actions";
 import { currentWords } from "@/lib/language";
-import { accountSummary } from "@/lib/i18n";
+import {
+  accountSummary,
+  accountsFound,
+  aiUsageLine,
+  confirmAllowAi,
+  confirmBlockAccount,
+  confirmChangeEmail,
+  confirmDeleteUser,
+  confirmMakeAdmin,
+  confirmSetPassword,
+  noAccountMatches,
+} from "@/lib/i18n";
 
 export default async function AccountsPage({
   searchParams,
@@ -31,7 +42,7 @@ export default async function AccountsPage({
   const words = await currentWords();
   const query = (params.q ?? "").trim();
 
-  // Bez klucza do modelu asystenta nie ma na tym serwerze wcale, więc nie ma
+  // Bez klucza do modelu KajetAI nie ma na tym serwerze wcale, więc nie ma
   // też czego nadawać ani odbierać - przełącznik się wtedy nie pokazuje.
   const assistantHere = aiWorks();
 
@@ -88,15 +99,14 @@ export default async function AccountsPage({
       </section>
 
       <p className="lead" style={{ marginBottom: 16 }}>
-        {query ? `Pasujące konta: ${matching}` : `Wszystkie konta: ${matching}`}
-        {matching > users.length ? ` (widocznych ${users.length} — zawęź wyszukiwanie)` : ""}
+        {accountsFound(words, matching, users.length, Boolean(query))}
       </p>
 
       <div className="column" style={{ gap: 16 }}>
         {users.length === 0 ? (
           <div className="sheet" style={{ padding: "20px 22px" }}>
             <p className="lead" style={{ margin: 0 }}>
-              Nie znaleziono konta o nicku lub e-mailu zawierającym „{query}”.
+              {noAccountMatches(words, query)}
             </p>
           </div>
         ) : null}
@@ -173,7 +183,7 @@ export default async function AccountsPage({
                         defaultValue={0}
                         aria-label={words.forHowManyDays}
                       />
-                      <span className="small">dni</span>
+                      <span className="small">{words.daysWord}</span>
                     </div>
                     <p className="small" style={{ margin: "0 0 8px 0" }}>
                       {words.quotaHint}
@@ -181,12 +191,12 @@ export default async function AccountsPage({
                   </ActionForm>
 
                   {/*
-                    Asystent siedzi W ŚRODKU kolumny limitów, za cienką kreską,
+                    KajetAI siedzi W ŚRODKU kolumny limitów, za cienką kreską,
                     a nie jako osobna kolumna siatki. Jako osobna robił piątą
                     kolumnę tam, gdzie mieszczą się cztery - i „Dostęp" spadał
                     sam do drugiego rzędu, zostawiając pół karty pustki. Teraz
                     liczba kolumn jest stała, więc karta wygląda tak samo
-                    z uprawnieniem do asystenta i bez niego.
+                    z uprawnieniem do KajetAI i bez niego.
                   */}
                   {assistantHere && user.canUseAi ? (
                     <div className="account-sub">
@@ -194,9 +204,13 @@ export default async function AccountsPage({
                       <p className="small" style={{ margin: "0 0 8px 0" }}>
                         {(usage.get(user.id) ?? NO_AI_USAGE).week === 0
                           ? words.aiNoUsageYet
-                          : `Doba: ${(usage.get(user.id) ?? NO_AI_USAGE).today} z ${dailyLimitFor(user)}. ` +
-                            `Tydzień: ${(usage.get(user.id) ?? NO_AI_USAGE).week} wywołań, ` +
-                            `${(usage.get(user.id) ?? NO_AI_USAGE).tokens.toLocaleString(words.locale)} tokenów.`}
+                          : aiUsageLine(
+                              words,
+                              (usage.get(user.id) ?? NO_AI_USAGE).today,
+                              dailyLimitFor(user),
+                              (usage.get(user.id) ?? NO_AI_USAGE).week,
+                              (usage.get(user.id) ?? NO_AI_USAGE).tokens,
+                            )}
                       </p>
                       <ActionForm action={setAiLimit} label={words.setAiLimit} compact toast>
                         <input type="hidden" name="userId" value={user.id} />
@@ -235,7 +249,7 @@ export default async function AccountsPage({
                     label={words.changeEmail}
                     compact
                     toast
-                    confirmation={`Zmienić adres konta ${user.login}? Odnośniki wysłane na stary adres przestaną działać.`}
+                    confirmation={confirmChangeEmail(words, user.login)}
                   >
                     <input type="hidden" name="userId" value={user.id} />
                     <input
@@ -264,7 +278,7 @@ export default async function AccountsPage({
                       label={words.setPasswordForUser}
                       compact
                       toast
-                      confirmation={`Ustawić nowe hasło dla ${user.login}? Konto zostanie wylogowane ze wszystkich urządzeń.`}
+                      confirmation={confirmSetPassword(words, user.login)}
                     >
                       <input type="hidden" name="userId" value={user.id} />
                       <input
@@ -293,9 +307,7 @@ export default async function AccountsPage({
                       toast
                       danger={!user.blocked}
                       confirmation={
-                        user.blocked
-                          ? undefined
-                          : `Zablokować konto ${user.login}? Zostanie wylogowane ze wszystkich urządzeń.`
+                        user.blocked ? undefined : confirmBlockAccount(words, user.login)
                       }
                     >
                       <input type="hidden" name="userId" value={user.id} />
@@ -315,9 +327,7 @@ export default async function AccountsPage({
                       compact
                       toast
                       confirmation={
-                        user.role === "ADMIN"
-                          ? undefined
-                          : `Nadać ${user.login} uprawnienia administratora?`
+                        user.role === "ADMIN" ? undefined : confirmMakeAdmin(words, user.login)
                       }
                     >
                       <input type="hidden" name="userId" value={user.id} />
@@ -341,10 +351,7 @@ export default async function AccountsPage({
                         compact
                         toast
                         confirmation={
-                          user.canUseAi
-                            ? undefined
-                            : `Pozwolić ${user.login} korzystać z asystenta AI? Treść notatek, ` +
-                              `przy których go użyje, będzie wysyłana do Google.`
+                          user.canUseAi ? undefined : confirmAllowAi(words, user.login)
                         }
                       >
                         <input type="hidden" name="userId" value={user.id} />
@@ -362,7 +369,7 @@ export default async function AccountsPage({
                         compact
                         danger
                         toast
-                        confirmation={`Skasować konto ${user.login} razem ze wszystkimi notatkami (${user._count.notes})? Tego nie da się cofnąć.`}
+                        confirmation={confirmDeleteUser(words, user.login, user._count.notes)}
                       >
                         <input type="hidden" name="userId" value={user.id} />
                       </ActionForm>

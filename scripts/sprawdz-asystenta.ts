@@ -1,5 +1,5 @@
 /**
- * Sprawdzenie asystenta KajetAI na żywym modelu.
+ * Sprawdzenie KajetAI na żywym modelu.
  *
  * Idzie całą drogą, którą chodzi punkt końcowy - system prompt, narzędzia,
  * wywołanie Gemini, walidacja odpowiedzi i złożenie nowej treści - tylko bez
@@ -35,6 +35,10 @@ const { buildTextNoteContent } = await import("../src/lib/text-note");
 const { buildCodeNoteContent } = await import("../src/lib/code-note");
 const { buildMindMapNoteContent } = await import("../src/lib/mindmap-note");
 const { readDocument } = await import("../src/lib/document");
+const { words } = await import("../src/lib/i18n");
+
+// Sprawdzenie chodzi po polsku - tak samo jak strona bez wyboru języka.
+const slownik = words("pl");
 
 const PROBY: { kind: Kind; title: string; content: string; instruction: string }[] = [
   {
@@ -86,7 +90,7 @@ let tokensOut = 0;
 let failed = 0;
 
 for (const proba of PROBY) {
-  const view = viewForModel(proba.kind, proba.content);
+  const view = viewForModel(proba.kind, proba.content, slownik);
   if (!view.ok) {
     console.log(`${proba.kind}: nie dało się odczytać notatki - ${view.powod}\n`);
     failed += 1;
@@ -96,7 +100,7 @@ for (const proba of PROBY) {
   const answer = await askGemini({
     kind: proba.kind,
     title: proba.title,
-    // Próbki mają własne tytuły, więc asystent nie ma ich zmieniać.
+    // Próbki mają własne tytuły, więc KajetAI nie ma ich zmieniać.
     titleIsOwn: true,
     material: view.material,
     instruction: proba.instruction,
@@ -119,6 +123,7 @@ for (const proba of PROBY) {
     content: proba.content,
     toolName: answer.toolName,
     args: answer.args,
+    words: slownik,
   });
 
   console.log(`${proba.kind} - „${proba.instruction}"`);
@@ -144,7 +149,7 @@ for (const proba of PROBY) {
       ? after?.text?.markdown
       : proba.kind === "CODE"
         ? after?.code?.source
-        : viewForModel("MINDMAP", outcome.content);
+        : viewForModel("MINDMAP", outcome.content, slownik);
   console.log(
     typeof shown === "string"
       ? indent(shown)

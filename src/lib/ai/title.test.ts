@@ -1,8 +1,8 @@
 /*
-  Nadawanie tytułu przez asystenta.
+  Nadawanie tytułu przez KajetAI.
 
   Reguła, o którą tu chodzi: tytuł napisany przez CZŁOWIEKA jest nietykalny,
-  a „Bez nazwy" i tytuł podpowiedziany z treści asystent może zastąpić.
+  a „Bez nazwy" i tytuł podpowiedziany z treści KajetAI może zastąpić.
 
   Informacji „ten tytuł wpisał człowiek" nie ma nigdzie - ani w bazie, ani
   w pliku notatki - więc rozstrzyga to porównanie z tym, co dałaby dzisiejsza
@@ -14,9 +14,11 @@ import { describe, expect, it } from "vitest";
 import { applyAiCall } from "./apply";
 import { titleIsOwn } from "@/lib/note-title";
 import { buildTextNoteContent } from "@/lib/text-note";
+import { words } from "@/lib/i18n";
 import { NAZWA_TEKST } from "./tools";
 
 const NOTE_ID = "n1";
+const PL = words("pl");
 
 function notatka(title: string, markdown: string) {
   return buildTextNoteContent({ id: NOTE_ID, title, markdown });
@@ -30,6 +32,7 @@ function popros(title: string, markdown: string, args: Record<string, unknown>) 
     content: notatka(title, markdown),
     toolName: NAZWA_TEKST,
     args,
+    words: PL,
   });
 }
 

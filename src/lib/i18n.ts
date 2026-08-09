@@ -90,6 +90,8 @@ export type Words = {
   noColour: string;
   ownColour: string;
   collapse: string;
+  linkAddress: string;
+  insertWord: string;
 
   // --- Kod ---
   codeRun: string;
@@ -371,7 +373,6 @@ export type Words = {
   shapeFillOff: string;
   shapeSquareLock: string;
   shapeRemove: string;
-  shapeHint: string;
   addOwnColour: string;
   pickOwnColourNewSlot: string;
   ownInkColour: string;
@@ -935,6 +936,30 @@ export type Words = {
   aiConsentAgree: string;
   aiConsentWithdraw: string;
   aiConsentWithdrawn: string;
+  /*
+    Odmowy KajetAI. Widzi je człowiek w panelu przy notatce, więc mówią
+    o tym, co się stało z jego notatką, a nie o kształcie odpowiedzi modelu.
+  */
+  aiNoQuestionAsked: string;
+  aiUnknownTool: string;
+  aiTextUnsavable: string;
+  aiTextUnchanged: string;
+  aiCodeUnsavable: string;
+  aiCodeUnchanged: string;
+  aiMapUnsavable: string;
+  aiCodeNoteUnreadable: string;
+  aiMindMapUnreadable: string;
+  // Odmowy strażnika mapy myśli.
+  aiMapNoOperations: string;
+  aiMapNodeUnnamed: string;
+  aiMapNewNodeLoose: string;
+  aiMapNodeUnderItself: string;
+  aiMapNodeUnderOwnBranch: string;
+  aiMapAddedNodeLoose: string;
+  aiMapNodeWithoutName: string;
+  aiMapTwoSameLinks: string;
+  aiMapLinkToNowhere: string;
+  aiMapSelfLink: string;
 
 
   apiServerBusy: string;
@@ -1015,6 +1040,11 @@ export type Words = {
   actLinkReady: string;
   actShareGone: string;
   actShareRevoked: string;
+  actSavedNote: string;
+  actNoteGone: string;
+  actWhichNote: string;
+  actPickFileFirst: string;
+  actNotACodeFile: string;
 
 
   actCopyConfirmLink: string;
@@ -1030,6 +1060,12 @@ export type Words = {
   actDeviceWillSignIn: string;
   actNoReleaseForDownload: string;
   actReleaseFileGone: string;
+  actWhichAccount: string;
+  actWhichCode: string;
+  actCodeDeleted: string;
+  actInviteMailFailed: string;
+  actNoSuchRelease: string;
+  daysWord: string;
 
   // --- Paski edytorów i nagłówek strony ---
   strokeOpacity: string;
@@ -1151,6 +1187,8 @@ const pl: Words = {
   noColour: "Bez koloru",
   ownColour: "Własny kolor pisma",
   collapse: "Zwiń",
+  linkAddress: "Adres odnośnika",
+  insertWord: "Wstaw",
 
   codeRun: "Uruchom",
   codeRunning: "Uruchamiam…",
@@ -1437,7 +1475,6 @@ const pl: Words = {
   shapeFillOff: "Bez wypełnienia",
   shapeSquareLock: "Proporcje 1:1 – koło i kwadrat",
   shapeRemove: "Usuń kształt",
-  shapeHint: "Przeciągnij, żeby wstawić kształt. Kliknij kształt, żeby go poprawić.",
   addOwnColour: "Dołóż własny kolor",
   pickOwnColourNewSlot: "Dobierz własny kolor – dojdzie do palety",
   ownInkColour: "Własny kolor pisma",
@@ -2144,6 +2181,25 @@ const pl: Words = {
   aiConsentAgree: "Zgadzam się",
   aiConsentWithdraw: "Wycofaj zgodę",
   aiConsentWithdrawn: "Zgoda wycofana. Rozmowy z KajetAI zostały skasowane.",
+  aiNoQuestionAsked: "KajetAI chciał o coś dopytać, ale nie podał pytania.",
+  aiUnknownTool: "KajetAI sięgnął po narzędzie, którego przy tej notatce nie ma.",
+  aiTextUnsavable: "KajetAI oddał treść w kształcie, którego nie da się zapisać.",
+  aiTextUnchanged: "KajetAI nie zmienił w notatce niczego.",
+  aiCodeUnsavable: "KajetAI oddał kod w kształcie, którego nie da się zapisać.",
+  aiCodeUnchanged: "KajetAI nie zmienił w kodzie niczego.",
+  aiMapUnsavable: "KajetAI oddał zmiany w mapie w kształcie, którego nie da się zapisać.",
+  aiCodeNoteUnreadable: "Nie udało się odczytać notatki z kodem.",
+  aiMindMapUnreadable: "Nie udało się odczytać mapy myśli.",
+  aiMapNoOperations: "KajetAI nie podał żadnej zmiany do wykonania.",
+  aiMapNodeUnnamed: "KajetAI nie nazwał dodawanego węzła.",
+  aiMapNewNodeLoose: "KajetAI chciał dodać węzeł, który do niczego nie jest podłączony.",
+  aiMapNodeUnderItself: "KajetAI chciał podwiesić węzeł sam pod siebie.",
+  aiMapNodeUnderOwnBranch: "KajetAI chciał przenieść węzeł pod jego własną gałąź.",
+  aiMapAddedNodeLoose: "KajetAI zostawił dodany węzeł bez połączenia z resztą mapy.",
+  aiMapNodeWithoutName: "Po tej zmianie w mapie zostałby węzeł nie do rozpoznania.",
+  aiMapTwoSameLinks: "Po tej zmianie mapa miałaby dwa połączenia nie do odróżnienia.",
+  aiMapLinkToNowhere: "Po tej zmianie w mapie zostałoby połączenie do węzła, którego już nie ma.",
+  aiMapSelfLink: "Po tej zmianie w mapie byłby węzeł podwieszony sam pod siebie.",
 
   apiServerBusy: "Serwer jest w tej chwili zajęty uruchamianiem cudzego kodu.",
   apiTryInSeconds: "Spróbuj za kilka sekund.",
@@ -2230,6 +2286,11 @@ const pl: Words = {
   actLinkReady: "Odnośnik gotowy:",
   actShareGone: "Tego udostępnienia już nie ma.",
   actShareRevoked: "Udostępnienie cofnięte. Ten odnośnik przestał działać.",
+  actSavedNote: "Zapisane.",
+  actNoteGone: "Tej notatki już nie ma. Może została skasowana, a może leży w koszu.",
+  actWhichNote: "Nie wiadomo, o którą notatkę chodzi. Odśwież stronę i spróbuj jeszcze raz.",
+  actPickFileFirst: "Najpierw wskaż plik do wysłania.",
+  actNotACodeFile: "Ta notatka nie jest plikiem z kodem.",
 
   actCopyConfirmLink: "Kopiuj odnośnik do potwierdzenia",
   actResetMailFailed:
@@ -2247,6 +2308,12 @@ const pl: Words = {
     "Nie ma jeszcze żadnego wydania aplikacji. Zajrzyj na stronę /download.",
   actReleaseFileGone:
     "Tego wydania nie da się już pobrać. Napisz do administratora.",
+  actWhichAccount: "Nie wiadomo, o które konto chodzi. Odśwież stronę i spróbuj jeszcze raz.",
+  actWhichCode: "Nie wiadomo, który kod skasować. Odśwież stronę i spróbuj jeszcze raz.",
+  actCodeDeleted: "Kod skasowany.",
+  actInviteMailFailed: "Wiadomość nie wyszła – przekaż odnośnik samodzielnie.",
+  actNoSuchRelease: "Tego wydania już nie ma.",
+  daysWord: "dni",
 
   strokeOpacity: "Krycie kreski",
   fontLabel: "Krój pisma",
@@ -2380,6 +2447,8 @@ const en: Words = {
   noColour: "No colour",
   ownColour: "Your own text colour",
   collapse: "Collapse",
+  linkAddress: "Link address",
+  insertWord: "Insert",
 
   codeRun: "Run",
   codeRunning: "Running…",
@@ -2662,7 +2731,6 @@ const en: Words = {
   shapeFillOff: "No fill",
   shapeSquareLock: "Equal sides – circle and square",
   shapeRemove: "Remove the shape",
-  shapeHint: "Drag to place a shape. Click a shape to adjust it.",
   addOwnColour: "Add a colour of your own",
   pickOwnColourNewSlot: "Pick your own colour – it is added to the palette",
   ownInkColour: "Your own ink colour",
@@ -3360,6 +3428,25 @@ const en: Words = {
   aiConsentAgree: "I agree",
   aiConsentWithdraw: "Withdraw consent",
   aiConsentWithdrawn: "Consent withdrawn. Your conversations with KajetAI have been deleted.",
+  aiNoQuestionAsked: "KajetAI wanted to ask something but gave no question.",
+  aiUnknownTool: "KajetAI reached for a tool this note does not have.",
+  aiTextUnsavable: "KajetAI returned the content in a shape that cannot be saved.",
+  aiTextUnchanged: "KajetAI changed nothing in the note.",
+  aiCodeUnsavable: "KajetAI returned the code in a shape that cannot be saved.",
+  aiCodeUnchanged: "KajetAI changed nothing in the code.",
+  aiMapUnsavable: "KajetAI returned the map changes in a shape that cannot be saved.",
+  aiCodeNoteUnreadable: "The code note could not be read.",
+  aiMindMapUnreadable: "The mind map could not be read.",
+  aiMapNoOperations: "KajetAI gave no change to make.",
+  aiMapNodeUnnamed: "KajetAI gave no name for the node it was adding.",
+  aiMapNewNodeLoose: "KajetAI wanted to add a node connected to nothing.",
+  aiMapNodeUnderItself: "KajetAI wanted to hang a node under itself.",
+  aiMapNodeUnderOwnBranch: "KajetAI wanted to move a node under its own branch.",
+  aiMapAddedNodeLoose: "KajetAI left the node it added with no link to the rest of the map.",
+  aiMapNodeWithoutName: "After this change the map would hold a node nothing can point at.",
+  aiMapTwoSameLinks: "After this change the map would have two links nothing can tell apart.",
+  aiMapLinkToNowhere: "After this change the map would keep a link to a node that is gone.",
+  aiMapSelfLink: "After this change the map would have a node hanging under itself.",
 
   apiServerBusy: "The server is busy running other people's code right now.",
   apiTryInSeconds: "Try again in a few seconds.",
@@ -3443,6 +3530,11 @@ const en: Words = {
   actLinkReady: "The link is ready:",
   actShareGone: "That share is gone already.",
   actShareRevoked: "The share has been revoked. That link has stopped working.",
+  actSavedNote: "Saved.",
+  actNoteGone: "That note is gone. It may have been deleted, or it is in the bin.",
+  actWhichNote: "Kajet cannot tell which note this is. Refresh the page and try again.",
+  actPickFileFirst: "Choose a file to upload first.",
+  actNotACodeFile: "This note is not a code file.",
 
   actCopyConfirmLink: "Copy the confirmation link",
   actResetMailFailed:
@@ -3459,6 +3551,12 @@ const en: Words = {
   actNoReleaseForDownload: "There is no release of the app yet. Look at the /download page.",
   actReleaseFileGone:
     "This release cannot be downloaded any more. Write to an administrator.",
+  actWhichAccount: "Kajet cannot tell which account this is. Refresh the page and try again.",
+  actWhichCode: "Kajet cannot tell which code to delete. Refresh the page and try again.",
+  actCodeDeleted: "The code has been deleted.",
+  actInviteMailFailed: "The message did not go out – pass the link on yourself.",
+  actNoSuchRelease: "That release is gone.",
+  daysWord: "days",
 
   strokeOpacity: "Stroke opacity",
   fontLabel: "Typeface",
@@ -3942,6 +4040,311 @@ export function deviceConnectedMsg(words: Words, device: string): string {
         words.actDeviceWillSignIn
     : `Połączono urządzenie „${device}”. Wróć do aplikacji Kajet – ` +
         words.actDeviceWillSignIn;
+}
+
+/*
+  Odmowy KajetAI z nazwą węzła w środku.
+
+  Nazwa jest w cudzysłowie, bo bierze się wprost z tego, co przysłał model –
+  bez niej zdanie „takiego węzła nie ma" nie mówi, którego.
+*/
+export function aiMapTwoNodesSameName(words: Words, name: string): string {
+  return words.locale === "en-GB"
+    ? `KajetAI used the name “${name}” for two new nodes.`
+    : `KajetAI użył nazwy „${name}” dla dwóch nowych węzłów.`;
+}
+
+export function aiMapNoParentForNew(words: Words, parent: string): string {
+  return words.locale === "en-GB"
+    ? `KajetAI wanted to hang a new node under “${parent}”, and there is no such node.`
+    : `KajetAI chciał podwiesić nowy węzeł pod „${parent}”, a takiego węzła nie ma.`;
+}
+
+export function aiMapNoSuchNode(words: Words, name: string): string {
+  return words.locale === "en-GB"
+    ? `KajetAI pointed at the node “${name}”, and the map has no such node.`
+    : `KajetAI wskazał węzeł „${name}”, a takiego w mapie nie ma.`;
+}
+
+export function aiMapNoParentForMove(words: Words, parent: string): string {
+  return words.locale === "en-GB"
+    ? `KajetAI wanted to move a node under “${parent}”, and there is no such node.`
+    : `KajetAI chciał przenieść węzeł pod „${parent}”, a takiego węzła nie ma.`;
+}
+
+export function aiMapUnknownChange(words: Words, kind: string): string {
+  return words.locale === "en-GB"
+    ? `KajetAI asked for an unknown change “${kind}”.`
+    : `KajetAI poprosił o nieznaną zmianę „${kind}”.`;
+}
+
+export function aiMapNodeTwice(words: Words, name: string): string {
+  return words.locale === "en-GB"
+    ? `After this change the map would hold the node “${name}” twice.`
+    : `Po tej zmianie węzeł „${name}” byłby w mapie dwa razy.`;
+}
+
+/** Zużycie KajetAI na jednym koncie – wiersz w panelu administratora. */
+export function aiUsageLine(
+  words: Words,
+  today: number,
+  limit: number,
+  week: number,
+  tokens: number,
+): string {
+  const counted = tokens.toLocaleString(words.locale);
+  if (words.locale === "en-GB") {
+    return `Today: ${today} of ${limit}. This week: ${week} ${week === 1 ? "call" : "calls"}, ${counted} tokens.`;
+  }
+  const calls = polishPlural(week, "wywołanie", "wywołania", "wywołań");
+  return `Doba: ${today} z ${limit}. Tydzień: ${week} ${calls}, ${counted} tokenów.`;
+}
+
+/* --- Panel administratora: spis kont --- */
+
+export function accountsFound(
+  words: Words,
+  matching: number,
+  shown: number,
+  searching: boolean,
+): string {
+  if (words.locale === "en-GB") {
+    const head = searching
+      ? `Accounts matching the search: ${matching}.`
+      : `All accounts: ${matching}.`;
+    return matching > shown
+      ? `${head} The first ${shown} are shown – narrow the search to see the rest.`
+      : head;
+  }
+  const head = searching
+    ? `Kont pasujących do wyszukiwania: ${matching}.`
+    : `Wszystkich kont: ${matching}.`;
+  return matching > shown
+    ? `${head} Widać pierwszych ${shown} – zawęź wyszukiwanie, żeby zobaczyć resztę.`
+    : head;
+}
+
+export function noAccountMatches(words: Words, query: string): string {
+  return words.locale === "en-GB"
+    ? `No account matches “${query}”.`
+    : `Żadne konto nie pasuje do „${query}”.`;
+}
+
+/* --- Panel administratora: okna potwierdzenia --- */
+
+export function confirmChangeEmail(words: Words, login: string): string {
+  return words.locale === "en-GB"
+    ? `Change the address of ${login}? Links sent to the old address will stop working.`
+    : `Zmienić adres konta ${login}? Odnośniki wysłane na stary adres przestaną działać.`;
+}
+
+export function confirmSetPassword(words: Words, login: string): string {
+  return words.locale === "en-GB"
+    ? `Set a new password for ${login}? The account will be signed out on every device.`
+    : `Ustawić nowe hasło dla ${login}? Konto zostanie wylogowane ze wszystkich urządzeń.`;
+}
+
+export function confirmBlockAccount(words: Words, login: string): string {
+  return words.locale === "en-GB"
+    ? `Block the account ${login}? It will be signed out on every device.`
+    : `Zablokować konto ${login}? Zostanie wylogowane ze wszystkich urządzeń.`;
+}
+
+export function confirmMakeAdmin(words: Words, login: string): string {
+  return words.locale === "en-GB"
+    ? `Give ${login} administrator rights?`
+    : `Nadać ${login} uprawnienia administratora?`;
+}
+
+/**
+ * Nadanie KajetAI cudzemu kontu. Jedyne miejsce, w którym o wysyłaniu treści
+ * do Google decyduje ktoś inny niż właściciel notatek - dlatego zdanie o
+ * uczeniu modeli pada TU, przed nadaniem, a nie dopiero na ekranie zgody.
+ */
+export function confirmAllowAi(words: Words, login: string): string {
+  return words.locale === "en-GB"
+    ? `Allow ${login} to use KajetAI? The content of the notes they use it on will go ` +
+        `to Google. The model is free, so Google may use it to train its models.`
+    : `Pozwolić ${login} korzystać z KajetAI? Treść notatek, przy których go użyje, ` +
+        `pojedzie do Google. Model jest darmowy, więc Google może wykorzystać ją ` +
+        `do uczenia swoich modeli.`;
+}
+
+export function confirmDeleteUser(words: Words, login: string, notes: number): string {
+  return words.locale === "en-GB"
+    ? `Delete the account ${login} together with ${notesCount(words, notes)}? This cannot be undone.`
+    : `Skasować konto ${login} razem z ${notesCount(words, notes)}? Tego nie da się cofnąć.`;
+}
+
+/* --- Panel administratora: odpowiedzi akcji --- */
+
+export function inviteCodeReady(words: Words, code: string): string {
+  return words.locale === "en-GB" ? `The code ${code} is ready.` : `Kod ${code} gotowy.`;
+}
+
+export function inviteSentTo(words: Words, email: string): string {
+  return words.locale === "en-GB"
+    ? `The invitation has gone to ${email}.`
+    : `Zaproszenie poszło na ${email}.`;
+}
+
+export function quotaSetTo(words: Words, megabytes: number, forDays: number): string {
+  if (words.locale === "en-GB") {
+    const period = forDays > 0 ? ` for ${forDays} ${forDays === 1 ? "day" : "days"}` : "";
+    return `The limit is now ${megabytes} MB${period}.`;
+  }
+  const period = forDays > 0 ? ` na ${forDays} ${polishPlural(forDays, "dzień", "dni", "dni")}` : "";
+  return `Limit ustawiony na ${megabytes} MB${period}.`;
+}
+
+export function accountBlockedMsg(words: Words, login: string): string {
+  return words.locale === "en-GB"
+    ? `The account ${login} is blocked and signed out on every device.`
+    : `Konto ${login} zablokowane i wylogowane ze wszystkich urządzeń.`;
+}
+
+export function accountUnblockedMsg(words: Words, login: string): string {
+  return words.locale === "en-GB"
+    ? `The account ${login} is unblocked.`
+    : `Konto ${login} odblokowane.`;
+}
+
+export function accountLoginNowMsg(words: Words, login: string): string {
+  return words.locale === "en-GB"
+    ? `The account's login is now ${login}.`
+    : `Konto ma teraz login ${login}.`;
+}
+
+export function accountEmailNowMsg(words: Words, email: string): string {
+  return words.locale === "en-GB"
+    ? `The account's address is now ${email}.`
+    : `Konto ma teraz adres ${email}.`;
+}
+
+export function passwordLinkSentMsg(words: Words, email: string): string {
+  return words.locale === "en-GB"
+    ? `The link for setting a new password has gone to ${email}. It is valid for an hour.`
+    : `Odnośnik do zmiany hasła poszedł na ${email}. Jest ważny przez godzinę.`;
+}
+
+export function passwordSetForMsg(words: Words, login: string): string {
+  return words.locale === "en-GB"
+    ? `Password set for ${login}. The account was signed out on every device.`
+    : `Hasło dla ${login} ustawione. Konto zostało wylogowane ze wszystkich urządzeń.`;
+}
+
+export function adminRightsGivenMsg(words: Words, login: string): string {
+  return words.locale === "en-GB"
+    ? `${login} now has administrator rights.`
+    : `${login} ma teraz uprawnienia administratora.`;
+}
+
+export function adminRightsTakenMsg(words: Words, login: string): string {
+  return words.locale === "en-GB"
+    ? `${login} is an ordinary user again.`
+    : `${login} jest znowu zwykłym użytkownikiem.`;
+}
+
+export function codeRunningAllowedMsg(words: Words, login: string): string {
+  return words.locale === "en-GB"
+    ? `${login} can run code on the server again.`
+    : `${login} może znowu uruchamiać kod na serwerze.`;
+}
+
+export function codeRunningTakenMsg(words: Words, login: string): string {
+  return words.locale === "en-GB"
+    ? `${login} will not run code on the server any more. Writing and saving still work.`
+    : `${login} nie uruchomi już kodu na serwerze. Pisać i zapisywać nadal może.`;
+}
+
+export function aiAccessGivenMsg(words: Words, login: string, needsConsent: boolean): string {
+  if (words.locale === "en-GB") {
+    return (
+      `${login} can now ask KajetAI for changes to notes.` +
+      (needsConsent ? " They confirm consent to sending content to Google in their own settings." : "")
+    );
+  }
+  return (
+    `${login} może teraz prosić KajetAI o zmiany w notatkach.` +
+    (needsConsent ? " Zgodę na wysyłanie treści do Google potwierdzi u siebie w ustawieniach." : "")
+  );
+}
+
+export function aiAccessTakenMsg(words: Words, login: string): string {
+  return words.locale === "en-GB"
+    ? `${login} no longer has access to KajetAI. The notes stay untouched.`
+    : `${login} nie ma już dostępu do KajetAI. Notatki zostają nietknięte.`;
+}
+
+export function aiLimitDefaultMsg(words: Words, login: string): string {
+  return words.locale === "en-GB"
+    ? `${login} goes back to the default KajetAI limit.`
+    : `${login} wraca do domyślnego limitu wywołań KajetAI.`;
+}
+
+export function aiLimitSetMsg(words: Words, login: string, perDay: number): string {
+  if (words.locale === "en-GB") {
+    return `${login} now has ${perDay} KajetAI ${perDay === 1 ? "call" : "calls"} a day.`;
+  }
+  const calls = polishPlural(perDay, "wywołanie", "wywołania", "wywołań");
+  return `${login} ma teraz ${perDay} ${calls} KajetAI na dobę.`;
+}
+
+export function accountDeletedMsg(words: Words, login: string): string {
+  return words.locale === "en-GB"
+    ? `The account ${login} is deleted, with everything that was on it.`
+    : `Konto ${login} skasowane razem ze wszystkim, co na nim było.`;
+}
+
+export function releaseNumberTaken(words: Words, number: number, version: string): string {
+  return words.locale === "en-GB"
+    ? `The release number ${number} already belongs to version ${version}. Raise the number, or delete that release.`
+    : `Numer wydania ${number} ma już wersja ${version}. Podnieś numer albo skasuj tamto wydanie.`;
+}
+
+export function olderReleasesGone(words: Words, count: number): string {
+  if (words.locale === "en-GB") {
+    return `Older releases (${count}) have gone from the database and from the disk.`;
+  }
+  return `Starsze wydania (${count}) poszły z bazy i z dysku.`;
+}
+
+export function releaseReadyMsg(words: Words, version: string): string {
+  return words.locale === "en-GB"
+    ? `Version ${version} is ready to download.`
+    : `Wersja ${version} jest już do pobrania.`;
+}
+
+export function releaseNowCurrentMsg(words: Words, version: string): string {
+  return words.locale === "en-GB"
+    ? `Version ${version} is the one to download now.`
+    : `Do pobrania idzie teraz wersja ${version}.`;
+}
+
+export function releaseDeletedMsg(words: Words, version: string): string {
+  return words.locale === "en-GB"
+    ? `Release ${version} is gone from the database and from the disk.`
+    : `Wydanie ${version} skasowane z bazy i z dysku.`;
+}
+
+/* --- Notatka --- */
+
+export function attachmentAddedMsg(words: Words, name: string): string {
+  return words.locale === "en-GB"
+    ? `The file “${name}” is with the note now.`
+    : `Plik „${name}” leży już przy notatce.`;
+}
+
+export function attachmentRemovedMsg(words: Words, name: string): string {
+  return words.locale === "en-GB"
+    ? `The file “${name}” is gone from the note.`
+    : `Plik „${name}” zniknął z notatki.`;
+}
+
+export function shareMailSentMsg(words: Words, email: string): string {
+  return words.locale === "en-GB"
+    ? `We sent a message to ${email}.`
+    : `Wysłaliśmy wiadomość na ${email}.`;
 }
 
 const DICTIONARIES: Record<Language, Words> = { pl, en };

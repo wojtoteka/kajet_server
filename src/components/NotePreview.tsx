@@ -54,6 +54,7 @@ token?: string;
             total={document.handwriting?.pages?.length ?? 1}
             noteId={noteId}
             token={token}
+            words={words}
           />
         ))}
       </div>
@@ -110,6 +111,7 @@ function HandwrittenPage({
   total,
   noteId,
   token,
+  words,
 }: {
   page: Page;
   noteBackground?: string;
@@ -117,6 +119,7 @@ function HandwrittenPage({
   total: number;
   noteId: string;
   token?: string;
+  words: Words;
 }) {
   const width = page.width ?? 595;
   const height = page.height ?? 842;
@@ -127,7 +130,7 @@ function HandwrittenPage({
       <svg
         viewBox={`0 0 ${width} ${height}`}
         role="img"
-        aria-label={`Strona ${number} z ${total}`}
+        aria-label={`${words.pageWord} ${number} ${words.ofWord} ${total}`}
         style={{
           width: "100%",
           height: "auto",
@@ -191,7 +194,7 @@ function HandwrittenPage({
 
       {total > 1 ? (
         <figcaption className="small" style={{ marginTop: 6 }}>
-          Strona {number} z {total}
+          {words.pageWord} {number} {words.ofWord} {total}
         </figcaption>
       ) : null}
     </figure>

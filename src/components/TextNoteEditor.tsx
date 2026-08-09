@@ -731,11 +731,11 @@ export function TextNoteEditor({
             onClick={() => paint("")}
           >
             <Icon name="format_color_reset" size={18} />
-            Bez koloru
+            {words.noColour}
           </button>
           <button type="button" className="compact" onClick={() => setColourBar(false)}>
             <Icon name="close" size={18} />
-            Zwiń
+            {words.collapse}
           </button>
         </div>
       ) : null}
@@ -743,7 +743,7 @@ export function TextNoteEditor({
       {linkBar ? (
         <div className="editor-toolbar" style={{ marginTop: 6 }}>
           <label className="small" htmlFor="link-url" style={{ margin: 0 }}>
-            Adres odnośnika
+            {words.linkAddress}
           </label>
           <input
             id="link-url"
@@ -762,10 +762,10 @@ export function TextNoteEditor({
             style={{ flex: 1, minWidth: 200, minHeight: 36, padding: "4px 8px" }}
           />
           <button type="button" className="compact primary" onClick={confirmLink}>
-            Wstaw
+            {words.insertWord}
           </button>
           <button type="button" className="compact" onClick={() => setLinkBar(false)}>
-            Anuluj
+            {words.cancel}
           </button>
         </div>
       ) : null}
@@ -780,7 +780,7 @@ export function TextNoteEditor({
               label={words.noteContent}
               markdown={block.text}
               revision={revision}
-              placeholder={onlyBlock ? "Pisz tutaj..." : undefined}
+              placeholder={onlyBlock ? words.writeHere : undefined}
               register={(node) => {
                 if (node) fields.current.set(index, node);
                 else fields.current.delete(index);

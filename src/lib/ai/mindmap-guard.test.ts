@@ -1,8 +1,8 @@
 /*
-  Spójność mapy myśli po zmianach asystenta.
+  Spójność mapy myśli po zmianach KajetAI.
 
   Uszkodzona mapa nie rzuca się w oczy od razu - i to jest dokładnie powód,
-  dla którego ten plik jest dłuższy niż reszta testów asystenta. Sprawdzane
+  dla którego ten plik jest dłuższy niż reszta testów KajetAI. Sprawdzane
   jest jedno: żadna paczka operacji nie ma prawa zostawić mapy z sierotą,
   z pierścieniem, z krawędzią donikąd ani z węzłem o dwóch rodzicach - a gdy
   próbuje, nie zapisuje się NIC, także częściowo.
@@ -11,6 +11,9 @@
 import { describe, expect, it } from "vitest";
 import { applyMindMapOperations, checkMindMap, type MindMapOperation } from "./mindmap-guard";
 import type { MindEdge, MindNode } from "@/lib/document";
+import { words } from "@/lib/i18n";
+
+const PL = words("pl");
 
 function node(id: string, text = id): MindNode {
   return { id, x: 0, y: 0, width: 160, height: 64, text, ink: [] };
@@ -39,7 +42,7 @@ describe("dodawanie węzłów", () => {
   it("podwiesza nowy węzeł pod wskazanym rodzicem i nadaje mu własny identyfikator", () => {
     const result = applyMindMapOperations(MAPA, [
       { rodzaj: "dodaj", id: "nowy1", text: "gruszka", rodzicId: "owoce" },
-    ]);
+    ], PL);
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -55,7 +58,7 @@ describe("dodawanie węzłów", () => {
     const result = applyMindMapOperations(MAPA, [
       { rodzaj: "dodaj", id: "a", text: "napoje", rodzicId: "korzen" },
       { rodzaj: "dodaj", id: "b", text: "sok", rodzicId: "a" },
-    ]);
+    ], PL);
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -68,7 +71,7 @@ describe("dodawanie węzłów", () => {
   it("nie pozwala dodać węzła bez rodzica do niepustej mapy", () => {
     const result = applyMindMapOperations(MAPA, [
       { rodzaj: "dodaj", id: "sierota", text: "nic" },
-    ]);
+    ], PL);
 
     expect(result.ok).toBe(false);
     if (result.ok) return;
@@ -78,7 +81,7 @@ describe("dodawanie węzłów", () => {
   it("do pustej mapy wolno dodać pierwszy węzeł bez rodzica", () => {
     const result = applyMindMapOperations({ nodes: [], edges: [] }, [
       { rodzaj: "dodaj", id: "pierwszy", text: "Temat" },
-    ]);
+    ], PL);
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -102,7 +105,7 @@ describe("dodawanie węzłów", () => {
       { rodzaj: "dodaj", id: "a", text: "Substraty", rodzicId: "korzen" },
       { rodzaj: "dodaj", id: "b", text: "Produkty", rodzicId: "korzen" },
       { rodzaj: "dodaj", id: "a1", text: "Woda", rodzicId: "a" },
-    ]);
+    ], PL);
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -120,7 +123,7 @@ describe("dodawanie węzłów", () => {
   it("odmawia, gdy rodzic nie istnieje", () => {
     const result = applyMindMapOperations(MAPA, [
       { rodzaj: "dodaj", id: "x", text: "coś", rodzicId: "nie-ma-takiego" },
-    ]);
+    ], PL);
 
     expect(result.ok).toBe(false);
     if (result.ok) return;
@@ -131,7 +134,7 @@ describe("dodawanie węzłów", () => {
     const result = applyMindMapOperations(MAPA, [
       { rodzaj: "dodaj", id: "ten-sam", text: "raz", rodzicId: "korzen" },
       { rodzaj: "dodaj", id: "ten-sam", text: "dwa", rodzicId: "korzen" },
-    ]);
+    ], PL);
 
     expect(result.ok).toBe(false);
   });
@@ -139,7 +142,7 @@ describe("dodawanie węzłów", () => {
 
 describe("kasowanie węzłów", () => {
   it("usun przesuwa dzieci pod dziadka, zamiast je osierocić", () => {
-    const result = applyMindMapOperations(MAPA, [{ rodzaj: "usun", id: "owoce" }]);
+    const result = applyMindMapOperations(MAPA, [{ rodzaj: "usun", id: "owoce" }], PL);
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -150,7 +153,7 @@ describe("kasowanie węzłów", () => {
   });
 
   it("usun_galaz zabiera węzeł razem ze wszystkim pod nim", () => {
-    const result = applyMindMapOperations(MAPA, [{ rodzaj: "usun_galaz", id: "owoce" }]);
+    const result = applyMindMapOperations(MAPA, [{ rodzaj: "usun_galaz", id: "owoce" }], PL);
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -160,17 +163,17 @@ describe("kasowanie węzłów", () => {
   });
 
   it("skasowanie korzenia zostawia jego dzieci jako nowe korzenie, nie jako sieroty", () => {
-    const result = applyMindMapOperations(MAPA, [{ rodzaj: "usun", id: "korzen" }]);
+    const result = applyMindMapOperations(MAPA, [{ rodzaj: "usun", id: "korzen" }], PL);
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     // Owoce i warzywa nie mają już rodzica - i tak ma być, bo nie ma gdzie ich
     // podwiesić. Mapa dalej jest spójna.
-    expect(checkMindMap(result)).toBeNull();
+    expect(checkMindMap(result, PL)).toBeNull();
   });
 
   it("odmawia kasowania węzła, którego nie ma", () => {
-    const result = applyMindMapOperations(MAPA, [{ rodzaj: "usun", id: "widmo" }]);
+    const result = applyMindMapOperations(MAPA, [{ rodzaj: "usun", id: "widmo" }], PL);
 
     expect(result.ok).toBe(false);
     if (result.ok) return;
@@ -182,7 +185,7 @@ describe("przenoszenie węzłów", () => {
   it("przepina węzeł pod nowego rodzica, zostawiając mu jednego", () => {
     const result = applyMindMapOperations(MAPA, [
       { rodzaj: "przenies", id: "jablko", rodzicId: "warzywa" },
-    ]);
+    ], PL);
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -194,7 +197,7 @@ describe("przenoszenie węzłów", () => {
   it("nie pozwala podwiesić węzła sam pod siebie", () => {
     const result = applyMindMapOperations(MAPA, [
       { rodzaj: "przenies", id: "owoce", rodzicId: "owoce" },
-    ]);
+    ], PL);
 
     expect(result.ok).toBe(false);
   });
@@ -202,7 +205,7 @@ describe("przenoszenie węzłów", () => {
   it("nie pozwala przenieść węzła pod jego własne dziecko - to zamknęłoby pierścień", () => {
     const result = applyMindMapOperations(MAPA, [
       { rodzaj: "przenies", id: "owoce", rodzicId: "jablko" },
-    ]);
+    ], PL);
 
     expect(result.ok).toBe(false);
     if (result.ok) return;
@@ -217,7 +220,7 @@ describe("paczka operacji wchodzi w całości albo wcale", () => {
       { rodzaj: "przenies", id: "korzen", rodzicId: "jablko" },
     ];
 
-    const result = applyMindMapOperations(MAPA, operations);
+    const result = applyMindMapOperations(MAPA, operations, PL);
     expect(result.ok).toBe(false);
 
     // Mapa wejściowa nietknięta - operacje idą po kopii.
@@ -225,40 +228,40 @@ describe("paczka operacji wchodzi w całości albo wcale", () => {
   });
 
   it("pusta lista operacji to błąd, a nie cicha zgoda", () => {
-    expect(applyMindMapOperations(MAPA, []).ok).toBe(false);
+    expect(applyMindMapOperations(MAPA, [], PL).ok).toBe(false);
   });
 });
 
 describe("sprawdzanie gotowej mapy", () => {
   it("przepuszcza mapę zdrową", () => {
-    expect(checkMindMap(MAPA)).toBeNull();
+    expect(checkMindMap(MAPA, PL)).toBeNull();
   });
 
   it("łapie krawędź do węzła, którego nie ma", () => {
     expect(
-      checkMindMap({ nodes: MAPA.nodes, edges: [...MAPA.edges, edge("korzen", "duch")] }),
+      checkMindMap({ nodes: MAPA.nodes, edges: [...MAPA.edges, edge("korzen", "duch")] }, PL),
     ).toContain("którego już nie ma");
   });
 
   // Poniższe dwie mapy da się narysować ręcznie w obu edytorach, więc strażnik
-  // nie ma prawa ich odrzucać. Kiedyś odrzucał - i przez to asystent odmawiał
+  // nie ma prawa ich odrzucać. Kiedyś odrzucał - i przez to KajetAI odmawiał
   // pracy przy takiej mapie na zawsze, choćby polecenie dotyczyło innej gałęzi.
   it("przepuszcza węzeł podwieszony w dwóch miejscach", () => {
     expect(
-      checkMindMap({ nodes: MAPA.nodes, edges: [...MAPA.edges, edge("warzywa", "jablko")] }),
+      checkMindMap({ nodes: MAPA.nodes, edges: [...MAPA.edges, edge("warzywa", "jablko")] }, PL),
     ).toBeNull();
   });
 
   it("przepuszcza gałąź zamkniętą w pierścień", () => {
     expect(
-      checkMindMap({
-        nodes: [node("a"), node("b")],
-        edges: [edge("a", "b"), edge("b", "a")],
-      }),
+      checkMindMap(
+        { nodes: [node("a"), node("b")], edges: [edge("a", "b"), edge("b", "a")] },
+        PL,
+      ),
     ).toBeNull();
   });
 
   it("łapie dwa węzły o tym samym identyfikatorze", () => {
-    expect(checkMindMap({ nodes: [node("a"), node("a")], edges: [] })).toContain("dwa razy");
+    expect(checkMindMap({ nodes: [node("a"), node("a")], edges: [] }, PL)).toContain("dwa razy");
   });
 });

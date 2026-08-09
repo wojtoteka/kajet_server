@@ -4,7 +4,7 @@
   Wszystko, co przyszło z zewnątrz, przechodzi tu przez zod, ZANIM cokolwiek
   zostanie zapisane. Model potrafi oddać liczbę tam, gdzie ma być napis, pustą
   tablicę operacji albo rozmiar pisma spoza skali - i wtedy notatka ma zostać
-  nietknięta, a człowiek ma zobaczyć zdanie po polsku, co poszło nie tak.
+  nietknięta, a człowiek ma zobaczyć w swoim języku, co poszło nie tak.
 
   Nowa treść powstaje ISTNIEJĄCYMI budowniczymi (buildTextNoteContent i spółka),
   tymi samymi, których używa panel WWW. Dzięki temu pola, o których model nic
@@ -29,6 +29,7 @@ import {
 } from "@/lib/mindmap-note";
 import { readDocument } from "@/lib/document";
 import { fitTitle, titleFromMarkdown, titleFromMindMap, titleIsOwn } from "@/lib/note-title";
+import type { Words } from "@/lib/i18n";
 import { applyMindMapOperations } from "./mindmap-guard";
 import { NAZWA_KOD, NAZWA_MAPA, NAZWA_PYTANIE, NAZWA_TEKST, type AiKind } from "./tools";
 
@@ -36,7 +37,7 @@ const opisPola = z.string().trim().min(1).max(300);
 /*
   Tytuł od modelu. Granica jest hojna CELOWO: gdyby była ciasna, model
   wklejający zamiast tytułu cały akapit wywracałby zod, a razem z nim całą
-  zmianę - i człowiek traciłby gotowe wypracowanie przez to, że asystent źle
+  zmianę - i człowiek traciłby gotowe wypracowanie przez to, że KajetAI źle
   nazwał notatkę. Tytuł jest dodatkiem do zmiany, nie warunkiem jej przyjęcia;
   za długi zostaje przycięty przez fitTitle.
 */
@@ -93,21 +94,23 @@ export type AiCallInput = {
   content: string;
   toolName: string;
   args: unknown;
+  /** Język, w którym ma wyjść odmowa - zdanie czyta człowiek, nie model. */
+  words: Words;
 };
 
 export function applyAiCall(input: AiCallInput): AiOutcome {
-  const { kind, toolName, args } = input;
+  const { kind, toolName, args, words } = input;
 
   if (toolName === NAZWA_PYTANIE) {
     const parsed = pytanieArgs.safeParse(args);
-    if (!parsed.success) return zle("Asystent chciał o coś dopytać, ale nie podał pytania.");
+    if (!parsed.success) return zle(words.aiNoQuestionAsked);
     return { kind: "pytanie", pytanie: parsed.data.pytanie };
   }
 
   // Narzędzie od innego typu notatki. Nie powinno się zdarzyć, bo do modelu
   // jadą tylko dwa - ale gdyby przyszło, notatka zostaje nietknięta.
   if (toolName !== expectedTool(kind)) {
-    return zle("Asystent sięgnął po narzędzie, którego przy tej notatce nie ma.");
+    return zle(words.aiUnknownTool);
   }
 
   if (kind === "TEXT") return zastosujTekst(input, args);
@@ -173,7 +176,7 @@ function zle(powod: string): AiOutcome {
 function zastosujTekst(input: AiCallInput, args: unknown): AiOutcome {
   const parsed = tekstArgs.safeParse(args);
   if (!parsed.success) {
-    return zle("Asystent oddał treść w kształcie, którego nie da się zapisać.");
+    return zle(input.words.aiTextUnsavable);
   }
 
   const { markdown, opis, tytul, font, fontSize, align } = parsed.data;
@@ -184,7 +187,7 @@ function zastosujTekst(input: AiCallInput, args: unknown): AiOutcome {
     font === undefined &&
     fontSize === undefined &&
     align === undefined;
-  if (nothingChanged) return zle("Asystent nie zmienił w notatce niczego.");
+  if (nothingChanged) return zle(input.words.aiTextUnchanged);
 
   const existing = parseExistingTextDocument(input.content);
 
@@ -207,11 +210,11 @@ function zastosujTekst(input: AiCallInput, args: unknown): AiOutcome {
 function zastosujKod(input: AiCallInput, args: unknown): AiOutcome {
   const parsed = kodArgs.safeParse(args);
   if (!parsed.success) {
-    return zle("Asystent oddał kod w kształcie, którego nie da się zapisać.");
+    return zle(input.words.aiCodeUnsavable);
   }
 
   const teraz = parseCodeNote(input.content);
-  if (!teraz) return zle("Nie udało się odczytać notatki z kodem.");
+  if (!teraz) return zle(input.words.aiCodeNoteUnreadable);
 
   const proposed = parsed.data.tytul
     ? withSameExtension(input.title, parsed.data.tytul)
@@ -219,7 +222,7 @@ function zastosujKod(input: AiCallInput, args: unknown): AiOutcome {
   const title = titleAfter(input, proposed);
 
   if (parsed.data.source === teraz.source && title === input.title) {
-    return zle("Asystent nie zmienił w kodzie niczego.");
+    return zle(input.words.aiCodeUnchanged);
   }
 
   return {
@@ -241,18 +244,19 @@ function zastosujKod(input: AiCallInput, args: unknown): AiOutcome {
 function zastosujMape(input: AiCallInput, args: unknown): AiOutcome {
   const parsed = mapaArgs.safeParse(args);
   if (!parsed.success) {
-    return zle("Asystent oddał zmiany w mapie w kształcie, którego nie da się zapisać.");
+    return zle(input.words.aiMapUnsavable);
   }
 
   const teraz = parseMindMapNote(input.content);
-  if (!teraz) return zle("Nie udało się odczytać mapy myśli.");
+  if (!teraz) return zle(input.words.aiMindMapUnreadable);
 
   const wynik = applyMindMapOperations(
     { nodes: teraz.nodes, edges: teraz.edges },
     parsed.data.operacje,
+    input.words,
   );
   // Uszkodzona mapa nie jest zapisywana ani w części. Powód idzie wprost do
-  // człowieka, bo mówi konkretnie, co asystent próbował zrobić.
+  // człowieka, bo mówi konkretnie, co KajetAI próbował zrobić.
   if (!wynik.ok) return zle(wynik.powod);
 
   return {

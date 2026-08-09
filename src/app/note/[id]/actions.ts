@@ -31,6 +31,11 @@ import type { MindEdge, MindNode, Page } from "@/lib/document";
 import { LANGUAGES, run, runnerState } from "@/lib/code-runner";
 import { checkLimit, takeSlot } from "@/lib/run-limits";
 import { currentWords } from "@/lib/language";
+import {
+  attachmentAddedMsg,
+  attachmentRemovedMsg,
+  shareMailSentMsg,
+} from "@/lib/i18n";
 import { aiVisibleFor } from "@/lib/ai/access";
 import { runAiEdit } from "@/lib/ai/run";
 import { forgetTurns, recentTurns } from "@/lib/ai/history";
@@ -135,8 +140,8 @@ export async function saveTextNote(_previous: Result, data: FormData): Promise<R
         tags: true,
       },
     });
-    if (!row || row.deletedAt) return { error: "Nie ma takiej notatki." };
-    if (row.ownerId !== user.id) return { error: "To nie jest Twoja notatka." };
+    if (!row || row.deletedAt) return { error: (await currentWords()).actNoteGone };
+    if (row.ownerId !== user.id) return { error: (await currentWords()).apiNoteNotYours };
     if (row.kind !== "TEXT") {
       return { error: (await currentWords()).actOnlyTextNotes };
     }
@@ -197,7 +202,7 @@ export async function saveTextNote(_previous: Result, data: FormData): Promise<R
     success:
       outcome.status === "unchanged"
         ? (await currentWords()).actNothingChanged
-        : `Zapisane (wersja ${outcome.version}).`,
+        : (await currentWords()).actSavedNote,
     // Autozapis podaje tę wersję jako baseVersion następnego zapisu —
     // bez tego drugi zapis z rzędu wpadałby w konflikt sam ze sobą.
     version: outcome.version,
@@ -288,8 +293,8 @@ export async function saveMindMapNote(_previous: Result, data: FormData): Promis
         tags: true,
       },
     });
-    if (!row || row.deletedAt) return { error: "Nie ma takiej notatki." };
-    if (row.ownerId !== user.id) return { error: "To nie jest Twoja notatka." };
+    if (!row || row.deletedAt) return { error: (await currentWords()).actNoteGone };
+    if (row.ownerId !== user.id) return { error: (await currentWords()).apiNoteNotYours };
     if (row.kind !== "MINDMAP") return { error: (await currentWords()).actNotAMindMap };
     existingDocument = parseExistingMindMapDocument(row.content);
     favorite = row.favorite;
@@ -338,7 +343,7 @@ export async function saveMindMapNote(_previous: Result, data: FormData): Promis
     success:
       outcome.status === "unchanged"
         ? (await currentWords()).actNothingChanged
-        : `Zapisane (wersja ${outcome.version}).`,
+        : (await currentWords()).actSavedNote,
     // Autozapis podaje tę wersję jako baseVersion następnego zapisu —
     // bez tego drugi zapis z rzędu wpadałby w konflikt sam ze sobą.
     version: outcome.version,
@@ -419,8 +424,8 @@ export async function saveHandwritingNote(_previous: Result, data: FormData): Pr
         tags: true,
       },
     });
-    if (!row || row.deletedAt) return { error: "Nie ma takiej notatki." };
-    if (row.ownerId !== user.id) return { error: "To nie jest Twoja notatka." };
+    if (!row || row.deletedAt) return { error: (await currentWords()).actNoteGone };
+    if (row.ownerId !== user.id) return { error: (await currentWords()).apiNoteNotYours };
     if (row.kind !== "HANDWRITTEN") return { error: (await currentWords()).actNotHandwriting };
     existingDocument = parseExistingHandwritingDocument(row.content);
     favorite = row.favorite;
@@ -467,7 +472,7 @@ export async function saveHandwritingNote(_previous: Result, data: FormData): Pr
     success:
       outcome.status === "unchanged"
         ? (await currentWords()).actNothingChanged
-        : `Zapisane (wersja ${outcome.version}).`,
+        : (await currentWords()).actSavedNote,
     // Autozapis podaje tę wersję jako baseVersion następnego zapisu —
     // bez tego drugi zapis z rzędu wpadałby w konflikt sam ze sobą.
     version: outcome.version,
@@ -530,9 +535,9 @@ export async function saveCodeNote(_previous: Result, data: FormData): Promise<R
         tags: true,
       },
     });
-    if (!row || row.deletedAt) return { error: "Nie ma takiej notatki." };
-    if (row.ownerId !== user.id) return { error: "To nie jest Twoja notatka." };
-    if (row.kind !== "CODE") return { error: "To nie jest notatka z kodem." };
+    if (!row || row.deletedAt) return { error: (await currentWords()).actNoteGone };
+    if (row.ownerId !== user.id) return { error: (await currentWords()).apiNoteNotYours };
+    if (row.kind !== "CODE") return { error: (await currentWords()).actNotACodeFile };
     favorite = row.favorite;
     tags = row.tags ? row.tags.split("|").filter(Boolean) : [];
     if (baseVersion <= 0) baseVersion = row.version;
@@ -587,7 +592,7 @@ export async function saveCodeNote(_previous: Result, data: FormData): Promise<R
     success:
       outcome.status === "unchanged"
         ? (await currentWords()).actNothingChanged
-        : `Zapisane (wersja ${outcome.version}).`,
+        : (await currentWords()).actSavedNote,
     // Autozapis podaje tę wersję jako baseVersion następnego zapisu —
     // bez tego drugi zapis z rzędu wpadałby w konflikt sam ze sobą.
     version: outcome.version,
@@ -656,7 +661,7 @@ export async function trashNote(_previous: Result, data: FormData): Promise<Resu
   if (!user) return { error: (await currentWords()).apiMustSignIn };
 
   const noteId = String(data.get("noteId") ?? "");
-  if (!noteId) return { error: "Brak identyfikatora notatki." };
+  if (!noteId) return { error: (await currentWords()).actWhichNote };
 
   const outcome = await setNoteDeletedForUser(user.id, noteId, true);
   if (outcome.status === "error") return { error: outcome.message };
@@ -672,7 +677,7 @@ export async function restoreNote(_previous: Result, data: FormData): Promise<Re
   if (!user) return { error: (await currentWords()).apiMustSignIn };
 
   const noteId = String(data.get("noteId") ?? "");
-  if (!noteId) return { error: "Brak identyfikatora notatki." };
+  if (!noteId) return { error: (await currentWords()).actWhichNote };
 
   const outcome = await setNoteDeletedForUser(user.id, noteId, false);
   if (outcome.status === "error") return { error: outcome.message };
@@ -688,7 +693,7 @@ export async function purgeNote(_previous: Result, data: FormData): Promise<Resu
   if (!user) return { error: (await currentWords()).apiMustSignIn };
 
   const noteId = String(data.get("noteId") ?? "");
-  if (!noteId) return { error: "Brak identyfikatora notatki." };
+  if (!noteId) return { error: (await currentWords()).actWhichNote };
 
   const outcome = await purgeNoteForUser(user.id, noteId);
   if (outcome.status === "error") return { error: outcome.message };
@@ -704,7 +709,7 @@ export async function toggleFavorite(_previous: Result, data: FormData): Promise
 
   const noteId = String(data.get("noteId") ?? "");
   const next = String(data.get("favorite") ?? "") === "1";
-  if (!noteId) return { error: "Brak identyfikatora notatki." };
+  if (!noteId) return { error: (await currentWords()).actWhichNote };
 
   const outcome = await setNoteFavoriteForUser(user.id, noteId, next);
   if (outcome.status === "error") return { error: outcome.message };
@@ -722,8 +727,8 @@ export async function uploadAttachment(_previous: Result, data: FormData): Promi
   const file = data.get("file");
   let name = String(data.get("name") ?? "").trim();
 
-  if (!noteId) return { error: "Brak identyfikatora notatki." };
-  if (!(file instanceof File)) return { error: "Wybierz plik." };
+  if (!noteId) return { error: (await currentWords()).actWhichNote };
+  if (!(file instanceof File)) return { error: (await currentWords()).actPickFileFirst };
   // Nazwa po oczyszczeniu, bo wchodzi wprost w odnośnik `assets/...` w treści
   // notatki - spacja albo nawias rozbiłyby go i zamiast zdjęcia zostałby tekst.
   name = safeAttachmentName(name || file.name || "plik");
@@ -732,8 +737,8 @@ export async function uploadAttachment(_previous: Result, data: FormData): Promi
     where: { id: noteId },
     select: { id: true, ownerId: true, deletedAt: true },
   });
-  if (!note || note.deletedAt) return { error: "Nie ma takiej notatki." };
-  if (note.ownerId !== user.id) return { error: "To nie jest Twoja notatka." };
+  if (!note || note.deletedAt) return { error: (await currentWords()).actNoteGone };
+  if (note.ownerId !== user.id) return { error: (await currentWords()).apiNoteNotYours };
 
   if (!mayUpload(file.type)) {
     return { error: (await currentWords()).apiFileKindRefused };
@@ -798,7 +803,7 @@ export async function uploadAttachment(_previous: Result, data: FormData): Promi
   }
 
   revalidatePath(`/note/${noteId}`);
-  return { success: `Dodano załącznik „${name}".`, attachment: { name } };
+  return { success: attachmentAddedMsg(await currentWords(), name), attachment: { name } };
 }
 
 export async function removeAttachment(_previous: Result, data: FormData): Promise<Result> {
@@ -813,8 +818,8 @@ export async function removeAttachment(_previous: Result, data: FormData): Promi
     where: { id: noteId },
     select: { id: true, ownerId: true },
   });
-  if (!note) return { error: "Nie ma takiej notatki." };
-  if (note.ownerId !== user.id) return { error: "To nie jest Twoja notatka." };
+  if (!note) return { error: (await currentWords()).actNoteGone };
+  if (note.ownerId !== user.id) return { error: (await currentWords()).apiNoteNotYours };
 
   const attachment = await prisma.attachment.findUnique({
     where: { noteId_name: { noteId, name } },
@@ -826,7 +831,7 @@ export async function removeAttachment(_previous: Result, data: FormData): Promi
   await changeUsed(user.id, -attachment.sizeBytes);
 
   revalidatePath(`/note/${noteId}`);
-  return { success: `Usunięto „${name}".` };
+  return { success: attachmentRemovedMsg(await currentWords(), name) };
 }
 
 const form = z.object({
@@ -856,7 +861,7 @@ export async function share(_previous: Result, data: FormData): Promise<Result> 
     where: { id: noteId },
     select: { id: true, title: true, ownerId: true, deletedAt: true },
   });
-  if (!note || note.deletedAt) return { error: "Nie ma takiej notatki." };
+  if (!note || note.deletedAt) return { error: (await currentWords()).actNoteGone };
   if (note.ownerId !== user.id) {
     return { error: (await currentWords()).actOnlyOwnNote };
   }
@@ -884,7 +889,7 @@ export async function share(_previous: Result, data: FormData): Promise<Result> 
       ),
     );
     return sent
-      ? { success: `Wysłaliśmy wiadomość na ${email}.` }
+      ? { success: shareMailSentMsg(await currentWords(), email) }
       : {
           success: (await currentWords()).actShareMailFailed,
           copyable: { value: link, label: (await currentWords()).copyLink },
@@ -909,7 +914,7 @@ export async function revokeShare(_previous: Result, data: FormData): Promise<Re
 
   if (!existing) return { success: (await currentWords()).actShareGone };
   if (existing.note.ownerId !== user.id) {
-    return { error: "To nie jest Twoja notatka." };
+    return { error: (await currentWords()).apiNoteNotYours };
   }
 
   await prisma.share.delete({ where: { id } });

@@ -65,7 +65,7 @@ async function writableNote(
       TEXT: words.actOnlyTextNotes,
       MINDMAP: words.actNotAMindMap,
       HANDWRITTEN: words.actNotHandwriting,
-      CODE: "To nie jest notatka z kodem.",
+      CODE: words.actNotACodeFile,
     };
     return { ok: false, error: mismatch[kind] ?? words.actCheckWhatYouTyped };
   }
@@ -98,7 +98,7 @@ async function finishSave(
     success:
       outcome.status === "unchanged"
         ? (await currentWords()).actNothingChanged
-        : `Zapisane (wersja ${outcome.version}).`,
+        : (await currentWords()).actSavedNote,
     version: outcome.version,
   };
 }

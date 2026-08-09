@@ -1,5 +1,5 @@
 /*
-  Operacje asystenta na mapie myśli i pilnowanie, żeby mapa po nich dalej
+  Operacje KajetAI na mapie myśli i pilnowanie, żeby mapa po nich dalej
   trzymała się kupy.
 
   To jest ważniejsze niż sam schemat JSON. Uszkodzony markdown widać od razu.
@@ -16,19 +16,28 @@
   stronie, i na tablecie - pozwalają takie mapy narysować i umieją je rysować
   dalej (druga krawędź jest przy układaniu pomijana, obchodzenie drzewa ma
   zabezpieczenie przed pętlą). Skoro człowiek ma prawo taką mapę zrobić, to
-  asystent nie ma prawa odmówić przy niej pracy - a odmawiał, i to na zawsze,
+  KajetAI nie ma prawa odmówić przy niej pracy - a odmawiał, i to na zawsze,
   bo sprawdzenie szło po CAŁEJ mapie, nie po tym, co sam zmienił.
 
   Zostaje to, co naprawdę psuje plik: węzeł bez identyfikatora, powtórzony
   identyfikator, krawędź do węzła, którego nie ma, i węzeł podwieszony sam pod
   siebie. Przed zawiązaniem pierścienia bronimy się przy samej operacji
-  „przenieś" - asystent nie ma prawa go zrobić, ale nie ma też prawa uznać za
+  „przenieś" - KajetAI nie ma prawa go zrobić, ale nie ma też prawa uznać za
   usterkę tego, który zrobił człowiek.
 */
 
 import { createMindEdge, createMindNode } from "@/lib/mindmap-note";
-import { arrangeMindMap } from "@/lib/mindmap-layout";
+import { arrangeMindMap, fitNodeSize } from "@/lib/mindmap-layout";
 import type { MindEdge, MindNode } from "@/lib/document";
+import {
+  aiMapNoParentForMove,
+  aiMapNoParentForNew,
+  aiMapNoSuchNode,
+  aiMapNodeTwice,
+  aiMapTwoNodesSameName,
+  aiMapUnknownChange,
+  type Words,
+} from "@/lib/i18n";
 
 /** Odstępy przepisane z edytora, żeby dostawiony węzeł stanął tam, gdzie stanąłby ręcznie. */
 const GAP_X = 64;
@@ -61,9 +70,10 @@ export type MindMapResult =
 export function applyMindMapOperations(
   before: MindMapBefore,
   operations: MindMapOperation[],
+  words: Words,
 ): MindMapResult {
   if (operations.length === 0) {
-    return { ok: false, powod: "Asystent nie podał żadnej zmiany do wykonania." };
+    return { ok: false, powod: words.aiMapNoOperations };
   }
 
   const nodes = before.nodes.map((node) => ({ ...node }));
@@ -101,42 +111,36 @@ export function applyMindMapOperations(
 
     if (rodzaj === "dodaj") {
       if (!operation.id) {
-        return { ok: false, powod: "Asystent nie nazwał dodawanego węzła." };
+        return { ok: false, powod: words.aiMapNodeUnnamed };
       }
       if (minted.has(operation.id)) {
-        return {
-          ok: false,
-          powod: `Asystent użył nazwy „${operation.id}" dla dwóch nowych węzłów.`,
-        };
+        return { ok: false, powod: aiMapTwoNodesSameName(words, operation.id) };
       }
 
       const parentId = realId(operation.rodzicId);
       if (parentId && !nodeAt(parentId)) {
-        return {
-          ok: false,
-          powod: `Asystent chciał podwiesić nowy węzeł pod „${parentId}", a takiego węzła nie ma.`,
-        };
+        return { ok: false, powod: aiMapNoParentForNew(words, parentId) };
       }
       // Poza pustą mapą każdy nowy węzeł musi mieć rodzica - inaczej właśnie
       // to się dzieje, czego pilnujemy: powstaje sierota. Mapa zakładana od
       // zera jest wyjątkiem: jej pierwszy węzeł nie ma pod co pójść.
       if (!parentId && !mapWasEmpty) {
-        return {
-          ok: false,
-          powod: "Asystent chciał dodać węzeł, który do niczego nie jest podłączony.",
-        };
+        return { ok: false, powod: words.aiMapNewNodeLoose };
       }
 
       const parent = parentId ? nodeAt(parentId) : null;
       const siblings = parentId ? childrenOf(parentId).length : nodes.length;
+      // Rozmiar pod hasło od razu - inaczej dłuższy napis byłby ucięty.
+      const size = fitNodeSize(operation.text);
       const fresh = createMindNode(
         parent
           ? {
               x: parent.x + (parent.width ?? 160) + GAP_X,
               y: parent.y + siblings * ((parent.height ?? 64) + GAP_Y),
               text: operation.text ?? "",
+              ...size,
             }
-          : { x: 200, y: 160 + siblings * (64 + GAP_Y), text: operation.text ?? "" },
+          : { x: 200, y: 160 + siblings * (64 + GAP_Y), text: operation.text ?? "", ...size },
       );
 
       nodes.push(fresh);
@@ -148,36 +152,37 @@ export function applyMindMapOperations(
 
     const id = realId(operation.id);
     if (!id || !nodeAt(id)) {
-      return {
-        ok: false,
-        powod: `Asystent wskazał węzeł „${operation.id}", a takiego w mapie nie ma.`,
-      };
+      return { ok: false, powod: aiMapNoSuchNode(words, operation.id) };
     }
 
     if (rodzaj === "zmien_tekst") {
       const node = nodeAt(id)!;
       node.text = operation.text ?? "";
+      /*
+        Rozmiar przeliczamy TYLKO wtedy, gdy węzeł ma go domyślny - czyli
+        nikt go dotąd nie rozciągnął ręcznie. Ustawiony ręcznie zostaje
+        taki, jaki jest: to decyzja człowieka o wyglądzie jego mapy.
+      */
+      if ((node.width ?? 160) === 160 && (node.height ?? 64) === 64) {
+        const size = fitNodeSize(node.text);
+        node.width = size.width;
+        node.height = size.height;
+      }
       continue;
     }
 
     if (rodzaj === "przenies") {
       const parentId = realId(operation.rodzicId);
       if (parentId && !nodeAt(parentId)) {
-        return {
-          ok: false,
-          powod: `Asystent chciał przenieść węzeł pod „${parentId}", a takiego węzła nie ma.`,
-        };
+        return { ok: false, powod: aiMapNoParentForMove(words, parentId) };
       }
       if (parentId === id) {
-        return { ok: false, powod: "Asystent chciał podwiesić węzeł sam pod siebie." };
+        return { ok: false, powod: words.aiMapNodeUnderItself };
       }
       // Pod własnego potomka też nie - to zamyka gałąź w pierścień, który
       // urywa ją od reszty mapy i zawiesza obchodzenie drzewa.
       if (parentId && isDescendant(edges, id, parentId)) {
-        return {
-          ok: false,
-          powod: "Asystent chciał przenieść węzeł pod jego własną gałąź.",
-        };
+        return { ok: false, powod: words.aiMapNodeUnderOwnBranch };
       }
       attach(id, parentId);
       continue;
@@ -210,10 +215,10 @@ export function applyMindMapOperations(
       continue;
     }
 
-    return { ok: false, powod: `Asystent poprosił o nieznaną zmianę „${rodzaj}".` };
+    return { ok: false, powod: aiMapUnknownChange(words, rodzaj) };
   }
 
-  const complaint = checkMindMap({ nodes, edges }, added, mapWasEmpty);
+  const complaint = checkMindMap({ nodes, edges }, words, added, mapWasEmpty);
   if (complaint) return { ok: false, powod: complaint };
 
   /*
@@ -241,6 +246,7 @@ export function applyMindMapOperations(
  */
 export function checkMindMap(
   map: MindMapBefore,
+  words: Words,
   added: ReadonlySet<string> = new Set(),
   /**
    * Czy mapa przed zmianą była zupełnie pusta. Wtedy węzeł dodany bez rodzica
@@ -251,34 +257,34 @@ export function checkMindMap(
 ): string | null {
   const ids = new Set<string>();
   for (const node of map.nodes) {
-    if (!node.id) return "W mapie jest węzeł bez identyfikatora.";
-    if (ids.has(node.id)) return `Węzeł „${node.id}" występuje w mapie dwa razy.`;
+    if (!node.id) return words.aiMapNodeWithoutName;
+    if (ids.has(node.id)) return aiMapNodeTwice(words, node.id);
     ids.add(node.id);
   }
 
   const edgeIds = new Set<string>();
   const parents = new Map<string, string>();
   for (const edge of map.edges) {
-    if (edgeIds.has(edge.id)) return "Dwie krawędzie mapy mają ten sam identyfikator.";
+    if (edgeIds.has(edge.id)) return words.aiMapTwoSameLinks;
     edgeIds.add(edge.id);
 
     if (!ids.has(edge.fromId) || !ids.has(edge.toId)) {
-      return "W mapie została krawędź prowadząca do węzła, którego już nie ma.";
+      return words.aiMapLinkToNowhere;
     }
-    if (edge.fromId === edge.toId) return "W mapie jest węzeł podwieszony sam pod siebie.";
+    if (edge.fromId === edge.toId) return words.aiMapSelfLink;
     // Węzeł z dwoma rodzicami i gałąź zamknięta w pierścień to mapy, które
     // człowiek ma prawo narysować w obu edytorach - patrz komentarz na górze
     // pliku. Zapamiętujemy pierwszego rodzica, żeby dało się rozpoznać sierotę.
     if (!parents.has(edge.toId)) parents.set(edge.toId, edge.fromId);
   }
 
-  // Sierota: węzeł, który asystent właśnie dodał, a który do niczego nie
+  // Sierota: węzeł, który KajetAI właśnie dodał, a który do niczego nie
   // prowadzi. Mapa zakładana od zera jest wyjątkiem - jej pierwszy węzeł nie
   // ma pod co pójść i właśnie on jest korzeniem.
   if (!mapWasEmpty) {
     for (const id of added) {
       if (ids.has(id) && !parents.has(id) && map.nodes.length > 1) {
-        return "Asystent zostawił dodany węzeł bez połączenia z resztą mapy.";
+        return words.aiMapAddedNodeLoose;
       }
     }
   }

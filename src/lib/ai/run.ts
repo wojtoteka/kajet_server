@@ -101,7 +101,7 @@ export async function runAiEdit(input: {
     return { status: "konflikt", version: note.version };
   }
 
-  const view = viewForModel(note.kind, note.content);
+  const view = viewForModel(note.kind, note.content, words);
   if (!view.ok) {
     return { status: "blad", code: "unreadable", message: view.powod, httpStatus: 400 };
   }
@@ -164,10 +164,11 @@ export async function runAiEdit(input: {
     content: note.content,
     toolName: answer.toolName,
     args: answer.args,
+    words,
   });
 
   if (outcome.kind === "blad") {
-    // Notatka została nietknięta - zdanie mówi, co asystent próbował zrobić.
+    // Notatka została nietknięta - zdanie mówi, co KajetAI próbował zrobić.
     return { status: "blad", code: "ai-refused", message: outcome.powod, httpStatus: 422 };
   }
 

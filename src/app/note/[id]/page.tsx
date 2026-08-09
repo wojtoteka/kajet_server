@@ -279,10 +279,7 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
         <section className="sheet-ruled" style={{ paddingBlock: 24, paddingInlineEnd: 26 }}>
           <p className="eyebrow">{words.sharingEyebrow}</p>
           <h2 style={{ marginBottom: 8 }}>{words.shareThisNote}</h2>
-          <p className="lead">
-            {words.shareAbout}
-            e-mail działa imiennie: otworzy je tylko osoba zalogowana tym adresem.
-          </p>
+          <p className="lead">{words.shareAbout}</p>
 
           <ActionForm action={share} label={words.shareButton} busyLabel={words.sharePreparing} primary>
             <input type="hidden" name="noteId" value={note.id} />

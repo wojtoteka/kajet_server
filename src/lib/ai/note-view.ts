@@ -16,13 +16,19 @@ import { parseCodeNote } from "@/lib/code-note";
 import { parseMindMapNote } from "@/lib/mindmap-note";
 import { textMarkdownFromContent } from "@/lib/text-note";
 import type { MindEdge, MindNode } from "@/lib/document";
+import type { Words } from "@/lib/i18n";
 import type { AiKind } from "./tools";
 
 export type NoteView =
   | { ok: true; material: string; chars: number }
   | { ok: false; powod: string };
 
-export function viewForModel(kind: AiKind, content: string): NoteView {
+/*
+  Słownik jest tu tylko po to, żeby ODMOWA wyszła w języku strony. Materiał dla
+  modelu zostaje po polsku zawsze - prompt też jest po polsku, a tłumaczenie
+  opisów węzłów podnosiłoby rachunek za tokeny i nic by nie dało.
+*/
+export function viewForModel(kind: AiKind, content: string, words: Words): NoteView {
   if (kind === "TEXT") {
     const markdown = textMarkdownFromContent(content);
     return gotowe(markdown);
@@ -30,12 +36,12 @@ export function viewForModel(kind: AiKind, content: string): NoteView {
 
   if (kind === "CODE") {
     const code = parseCodeNote(content);
-    if (!code) return { ok: false, powod: "Nie udało się odczytać notatki z kodem." };
+    if (!code) return { ok: false, powod: words.aiCodeNoteUnreadable };
     return gotowe(`Język: ${code.language}\n\n${code.source}`);
   }
 
   const map = parseMindMapNote(content);
-  if (!map) return { ok: false, powod: "Nie udało się odczytać mapy myśli." };
+  if (!map) return { ok: false, powod: words.aiMindMapUnreadable };
   return gotowe(drawMindMap(map.nodes, map.edges));
 }
 
