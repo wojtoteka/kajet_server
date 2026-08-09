@@ -245,10 +245,10 @@ export async function createShare(options: {
   email?: string | null;
   anonymousAllowed: boolean;
   expiresInDays?: number | null;
-}): Promise<string> {
+}): Promise<{ id: string; token: string }> {
   const token = randomBytes(24).toString("base64url");
 
-  await prisma.share.create({
+  const share = await prisma.share.create({
     data: {
       token,
       noteId: options.noteId,
@@ -262,9 +262,10 @@ export async function createShare(options: {
         ? new Date(Date.now() + options.expiresInDays * 86_400_000)
         : null,
     },
+    select: { id: true },
   });
 
-  return token;
+  return { id: share.id, token };
 }
 
 export function shareUrl(baseUrl: string, token: string): string {

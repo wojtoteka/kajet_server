@@ -37,6 +37,7 @@ import {
   safeAttachmentName,
   storeAttachment,
   deleteAttachment,
+  RefusedUpload,
 } from "@/lib/files";
 import { reserveBytes, changeUsed } from "@/lib/quota";
 
@@ -73,6 +74,8 @@ const textNoteForm = z.object({
   // Whole-note appearance, the same fields the tablet keeps in content.json.
   font: z.enum(["body", "heading", "mono"]).optional(),
   fontSize: z.coerce.number().min(0).max(48).optional(),
+  // Barwa pisma całej notatki: liczba ARGB ze znakiem, jak w content.json.
+  textColor: z.coerce.number().int().min(-2147483648).max(2147483647).optional(),
   align: z.enum(["left", "center", "right"]).optional(),
 });
 
@@ -87,6 +90,7 @@ export async function saveTextNote(_previous: Result, data: FormData): Promise<R
     baseVersion: data.get("baseVersion") ?? 0,
     font: data.get("font") || undefined,
     fontSize: data.get("fontSize") ?? undefined,
+    textColor: data.get("textColor") ?? undefined,
     align: data.get("align") || undefined,
   });
   if (!parsed.success) {
@@ -143,6 +147,7 @@ export async function saveTextNote(_previous: Result, data: FormData): Promise<R
     appearance: {
       font: parsed.data.font,
       fontSize: parsed.data.fontSize,
+      textColor: parsed.data.textColor,
       align: parsed.data.align,
     },
     existing: existingDocument,
@@ -597,7 +602,7 @@ export async function runCodeAction(
   if (!language) return { error: (await currentWords()).actPickLanguage };
   if (!code.trim()) return { error: (await currentWords()).apiNothingToRun };
 
-  const limit = checkLimit(user.id);
+  const limit = checkLimit(user.id, await currentWords());
   if (!limit.allowed) return { error: limit.message };
 
   const slot = takeSlot(await currentWords());
@@ -728,8 +733,11 @@ export async function uploadAttachment(_previous: Result, data: FormData): Promi
     stored = await storeAttachment(user.id, noteId, name, buffer);
   } catch (problem) {
     await changeUsed(user.id, -added);
+    // Błędy dysku niosą w treści pełne ścieżki serwera - do przeglądarki
+    // idzie tylko zdanie, że się nie udało, a szczegół zostaje w dzienniku.
+    console.error("[panel] attachment save", problem);
     return {
-      error: problem instanceof Error ? problem.message : (await currentWords()).apiFileSaveFailed,
+      error: problem instanceof RefusedUpload ? problem.message : (await currentWords()).apiFileSaveFailed,
     };
   }
 
@@ -824,7 +832,7 @@ export async function share(_previous: Result, data: FormData): Promise<Result> 
     return { error: (await currentWords()).actOnlyOwnNote };
   }
 
-  const token = await createShare({
+  const { token } = await createShare({
     noteId,
     sharedById: user.id,
     permission,
