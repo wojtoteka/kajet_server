@@ -28,6 +28,8 @@ import { viewForModel } from "@/lib/ai/note-view";
 import { recentTurns, rememberTurn, sweepOldTurns } from "@/lib/ai/history";
 import { askGemini, type AiFailure } from "@/lib/ai/gemini";
 import { applyAiCall } from "@/lib/ai/apply";
+import { checkAiLimit } from "@/lib/ai/limits";
+import { recordAiCall } from "@/lib/ai/usage";
 
 export { OPTIONS } from "@/lib/api";
 
@@ -99,6 +101,12 @@ export const POST = wrapApi(
       );
     }
 
+    // Limit sprawdzany tuż przed wywołaniem, gdy wiadomo już, że żądanie ma
+    // sens - odbicie się od bramki albo od rozmiaru notatki nie ma prawa
+    // zjadać komuś dziennej puli.
+    const room = await checkAiLimit(result.user, words);
+    if (!room.allowed) return error("ai-limit", room.message, 429);
+
     const history = await recentTurns(result.user.id, noteId);
 
     const answer = await askGemini({
@@ -107,6 +115,16 @@ export const POST = wrapApi(
       material: view.material,
       instruction: parsed.data.instruction,
       history,
+    });
+
+    // Do rozliczeń idzie każde wywołanie, także nieudane: za tokeny wejściowe
+    // płaci się i wtedy, gdy odpowiedź do niczego się nie nadała.
+    await recordAiCall({
+      userId: result.user.id,
+      kind: note.kind,
+      usage: answer.usage,
+      tookMs: answer.tookMs,
+      failure: answer.ok ? undefined : answer.failure,
     });
 
     if (!answer.ok) {

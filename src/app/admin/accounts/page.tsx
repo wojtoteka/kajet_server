@@ -4,11 +4,13 @@ import { prisma } from "@/lib/prisma";
 import { humanSize } from "@/lib/quota";
 import { ActionForm } from "@/components/ActionForm";
 import { aiWorks } from "@/lib/settings";
+import { NO_AI_USAGE, aiUsageForMany, dailyLimitFor } from "@/lib/ai/limits";
 import {
   toggleAdmin,
   toggleBlock,
   toggleCodeRunning,
   toggleAi,
+  setAiLimit,
   recomputeStorage,
   setQuota,
   changeLogin,
@@ -47,6 +49,11 @@ export default async function AccountsPage({
     }),
     prisma.user.count({ where }),
   ]);
+
+  // Zużycie dla całej strony dwoma zapytaniami, nie dwoma na konto.
+  const usage = assistantHere
+    ? await aiUsageForMany(users.filter((user) => user.canUseAi).map((user) => user.id))
+    : new Map();
 
   return (
     <>
@@ -236,6 +243,32 @@ export default async function AccountsPage({
                     </ActionForm>
                   </div>
                 </div>
+
+                {assistantHere && user.canUseAi ? (
+                  <div>
+                    <p className="eyebrow">{words.aiSection}</p>
+                    <p className="small" style={{ margin: "0 0 8px 0" }}>
+                      {(usage.get(user.id) ?? NO_AI_USAGE).week === 0
+                        ? words.aiNoUsageYet
+                        : `Doba: ${(usage.get(user.id) ?? NO_AI_USAGE).today} z ${dailyLimitFor(user)}. ` +
+                          `Tydzień: ${(usage.get(user.id) ?? NO_AI_USAGE).week} wywołań, ` +
+                          `${(usage.get(user.id) ?? NO_AI_USAGE).tokens.toLocaleString(words.locale)} tokenów.`}
+                    </p>
+                    <ActionForm action={setAiLimit} label={words.setAiLimit} compact toast>
+                      <input type="hidden" name="userId" value={user.id} />
+                      <input
+                        name="perDay"
+                        type="number"
+                        min={0}
+                        defaultValue={user.aiDailyLimit}
+                        aria-label={words.aiDailyLimitLabel}
+                      />
+                      <p className="small" style={{ margin: "4px 0 8px 0" }}>
+                        {words.aiLimitHint}
+                      </p>
+                    </ActionForm>
+                  </div>
+                ) : null}
 
                 <div>
                   <p className="eyebrow">{words.accessEyebrow}</p>

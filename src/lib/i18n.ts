@@ -716,6 +716,11 @@ export type Words = {
   allowCodeRunning: string;
   takeAiAccess: string;
   allowAiAccess: string;
+  aiSection: string;
+  aiDailyLimitLabel: string;
+  setAiLimit: string;
+  aiLimitHint: string;
+  aiNoUsageYet: string;
   recomputeStorage: string;
   deleteAccount: string;
 
@@ -1847,6 +1852,11 @@ const pl: Words = {
   allowCodeRunning: "Pozwól uruchamiać kod",
   takeAiAccess: "Zabierz asystenta AI",
   allowAiAccess: "Pozwól korzystać z asystenta AI",
+  aiSection: "Asystent AI",
+  aiDailyLimitLabel: "Wywołań na dobę",
+  setAiLimit: "Ustaw limit",
+  aiLimitHint: "Zero oznacza limit domyślny.",
+  aiNoUsageYet: "Jeszcze z niego nie korzystał.",
   recomputeStorage: "Przelicz miejsce",
   deleteAccount: "Skasuj konto",
 
@@ -3051,6 +3061,11 @@ const en: Words = {
   allowCodeRunning: "Allow code running",
   takeAiAccess: "Take away the AI assistant",
   allowAiAccess: "Allow the AI assistant",
+  aiSection: "AI assistant",
+  aiDailyLimitLabel: "Calls per day",
+  setAiLimit: "Set the limit",
+  aiLimitHint: "Zero means the default limit.",
+  aiNoUsageYet: "Has not used it yet.",
   recomputeStorage: "Recompute the space",
   deleteAccount: "Delete the account",
 
@@ -3628,6 +3643,21 @@ export function tooManyRuns(words: Words, limit: number, retryInSeconds: number)
   }
   const times = limit === 1 ? "raz" : `${limit} razy`;
   return `Kod uruchomił się już ${times} w ciągu minuty. Odczekaj ${retryInSeconds} s i spróbuj jeszcze raz.`;
+}
+
+/** Wyczerpany limit wywołań asystenta - dobowy albo godzinowy. */
+export function aiLimitReached(
+  words: Words,
+  limit: number,
+  window: "doba" | "godzina",
+): string {
+  if (words.locale === "en-GB") {
+    const period = window === "doba" ? "the past 24 hours" : "the past hour";
+    return `The assistant has already been asked ${limit} times in ${period}. Try later.`;
+  }
+  const razy = limit === 1 ? "raz" : `${limit} razy`;
+  const okres = window === "doba" ? "w ciągu doby" : "w ciągu godziny";
+  return `Asystent był już proszony o zmianę ${razy} ${okres}. Spróbuj później.`;
 }
 
 /**

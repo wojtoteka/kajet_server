@@ -468,6 +468,36 @@ export async function toggleAi(_previous: Result, data: FormData): Promise<Resul
   };
 }
 
+/**
+ * Limit wywołań asystenta dla jednego konta. Zero zdejmuje własny limit i
+ * konto wraca do domyślnego z ustawień serwera - tak samo jak przy miejscu.
+ */
+export async function setAiLimit(_previous: Result, data: FormData): Promise<Result> {
+  const admin = await requireAdmin();
+
+  const parsed = z
+    .object({ userId: z.string().min(1), perDay: z.coerce.number().int().min(0).max(10_000) })
+    .safeParse({ userId: data.get("userId"), perDay: data.get("perDay") ?? 0 });
+  if (!parsed.success) return { error: (await currentWords()).actCheckNumbers };
+
+  const user = await prisma.user.findUnique({ where: { id: parsed.data.userId } });
+  if (!user) return { error: "Nie ma takiego konta." };
+
+  await prisma.user.update({
+    where: { id: parsed.data.userId },
+    data: { aiDailyLimit: parsed.data.perDay },
+  });
+  await writeToLog(admin.id, "account.ai.limit", `${user.login}: ${parsed.data.perDay}`);
+
+  revalidatePath("/admin/accounts");
+  return {
+    success:
+      parsed.data.perDay === 0
+        ? `${user.login} wraca do domyślnego limitu wywołań asystenta.`
+        : `${user.login} ma teraz ${parsed.data.perDay} wywołań asystenta na dobę.`,
+  };
+}
+
 export async function recomputeStorage(_previous: Result, data: FormData): Promise<Result> {
   await requireAdmin();
   const userId = String(data.get("userId") ?? "");

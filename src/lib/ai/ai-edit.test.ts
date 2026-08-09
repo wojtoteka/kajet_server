@@ -37,9 +37,16 @@ const UDANA_ODPOWIEDZ = {
 };
 
 type Setup = {
-  user?: Partial<{ id: string; canUseAi: boolean; aiConsentAt: Date | null }>;
+  user?: Partial<{
+    id: string;
+    canUseAi: boolean;
+    aiConsentAt: Date | null;
+    aiDailyLimit: number;
+  }>;
   note?: Partial<typeof NOTE> | null;
   answer?: unknown;
+  /** Ile wywołań konto ma już w oknie limitu. */
+  callsSoFar?: number;
 };
 
 async function routeWith(setup: Setup = {}) {
@@ -49,6 +56,7 @@ async function routeWith(setup: Setup = {}) {
     id: "u1",
     canUseAi: true,
     aiConsentAt: new Date("2026-08-01T00:00:00.000Z"),
+    aiDailyLimit: 0,
     ...setup.user,
   };
   const note = setup.note === null ? null : { ...NOTE, ...setup.note };
@@ -71,6 +79,11 @@ async function routeWith(setup: Setup = {}) {
       findMany: async () => [],
       create: vi.fn(async () => ({})),
       deleteMany: vi.fn(async () => ({ count: 0 })),
+    },
+    aiCall: {
+      // Ile wywołań ma już na koncie: zero, chyba że próba mówi inaczej.
+      count: vi.fn(async () => setup.callsSoFar ?? 0),
+      create: vi.fn(async () => ({})),
     },
   };
 
@@ -205,6 +218,51 @@ describe("czego asystent nie tyka", () => {
 
     expect(response.status).toBe(400);
     expect(askGemini).not.toHaveBeenCalled();
+  });
+});
+
+describe("limity i rozliczanie", () => {
+  it("wyczerpany limit odbija żądanie, zanim cokolwiek pójdzie do Google", async () => {
+    const { route, askGemini } = await routeWith({ callsSoFar: 500 });
+
+    const response = await route.POST(ask(), noteParams);
+    const body = await response.json();
+
+    expect(response.status).toBe(429);
+    expect(body.error).toBe("ai-limit");
+    expect(askGemini).not.toHaveBeenCalled();
+  });
+
+  it("udane wywołanie zostawia ślad w rozliczeniach, bez treści notatki", async () => {
+    const { route, prisma } = await routeWith();
+    await route.POST(ask("dopisz chleb"), noteParams);
+
+    const [[call]] = prisma.aiCall.create.mock.calls as [[{ data: Record<string, unknown> }]];
+    expect(call.data).toMatchObject({
+      userId: "u1",
+      kind: "TEXT",
+      inputTokens: 100,
+      outputTokens: 50,
+      failure: null,
+    });
+    // Ani polecenia, ani treści, ani identyfikatora notatki.
+    const written = JSON.stringify(call.data);
+    expect(written).not.toContain("chleb");
+    expect(written).not.toContain(NOTE_ID);
+  });
+
+  it("nieudane wywołanie też się liczy - za tokeny wejścia płaci się tak czy owak", async () => {
+    const { route, prisma } = await routeWith({
+      answer: { ok: false, failure: "no-call", usage: { input: 900, output: 12 }, tookMs: 800 },
+    });
+
+    await route.POST(ask(), noteParams);
+
+    expect(prisma.aiCall.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ failure: "no-call", inputTokens: 900 }),
+      }),
+    );
   });
 });
 
