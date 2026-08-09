@@ -28,7 +28,14 @@ import {
   type Formats,
   type MarkName,
 } from "@/components/rich-commands";
-import { attachmentUrl, cssAlign, cssFont } from "@/lib/document";
+import {
+  argbFromHex,
+  attachmentUrl,
+  cssAlign,
+  cssFont,
+  displayInkColor,
+  hexFromArgb,
+} from "@/lib/document";
 import { htmlToMarkdown, normaliseColour } from "@/lib/rich-text";
 import {
   IMAGE_FULL_WIDTH,
@@ -83,6 +90,7 @@ export function TextNoteEditor({
   autoSave = true,
   bold = false,
   submitLabel,
+  token,
 }: {
   action: Action;
   /** Wysyłka zdjęcia do notatki - ta sama akcja co w „Pliki przy notatce". */
@@ -97,6 +105,8 @@ export function TextNoteEditor({
   /** Ustawienie konta: grube pismo w polu do pisania. */
   bold?: boolean;
   submitLabel: string;
+  /** Odnośnik do udostępnienia - zdjęcia idą wtedy jego trasą, nie właściciela. */
+  token?: string;
 }) {
   const words = useWords();
   const [state, submit, busy] = useActionState<ActionResult, FormData>(action, {});
@@ -120,6 +130,9 @@ export function TextNoteEditor({
   const [revision, setRevision] = useState(0);
   const [font, setFont] = useState(appearance?.font ?? "body");
   const [fontSize, setFontSize] = useState(appearance?.fontSize ?? 0);
+  // Barwa pisma całej notatki - ta sama liczba ARGB, którą tablet trzyma
+  // w content.json (0 = barwa domyślna).
+  const [textColor, setTextColor] = useState(appearance?.textColor ?? 0);
   const [align, setAlign] = useState(appearance?.align ?? "left");
   const shownSize = fontSize > 0 ? fontSize : TEXT_DEFAULT_SIZE;
 
@@ -423,17 +436,13 @@ export function TextNoteEditor({
       className="sheet"
       style={{ padding: "22px 24px" }}
     >
-      {/* Powodzenie zapisu pokazuje napis przy przycisku - zielona ramka nad
-          notatką przeskakiwałaby przy każdym autozapisie. Błąd zostaje tutaj,
-          bo trzeba go przeczytać. */}
-      {state.error ? <p className="error">{state.error}</p> : null}
-
       {saved.noteId ? <input type="hidden" name="noteId" value={saved.noteId} /> : null}
       {saved.version != null ? (
         <input type="hidden" name="baseVersion" value={String(saved.version)} />
       ) : null}
       <input type="hidden" name="font" value={font} />
       <input type="hidden" name="fontSize" value={String(fontSize)} />
+      <input type="hidden" name="textColor" value={String(textColor)} />
       <input type="hidden" name="align" value={align} />
       {/* Do zapisu idzie cała treść sklejona z bloków - pola do pisania same
           nie mają nazw, bo każde z nich to tylko kawałek notatki. */}
@@ -448,7 +457,7 @@ export function TextNoteEditor({
           value={noteTitle}
           onChange={(event) => setNoteTitle(event.target.value)}
           maxLength={300}
-          placeholder="Bez nazwy"
+          placeholder={words.untitled}
         />
       </div>
 
@@ -541,8 +550,8 @@ export function TextNoteEditor({
         <button
           type="button"
           className="compact icon-only"
-          title="Tabela"
-          aria-label="Tabela"
+          title={words.tableWord}
+          aria-label={words.tableWord}
           onMouseDown={keepCaret}
           onClick={() => command(insertTable)}
         >
@@ -561,8 +570,8 @@ export function TextNoteEditor({
         <button
           type="button"
           className="compact icon-only"
-          title="Linia"
-          aria-label="Linia"
+          title={words.dividerWord}
+          aria-label={words.dividerWord}
           onMouseDown={keepCaret}
           onClick={() => command(insertRule)}
         >
@@ -610,6 +619,33 @@ export function TextNoteEditor({
             }}
             style={{ width: 64, minHeight: 36, padding: "4px 8px" }}
           />
+        </span>
+        {/* Barwa pisma całej notatki - jak na tablecie. Kolorowanie jednego
+            słowa robi się przyciskiem przy pogrubieniu, nie tutaj. */}
+        <span
+          className="toolbar-field"
+          title={words.wholeNoteColour}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+        >
+          <Icon name="format_color_text" size={18} />
+          <input
+            type="color"
+            aria-label={words.wholeNoteColour}
+            value={textColor !== 0 ? hexFromArgb(textColor) : "#23211d"}
+            onChange={(event) => setTextColor(argbFromHex(event.target.value))}
+            style={{ width: 38, minHeight: 34, padding: 2 }}
+          />
+          {textColor !== 0 ? (
+            <button
+              type="button"
+              className="compact icon-only"
+              title={words.defaultColour}
+              aria-label={words.defaultColour}
+              onClick={() => setTextColor(0)}
+            >
+              <Icon name="format_color_reset" size={18} />
+            </button>
+          ) : null}
         </span>
         {(
           [
@@ -669,7 +705,7 @@ export function TextNoteEditor({
           <button
             type="button"
             className="compact"
-            title="Zdejmij kolor - tekst wraca do barwy kartki"
+            title={words.clearColourHint}
             onMouseDown={keepCaret}
             onClick={() => paint("")}
           >
@@ -738,6 +774,7 @@ export function TextNoteEditor({
               style={{
                 fontFamily: cssFont(font),
                 fontSize: shownSize,
+                color: textColor !== 0 ? displayInkColor(textColor) : undefined,
                 // „Gruba czcionka" z ustawień konta. Dotyczy pisania na
                 // stronie, więc do treści notatki nic z niej nie wchodzi.
                 fontWeight: bold ? 700 : undefined,
@@ -752,7 +789,7 @@ export function TextNoteEditor({
               <img
                 src={
                   block.target.startsWith("assets/")
-                    ? attachmentUrl(saved.noteId ?? "", block.target.slice("assets/".length))
+                    ? attachmentUrl(saved.noteId ?? "", block.target.slice("assets/".length), token)
                     : block.target
                 }
                 alt={block.alt || words.photoInNote}
@@ -815,6 +852,15 @@ export function TextNoteEditor({
         Przy rozbieżności wersji dostaniesz komunikat zamiast nadpisać cudzą zmianę.{" "}
         {body.length.toLocaleString("pl-PL")} znaków.
       </p>
+
+      {/* Powodzenie zapisu pokazuje napis przy przycisku - zielona ramka nad
+          notatką przeskakiwałaby przy każdym autozapisie. Pełny błąd też stoi
+          tutaj, przy przycisku: na górze spychał całą notatkę w dół. */}
+      {state.error ? (
+        <p className="error" style={{ margin: "0 0 10px 0" }}>
+          {state.error}
+        </p>
+      ) : null}
 
       <div className="save-row">
         <button type="submit" className="primary" disabled={busy}>

@@ -1,7 +1,24 @@
 import Link from "next/link";
+import { prisma } from "@/lib/prisma";
 import { tokenAccess } from "@/lib/sharing";
+import { writingSettingsFor } from "@/lib/writing-settings";
+import { textAppearanceFromContent, textMarkdownFromContent } from "@/lib/text-note";
+import { parseMindMapNote } from "@/lib/mindmap-note";
+import { parseHandwritingNote } from "@/lib/handwriting-note";
+import { parseCodeNote, languageOptions } from "@/lib/code-note";
 import { KajetMark } from "@/components/KajetMark";
 import { NotePreview } from "@/components/NotePreview";
+import { TextNoteEditor } from "@/components/TextNoteEditor";
+import { MindMapEditor } from "@/components/MindMapEditor";
+import { HandwritingEditor } from "@/components/HandwritingEditor";
+import { CodeNotePanel } from "@/components/CodeNotePanel";
+import { runCodeAction } from "@/app/note/[id]/actions";
+import {
+  saveSharedTextNote,
+  saveSharedMindMapNote,
+  saveSharedHandwritingNote,
+  saveSharedCodeNote,
+} from "./actions";
 import { currentWords } from "@/lib/language";
 import type { Words } from "@/lib/i18n";
 
@@ -51,6 +68,31 @@ export default async function SharedNotePage({
 
   const { note, canEdit, isOwner } = result.access;
 
+  /*
+    Edycja przez odnośnik używa tych samych edytorów co właściciel - różni się
+    tylko akcja zapisu (sprawdza udostępnienie, nie własność; token wjeżdża
+    przez .bind, żeby notatka zawsze wynikała z odnośnika). Ustawienia pisania
+    (autozapis, grube pismo) są tego, kto pisze; bez konta - domyślne.
+  */
+  const writing = canEdit ? await writingSettingsFor(result.access.userId) : null;
+
+  // Zdjęcia już wysłane do notatki - edytor odręczny umie je wstawiać, choć
+  // wysyłanie nowych zostaje u właściciela.
+  const attachments =
+    canEdit && note.kind === "HANDWRITTEN"
+      ? await prisma.attachment.findMany({
+          where: { noteId: note.id },
+          orderBy: { createdAt: "asc" },
+          select: { name: true, mime: true, sizeBytes: true },
+        })
+      : [];
+
+  const codeBody = canEdit && note.kind === "CODE" ? parseCodeNote(note.content) : null;
+  const mindMapBody =
+    canEdit && note.kind === "MINDMAP" ? parseMindMapNote(note.content) : null;
+  const handwritingBody =
+    canEdit && note.kind === "HANDWRITTEN" ? parseHandwritingNote(note.content) : null;
+
   return (
     <main className="page wide">
       <KajetMark caption={words.sharedNoteCaption} />
@@ -71,18 +113,107 @@ export default async function SharedNotePage({
         ) : null}
       </div>
 
-      {canEdit ? (
-        <p className="success">
-          {words.canEditButNoEditor}
-        </p>
+      {canEdit && note.kind === "TEXT" ? (
+        <section>
+          <p className="eyebrow" style={{ marginBottom: 10 }}>
+            {words.editing}
+          </p>
+          <TextNoteEditor
+            action={saveSharedTextNote.bind(null, token)}
+            noteId={note.id}
+            version={note.version}
+            title={note.title}
+            markdown={textMarkdownFromContent(note.content)}
+            appearance={textAppearanceFromContent(note.content)}
+            autoSave={writing?.autoSave}
+            bold={writing?.bold}
+            submitLabel={words.save}
+            token={token}
+          />
+        </section>
       ) : null}
 
-      <NotePreview content={note.content} noteId={note.id} token={token} />
+      {canEdit && note.kind === "MINDMAP" ? (
+        mindMapBody ? (
+          <section>
+            <p className="eyebrow" style={{ marginBottom: 10 }}>
+              {words.editingMindMap}
+            </p>
+            <MindMapEditor
+              action={saveSharedMindMapNote.bind(null, token)}
+              noteId={note.id}
+              version={note.version}
+              title={note.title}
+              initial={mindMapBody}
+              autoSave={writing?.autoSave}
+              submitLabel={words.save}
+            />
+          </section>
+        ) : (
+          // Nieczytelnej mapy nie podmieniamy pustą - u siebie właściciel może
+          // zaczynać od zera, ale odbiorca zobaczy chociaż podgląd.
+          <section>
+            <p className="error">{words.actMindMapUnreadable}</p>
+            <NotePreview content={note.content} noteId={note.id} token={token} />
+          </section>
+        )
+      ) : null}
+
+      {canEdit && note.kind === "HANDWRITTEN" ? (
+        handwritingBody ? (
+          <section>
+            <p className="eyebrow" style={{ marginBottom: 10 }}>
+              {words.editingHandwriting}
+            </p>
+            <HandwritingEditor
+              action={saveSharedHandwritingNote.bind(null, token)}
+              noteId={note.id}
+              version={note.version}
+              title={note.title}
+              initial={handwritingBody}
+              autoSave={writing?.autoSave}
+              submitLabel={words.save}
+              attachments={attachments}
+              token={token}
+            />
+          </section>
+        ) : (
+          <section>
+            <p className="error">{words.handwritingUnreadable}</p>
+            <NotePreview content={note.content} noteId={note.id} token={token} />
+          </section>
+        )
+      ) : null}
+
+      {canEdit && note.kind === "CODE" ? (
+        <section>
+          <CodeNotePanel
+            saveAction={saveSharedCodeNote.bind(null, token)}
+            runAction={runCodeAction}
+            noteId={note.id}
+            version={note.version}
+            title={note.title}
+            language={codeBody?.language ?? "python"}
+            source={codeBody?.source ?? ""}
+            languages={languageOptions()}
+            canRun={false}
+            runnerHint={words.codeRunOwnerOnly}
+            autoSave={writing?.autoSave}
+            submitLabel={words.save}
+          />
+          {!codeBody ? (
+            <p className="error" style={{ marginTop: 12 }}>
+              {words.codeUnreadable}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
+
+      {!canEdit ? <NotePreview content={note.content} noteId={note.id} token={token} /> : null}
 
       <hr className="divider" />
       <p className="small">
-        {words.thisIsAKajetNote}{" "}
-        <Link href="/">{words.seeWhatItIs}</Link>
+        {words.thisIsAKajetNote} <Link href="/">{words.seeWhatItIs}</Link>
       </p>
     </main>
   );

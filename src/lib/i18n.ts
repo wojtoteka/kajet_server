@@ -128,6 +128,7 @@ export type Words = {
   kindHandwritten: string;
   kindMindMaps: string;
   filterButton: string;
+  filtersLabel: string;
   emptyPageTitle: string;
   emptyPageHeading: string;
   backToStart: string;
@@ -209,11 +210,10 @@ export type Words = {
   noteNotFoundAbout: string;
   lookInTrash: string;
   pageNotFoundHeading: string;
-  pageNotFoundAbout: string;
-
-
+  pageNotFoundLead: string;
+  pageNotFoundWrite: string;
+  pageNotFoundWriteLink: string;
   homePage: string;
-  pageGoneAbout: string;
   sharedLinkNote: string;
 
 
@@ -443,21 +443,45 @@ export type Words = {
 
   // --- Strona główna ---
   homeEyebrow: string;
-  homeHeading: string;
+  // Tytuł strony głównej w trzech kawałkach, bo środkowe słowo dostaje
+  // atramentowe podkreślenie i musi stać w osobnym znaczniku.
+  homeTitleBefore: string;
+  homeTitleWord: string;
+  homeTitleAfter: string;
   homeLead: string;
   haveInviteCode: string;
   downloadForAndroid: string;
   latestRelease: string;
-  tileNoAccountEyebrow: string;
-  tileNoAccountHeading: string;
-  tileNoAccountBody: string;
-  tileAccountEyebrow: string;
-  tileAccountHeading: string;
-  tileAccountBody: string;
-  tileTogetherEyebrow: string;
-  tileTogetherHeading: string;
-  tileTogetherBody: string;
-  inviteCodeNote: string;
+  skipToContent: string;
+  homeKindsTitle: string;
+  homeKindsIntro: string;
+  homeKindHandTitle: string;
+  homeKindHandBody: string;
+  homeHandPicture: string;
+  homeKindTextTitle: string;
+  homeKindTextBody: string;
+  homeTextPicture: string;
+  homeKindMapTitle: string;
+  homeKindMapBody: string;
+  homeKindCodeTitle: string;
+  homeKindCodeBody: string;
+  homeCodePicture: string;
+  homeWhereTitle: string;
+  homeNoAccountTitle: string;
+  homeNoAccountBody: string;
+  homeWithAccountTitle: string;
+  homeWithAccountBody: string;
+  homeShareTitle: string;
+  homeShareBody: string;
+  homeDownloadTitle: string;
+  homeStepOne: string;
+  homeStepTwo: string;
+  homeStepThree: string;
+  homeDownloadFacts: string;
+  homeDownloadPage: string;
+  homeDownloadFile: string;
+  homeInviteTitle: string;
+  homeInviteBody: string;
 
   // --- Udostępniona notatka ---
   metaSharedNote: string;
@@ -467,7 +491,7 @@ export type Words = {
   mayChangeIt: string;
   readOnlyMark: string;
   openAsOwner: string;
-  canEditButNoEditor: string;
+  codeRunOwnerOnly: string;
   thisIsAKajetNote: string;
   seeWhatItIs: string;
 
@@ -637,25 +661,23 @@ export type Words = {
   statSpaceNote: string;
   statFreeCodes: string;
   statFreeCodesNote: string;
-  settingsEyebrow: string;
-  rowSiteAddress: string;
-  rowPort: string;
-  rowOutgoingMail: string;
-  notSetUp: string;
+  lastWeekEyebrow: string;
+  statNewAccounts: string;
+  statNotesToday: string;
+  statCrashes: string;
+  statFreeSpace: string;
+  statFreeSpaceNote: string;
+  unknownWord: string;
+  worthCheckingEyebrow: string;
+  serverNearlyFullTitle: string;
+  diskUnderLimitTitle: string;
+  mailOffTitle: string;
   noSmtpHint: string;
-  rowGoogleSignIn: string;
-  enabledWord: string;
-  disabledWord: string;
+  googleOffTitle: string;
   googleEnvHint: string;
-  rowDefaultQuota: string;
-  rowLargestFile: string;
-  rowFilesDirectory: string;
-  rowAndroidApp: string;
-  notPublished: string;
+  noReleaseTitle: string;
   noReleaseHint: string;
-  rowRunningCode: string;
-  inDockerContainer: string;
-  notWorking: string;
+  codeOffTitle: string;
   codeOffHint: string;
   issueInviteCode: string;
   manageAccounts: string;
@@ -761,6 +783,9 @@ export type Words = {
   versionPlaceholder: string;
   versionHint: string;
   releaseNumberLabel: string;
+  releaseNumberHint: string;
+  readFromFile: string;
+  couldNotReadRelease: string;
   whatChangedLabel: string;
   releaseNotesPlaceholder: string;
   replacePreviousHint: string;
@@ -809,6 +834,7 @@ export type Words = {
   apiCrashTooOften: string;
   apiCrashTooBig: string;
   apiCrashUnreadable: string;
+  apiVersionTooOften: string;
   apiNotSignedIn: string;
   apiTokenDead: string;
   apiTokenExpired: string;
@@ -819,6 +845,7 @@ export type Words = {
   apiFolderNotYours: string;
   apiLinkDead: string;
   apiLinkExpired: string;
+  apiShareReadOnly: string;
   apiSharedByName: string;
   apiSharedToSomeoneElse: string;
   apiSignInToOpen: string;
@@ -834,9 +861,11 @@ export type Words = {
   apiPreviewBelow: string;
   apiRunningOff: string;
   apiRunFailed: string;
+  apiRunnerBroken: string;
   apiInstallDocker: string;
   apiNoDockerRights: string;
   apiOffInServerSettings: string;
+  apiRunnerReady: string;
   apiConflict: string;
   apiNoteWithoutBody: string;
   apiTrashFirst: string;
@@ -981,6 +1010,54 @@ export type Words = {
   wrongCredentials: string;
   tooManyAttempts: string;
   forgotPassword: string;
+
+  // --- Stopka i dokumenty ---
+  footerTerms: string;
+  footerPrivacy: string;
+  metaTerms: string;
+  metaPrivacy: string;
+  acceptTerms: string;
+  mustAcceptTerms: string;
+
+  // --- Kontakt ---
+  footerContact: string;
+  metaContact: string;
+  contactEyebrow: string;
+  contactHeading: string;
+  contactLead: string;
+  contactNameLabel: string;
+  contactSubjectLabel: string;
+  contactMessageLabel: string;
+  contactSendButton: string;
+  contactSendingWord: string;
+  contactSent: string;
+  contactFillEverything: string;
+  contactTooMany: string;
+  contactFailed: string;
+  contactNotSet: string;
+  contactMailInstead: string;
+  contactCaptchaMissing: string;
+  contactCaptchaFailed: string;
+  contactCaptchaUnavailable: string;
+
+  // --- Skasowanie własnego konta ---
+  deleteAccountEyebrow: string;
+  deleteAccountLead: string;
+  deleteAccountWhatGoes: string;
+  sendDeletionCodeButton: string;
+  sendingDeletionCode: string;
+  deletionCodeSent: string;
+  deletionCodeLabel: string;
+  deletionCodeHint: string;
+  deleteAccountForever: string;
+  deletingAccount: string;
+  confirmDeleteAccount: string;
+  deletionGiveCode: string;
+  deletionCodeWrong: string;
+  deletionCodeExpired: string;
+  deletionTooManyTries: string;
+  deletionMailFailed: string;
+  byeAccountDeleted: string;
 };
 
 const pl: Words = {
@@ -1071,6 +1148,7 @@ const pl: Words = {
   kindHandwritten: "Odręczne",
   kindMindMaps: "Mapy myśli",
   filterButton: "Filtruj",
+  filtersLabel: "Filtry",
   emptyPageTitle: "Pusta strona",
   emptyPageHeading: "Tu już nic nie ma",
   backToStart: "Wróć na początek",
@@ -1166,13 +1244,13 @@ const pl: Words = {
     "tylko w koszu, nic jej nie brakuje – kosz trzyma notatki, dopóki go nie opróżnisz.",
   lookInTrash: "Zajrzyj do kosza",
   pageNotFoundHeading: "Nie ma takiej strony",
-  pageNotFoundAbout:
-    "Ten adres nie prowadzi do żadnej strony. Mógł się zmienić albo jest w nim literówka.",
-
+  pageNotFoundLead:
+    "Może to literówka w adresie, może strona się przeniosła, a może pies zjadł tę " +
+    "kartkę – jak kiedyś zadanie domowe. Twoim notatkom nic się nie stało: są tam, " +
+    "gdzie zawsze.",
+  pageNotFoundWrite: "A jeśli ta strona powinna istnieć,",
+  pageNotFoundWriteLink: "napisz do nas",
   homePage: "Strona główna",
-  pageGoneAbout:
-    "Adres jest błędny, strona się przeniosła albo notatki spod niego już nie ma. Nic " +
-    "przez to nie przepadło – Twoje notatki są na swoim miejscu.",
   sharedLinkNote:
     "Jeśli prowadził tu odnośnik do udostępnionej notatki, poproś o nowy. Stare odnośniki " +
     "można cofnąć i mają swój termin ważności.",
@@ -1408,32 +1486,69 @@ const pl: Words = {
     "Shift i kółko myszy przesuwa w bok · Tab dodaje gałąź, Delete usuwa węzeł",
 
   homeEyebrow: "Notatnik",
-  homeHeading: "Jeden Kajet – telefon, tablet i komputer",
+  homeTitleBefore: "Jeden ",
+  homeTitleWord: "Kajet",
+  homeTitleAfter: " na telefon, tablet i przeglądarkę.",
   homeLead:
-    "Kajet to notatnik z pismem odręcznym, tekstem, mapami myśli i kodem. Na stronie " +
-    "zrobisz to samo co w aplikacji: te same notatki, kosz, udostępnianie i – jeśli serwer " +
-    "na to pozwala – uruchamianie programów. Wszystko na jednym koncie.",
+    "Pismo odręczne, tekst, mapy myśli i kod w jednym notatniku. Piszesz w aplikacji, " +
+    "a w przeglądarce robisz to samo na tym samym koncie.",
   haveInviteCode: "Mam kod zaproszenia",
   downloadForAndroid: "Pobierz na Androida",
   latestRelease: "Najnowsze wydanie aplikacji",
-  tileNoAccountEyebrow: "Bez konta",
-  tileNoAccountHeading: "Tylko urządzenie",
-  tileNoAccountBody:
-    "Aplikacja działa bez logowania. Notatki zostają wtedy tylko na urządzeniu, " +
-    "w katalogu, który sama wskażesz.",
-  tileAccountEyebrow: "Z kontem",
-  tileAccountHeading: "Wszędzie to samo",
-  tileAccountBody:
-    "Po zalogowaniu notatki trafiają na serwer. Otworzysz je na stronie i w aplikacji, " +
-    "a po zmianie telefonu czy tabletu wrócą same.",
-  tileTogetherEyebrow: "Razem",
-  tileTogetherHeading: "Udostępnianie i kod",
-  tileTogetherBody:
-    "Notatkę udostępnisz odnośnikiem albo wyślesz na adres e-mail. Pliki z kodem " +
-    "uruchomisz na serwerze – ze strony albo z aplikacji.",
-  inviteCodeNote:
-    "Konto zakłada się na kod od administratora. Jeśli go nie masz, poproś osobę, która " +
-    "prowadzi ten serwer.",
+  skipToContent: "Przejdź do treści",
+  homeKindsTitle: "Cztery rodzaje notatek",
+  homeKindsIntro: "Każdy rodzaj otwierasz w aplikacji i na stronie. Wszystkie leżą w jednej bibliotece.",
+  homeKindHandTitle: "Pismo odręczne",
+  homeKindHandBody:
+    "Pióro, cienkopis, zakreślacz, gumka i kształty. Na tablecie piszesz rysikiem, " +
+    "a na stronie poprawisz notatkę myszką albo palcem. Kolory atramentu są te same tu i tam.",
+  homeHandPicture:
+    "Domek narysowany krzywo atramentem na kartce papieru; szczyt dachu z kominem " +
+    "i dym wychodzą poza jej krawędź",
+  homeKindTextTitle: "Tekst",
+  homeKindTextBody:
+    "Nagłówki, listy zadań, cytaty, tabele i zdjęcia w treści. Wszystko z jednego paska " +
+    "nad polem pisania.",
+  homeTextPicture:
+    "Trzy linijki pisma odręcznego zapisane atramentem, z zamaszystym podkreśleniem " +
+    "pod ostatnim słowem",
+  homeKindMapTitle: "Mapa myśli",
+  homeKindMapBody:
+    "Węzły łączysz w gałęzie i rozsuwasz po kartce. Tab dodaje gałąź, Delete usuwa węzeł.",
+  homeKindCodeTitle: "Kod",
+  homeKindCodeBody:
+    "Plik z kodem trzymasz w notatce i uruchamiasz go na serwerze. Dziewięć języków, " +
+    "od Pythona po SQL.",
+  homeCodePicture:
+    "Ciemna kartka położona krzywo, a na niej konsola Pythona: polecenie print z napisem " +
+    "Hello World i to samo Hello World wypisane pod spodem",
+  homeWhereTitle: "Gdzie mają leżeć Twoje notatki?",
+  homeNoAccountTitle: "Bez konta",
+  homeNoAccountBody:
+    "Aplikacja działa bez logowania. Notatki zostają na urządzeniu, w katalogu, który " +
+    "wskażesz, jako zwykłe pliki. Żadna z nich nie wychodzi na serwer.",
+  homeWithAccountTitle: "Z kontem",
+  homeWithAccountBody:
+    "Notatki trafiają na serwer. Otwierasz je na stronie i w aplikacji, a po zmianie " +
+    "telefonu czy tabletu wracają same. Kosz, foldery i ulubione też są wspólne.",
+  homeShareTitle: "Udostępnianie",
+  homeShareBody:
+    "Notatkę udostępniasz odnośnikiem albo wysyłasz na adres e-mail. Otwarty odnośnik " +
+    "każdy przeczyta w przeglądarce, bez konta i bez aplikacji. Odbiorca dostaje podgląd " +
+    "tylko do odczytu, a wysyłka na e-mail trafia do osoby z kontem na tym serwerze.",
+  homeDownloadTitle: "Aplikacja na Androida",
+  homeStepOne: "Pobierz plik na telefon.",
+  homeStepTwo: "Zgódź się na instalację spoza sklepu Play. Telefon sam o to zapyta.",
+  homeStepThree: "Otwórz pobrany plik i gotowe.",
+  homeDownloadFacts:
+    "Działa od Androida 8.0 na procesorach 64-bitowych (arm64). Na stronie pobierania " +
+    "znajdziesz opis zmian, sumę kontrolną pliku i starsze wydania.",
+  homeDownloadPage: "Otwórz stronę pobierania",
+  homeDownloadFile: "Pobierz plik",
+  homeInviteTitle: "Konto na zaproszenie",
+  homeInviteBody:
+    "Konto zakładasz wyłącznie na kod zaproszenia. Kod dostaniesz od osoby prowadzącej " +
+    "serwer.",
 
   metaSharedNote: "Udostępniona notatka – Kajet",
   linkEyebrow: "Odnośnik",
@@ -1442,9 +1557,9 @@ const pl: Words = {
   mayChangeIt: "masz prawo do zmian",
   readOnlyMark: "tylko do czytania",
   openAsOwner: "Otwórz jako właściciel",
-  canEditButNoEditor:
-    "Masz prawo poprawiać tę notatkę, ale edytor w przeglądarce jeszcze nie jest gotowy, " +
-    "więc na razie możesz ją tylko przeczytać.",
+  codeRunOwnerOnly:
+    "Uruchamianie kodu jest dostępne tylko dla właściciela notatki. Zapisywanie zmian " +
+    "działa normalnie.",
   thisIsAKajetNote: "To jest notatka z Kajetu.",
   seeWhatItIs: "Zobacz, o co chodzi",
 
@@ -1658,29 +1773,27 @@ const pl: Words = {
   statSpaceNote: "razem na wszystkich kontach",
   statFreeCodes: "Wolne kody",
   statFreeCodesNote: "jeszcze ważne",
-  settingsEyebrow: "Ustawienia",
-  rowSiteAddress: "Adres strony",
-  rowPort: "Port",
-  rowOutgoingMail: "Poczta wychodząca",
-  notSetUp: "nie ustawiona",
+  lastWeekEyebrow: "Ostatni tydzień",
+  statNewAccounts: "Nowe konta",
+  statNotesToday: "Notatki dziś",
+  statCrashes: "Awarie aplikacji",
+  statFreeSpace: "Wolne miejsce",
+  statFreeSpaceNote: "na dysku serwera",
+  unknownWord: "nie wiadomo",
+  worthCheckingEyebrow: "Do sprawdzenia",
+  serverNearlyFullTitle: "Serwer jest prawie pełny",
+  diskUnderLimitTitle: "Na dysku jest mniej miejsca niż w granicy serwera",
+  mailOffTitle: "Poczta wychodząca nie jest ustawiona",
   noSmtpHint:
     "Bez SMTP nie wysyłamy zaproszeń, potwierdzeń ani powiadomień o udostępnieniu. " +
     "Odnośniki nadal da się kopiować ze strony.",
-  rowGoogleSignIn: "Logowanie przez Google",
-  enabledWord: "włączone",
-  disabledWord: "wyłączone",
+  googleOffTitle: "Logowanie przez Google jest wyłączone",
   googleEnvHint: "Uzupełnij AUTH_GOOGLE_ID i AUTH_GOOGLE_SECRET w pliku .env.",
-  rowDefaultQuota: "Domyślny limit nowego konta",
-  rowLargestFile: "Największy pojedynczy plik",
-  rowFilesDirectory: "Katalog z plikami",
-  rowAndroidApp: "Aplikacja na Androida",
-  notPublished: "nie wystawiona",
+  noReleaseTitle: "Aplikacja nie jest wystawiona",
   noReleaseHint:
     "Dopóki nic tu nie ma, strona /download informuje odwiedzających, że aplikacji nie ma " +
     "jeszcze do pobrania. Wystawisz ją w zakładce „Aplikacja”.",
-  rowRunningCode: "Uruchamianie kodu",
-  inDockerContainer: "w kontenerze Dockera",
-  notWorking: "nie działa",
+  codeOffTitle: "Uruchamianie kodu nie działa",
   codeOffHint:
     "Dopóki to nie działa, aplikacja informuje użytkowników, że uruchamianie jest " +
     "niedostępne. Kod nadal da się pisać i zapisywać.",
@@ -1795,6 +1908,14 @@ const pl: Words = {
   versionPlaceholder: "np. 1.4.2",
   versionHint: "Numer widoczny dla użytkownika – to samo, co versionName w aplikacji.",
   releaseNumberLabel: "Numer wydania",
+  releaseNumberHint:
+    "versionCode z pliku. Po nim aplikacja poznaje, że jest starsza – dlatego serwer " +
+    "odczytuje go sam i nie da się go tu podmienić.",
+  readFromFile: "odczytane z pliku",
+  couldNotReadRelease:
+    "Nie udało się odczytać wersji z tego pliku. Wpisz numer wydania i wersję ręcznie, " +
+    "dokładnie tak, jak stoją w build.gradle.kts – od zgodności numeru zależy " +
+    "powiadamianie o aktualizacji.",
   whatChangedLabel: "Co się zmieniło",
   releaseNotesPlaceholder: "Możesz zostawić puste. Ten opis widzą pobierający.",
   replacePreviousHint:
@@ -1866,6 +1987,7 @@ const pl: Words = {
   apiCrashTooOften: "Z tego miejsca przyszło już dość raportów o awariach. Spróbuj później.",
   apiCrashTooBig: "Raport o awarii jest za duży.",
   apiCrashUnreadable: "Nie da się odczytać raportu o awarii.",
+  apiVersionTooOften: "Z tego miejsca przyszło już dość pytań o wersję. Spróbuj później.",
   apiNotSignedIn: "Nie jesteś zalogowany. Zaloguj się w ustawieniach aplikacji.",
   apiTokenDead: "Ten token już nie działa. Zaloguj się jeszcze raz.",
   apiTokenExpired: "Token wygasł. Zaloguj się jeszcze raz.",
@@ -1876,6 +1998,7 @@ const pl: Words = {
   apiFolderNotYours: "Ten folder należy do kogoś innego.",
   apiLinkDead: "Ten odnośnik już nie działa albo notatka została skasowana.",
   apiLinkExpired: "Ten odnośnik wygasł. Poproś o nowy.",
+  apiShareReadOnly: "Ten odnośnik pozwala tylko czytać, więc zmiany nie zostały zapisane.",
   apiSharedByName:
     "Ta notatka jest udostępniona imiennie. Zaloguj się adresem, na który przyszła wiadomość.",
   apiSharedToSomeoneElse:
@@ -1893,9 +2016,11 @@ const pl: Words = {
   apiPreviewBelow: "Podgląd znajdziesz pod polem z kodem.",
   apiRunningOff: "Uruchamianie kodu jest na tym serwerze wyłączone.",
   apiRunFailed: "Nie udało się uruchomić programu.",
+  apiRunnerBroken: "Uruchamianie kodu na tym serwerze nie działa. Szczegóły są w dzienniku serwera.",
   apiInstallDocker: "Zainstaluj Dockera albo wyłącz uruchamianie w ustawieniach serwera.",
   apiNoDockerRights: "Konto, na którym działa Kajet, nie ma uprawnień do Dockera. ",
   apiOffInServerSettings: "Wyłączone w ustawieniach serwera.",
+  apiRunnerReady: "Gotowe do uruchamiania kodu.",
   apiConflict:
     "Ta notatka zmieniła się także gdzie indziej. Zapisz swoją wersję obok, żeby nic nie przepadło.",
   apiNoteWithoutBody: "Notatka przyszła bez treści. Zaktualizuj aplikację.",
@@ -2057,6 +2182,66 @@ const pl: Words = {
     "Za dużo nieudanych prób logowania. Ze względów bezpieczeństwa odczekaj 15 minut " +
     "i spróbuj jeszcze raz. Jeśli nie pamiętasz hasła, ustaw nowe przez „Nie pamiętam hasła”.",
   forgotPassword: "Nie pamiętam hasła",
+
+  footerTerms: "Regulamin",
+  footerPrivacy: "Polityka prywatności",
+  metaTerms: "Regulamin – Kajet",
+  metaPrivacy: "Polityka prywatności – Kajet",
+  acceptTerms: "Akceptuję regulamin i politykę prywatności.",
+  mustAcceptTerms: "Żeby założyć konto, trzeba przyjąć regulamin i politykę prywatności.",
+
+  footerContact: "Kontakt",
+  metaContact: "Kontakt – Kajet",
+  contactEyebrow: "Kontakt",
+  contactHeading: "Napisz do nas",
+  contactLead:
+    "Pytanie, pomysł, coś nie działa? Wypełnij formularz, a wiadomość trafi " +
+    "prosto do nas. Odpowiadamy na adres, który podasz.",
+  contactNameLabel: "Imię lub nick",
+  contactSubjectLabel: "Tytuł",
+  contactMessageLabel: "Treść wiadomości",
+  contactSendButton: "Wyślij wiadomość",
+  contactSendingWord: "Wysyłam",
+  contactSent: "Wiadomość poszła. Dziękujemy - odpowiemy na podany adres.",
+  contactFillEverything: "Wypełnij wszystkie pola i sprawdź adres e-mail.",
+  contactTooMany: "Za dużo wiadomości w krótkim czasie. Odczekaj chwilę i spróbuj jeszcze raz.",
+  contactFailed: "Nie udało się wysłać wiadomości. Spróbuj za chwilę albo napisz zwykłym mailem.",
+  contactNotSet: "Formularz nie jest tu jeszcze podłączony. Napisz zwykłym mailem.",
+  contactMailInstead: "Wolisz zwykłą pocztę? Napisz na",
+  contactCaptchaMissing: "Potwierdź najpierw w okienku, że nie jesteś robotem.",
+  contactCaptchaFailed:
+    "Nie udało się potwierdzić, że nie jesteś robotem. Spróbuj jeszcze raz.",
+  contactCaptchaUnavailable:
+    "Okienko sprawdzające, że nie jesteś robotem, nie mogło się wczytać. " +
+    "Odśwież stronę i spróbuj jeszcze raz albo napisz zwykłym mailem.",
+
+  deleteAccountEyebrow: "Skasowanie konta",
+  deleteAccountLead:
+    "Konto kasuje się w dwóch krokach: najpierw wysyłamy kod na Twój adres, " +
+    "potem przepisujesz go tutaj. Po wpisaniu kodu wszystko znika natychmiast.",
+  deleteAccountWhatGoes:
+    "Znikają: wszystkie notatki razem z treścią, wszystkie załączniki, foldery, " +
+    "udostępnione odnośniki (przestają działać od razu) i zalogowane urządzenia. " +
+    "Tego nie da się cofnąć. Zanim skasujesz konto, wyeksportuj to, co chcesz zachować.",
+  sendDeletionCodeButton: "Wyślij kod na e-mail",
+  sendingDeletionCode: "Wysyłam kod",
+  deletionCodeSent:
+    "Kod poszedł na adres Twojego konta. Jest ważny godzinę i działa jeden raz.",
+  deletionCodeLabel: "Kod z wiadomości",
+  deletionCodeHint: "Osiem znaków, na przykład ABCD-EFGH. Wielkość liter nie ma znaczenia.",
+  deleteAccountForever: "Skasuj konto na zawsze",
+  deletingAccount: "Kasuję konto",
+  confirmDeleteAccount:
+    "Skasować konto razem ze wszystkimi notatkami? Tego nie da się cofnąć.",
+  deletionGiveCode: "Wpisz kod z wiadomości.",
+  deletionCodeWrong: "Zły kod. Sprawdź wiadomość albo wyślij nowy kod.",
+  deletionCodeExpired: "Ten kod jest już nieważny. Wyślij nowy.",
+  deletionTooManyTries:
+    "Za dużo nieudanych prób. Odczekaj kwadrans i spróbuj jeszcze raz.",
+  deletionMailFailed:
+    "Nie udało się wysłać wiadomości z kodem. Spróbuj za chwilę - konto zostaje bez zmian.",
+  byeAccountDeleted:
+    "Konto zostało skasowane razem ze wszystkimi notatkami. Dziękujemy i do zobaczenia.",
 };
 
 const en: Words = {
@@ -2147,6 +2332,7 @@ const en: Words = {
   kindHandwritten: "Handwritten",
   kindMindMaps: "Mind maps",
   filterButton: "Filter",
+  filtersLabel: "Filters",
   emptyPageTitle: "Empty page",
   emptyPageHeading: "There is nothing here",
   backToStart: "Back to the beginning",
@@ -2241,13 +2427,13 @@ const en: Words = {
     "it is only in the bin, it is safe – the bin keeps notes until you empty it.",
   lookInTrash: "Look in the bin",
   pageNotFoundHeading: "No such page",
-  pageNotFoundAbout:
-    "This address does not lead to any page. It may have changed, or there is a typo in it.",
-
+  pageNotFoundLead:
+    "Maybe the address has a typo, maybe the page has moved, or maybe the dog ate this " +
+    "page – just like the homework back then. Your notes are fine: right where they " +
+    "always were.",
+  pageNotFoundWrite: "And if this page should exist,",
+  pageNotFoundWriteLink: "write to us",
   homePage: "Home page",
-  pageGoneAbout:
-    "The address is wrong, the page has moved, or the note behind it is gone. Nothing of " +
-    "yours was lost – your notes are where they were.",
   sharedLinkNote:
     "If a link to a shared note brought you here, ask for a new one. Old links can be " +
     "revoked, and they have an expiry date.",
@@ -2482,32 +2668,71 @@ const en: Words = {
     "the wheel scrolls sideways · Tab adds a branch, Delete removes the node",
 
   homeEyebrow: "Notebook",
-  homeHeading: "One Kajet – phone, tablet and computer",
+  homeTitleBefore: "One ",
+  homeTitleWord: "Kajet",
+  homeTitleAfter: " for your phone, tablet and browser.",
   homeLead:
-    "Kajet is a notebook for handwriting, text, mind maps and code. The website does the " +
-    "same as the app: the same notes, the bin, sharing and – where the server allows it – " +
-    "running programs. One account covers both.",
+    "Handwriting, text, mind maps and code in one notebook. You write in the app " +
+    "and do the same in the browser, on the same account.",
   haveInviteCode: "I have an invite code",
   downloadForAndroid: "Get it for Android",
   latestRelease: "Latest release of the app",
-  tileNoAccountEyebrow: "Without an account",
-  tileNoAccountHeading: "This device only",
-  tileNoAccountBody:
-    "The app works without signing in. Your notes then stay on the device only, in a " +
-    "folder you choose yourself.",
-  tileAccountEyebrow: "With an account",
-  tileAccountHeading: "The same everywhere",
-  tileAccountBody:
-    "Once you sign in, notes go to the server. You can open them on the website and in " +
-    "the app, and they come back after you change phone or tablet.",
-  tileTogetherEyebrow: "Together",
-  tileTogetherHeading: "Sharing and code",
-  tileTogetherBody:
-    "Pass a note on with a link or by e-mail. Code files run on the server, from the " +
-    "website or from the app.",
-  inviteCodeNote:
-    "Accounts are created with a code from an administrator. If you have none, ask the " +
-    "person who runs this server.",
+  skipToContent: "Skip to content",
+  homeKindsTitle: "Four kinds of notes",
+  homeKindsIntro: "You open every kind in the app and on the website. They all sit in one library.",
+  homeKindHandTitle: "Handwriting",
+  homeKindHandBody:
+    "Pen, fineliner, highlighter, eraser and shapes. On a tablet you write with a stylus, " +
+    "and on the website you touch a note up with a mouse or a finger. The ink colours are " +
+    "the same in both.",
+  homeHandPicture:
+    "A little house drawn crookedly in ink on a sheet of paper; the top of the roof with " +
+    "its chimney and the smoke reach past the edge of the sheet",
+  homeKindTextTitle: "Text",
+  homeKindTextBody:
+    "Headings, task lists, quotes, tables and photos inside the note. All from a single " +
+    "bar above the writing area.",
+  homeTextPicture:
+    "Three lines of handwriting in ink, with a sweeping underline below the last word",
+  homeKindMapTitle: "Mind map",
+  homeKindMapBody:
+    "You join nodes into branches and spread them over the page. Tab adds a branch, " +
+    "Delete removes a node.",
+  homeKindCodeTitle: "Code",
+  homeKindCodeBody:
+    "A code file lives in a note and you run it on the server. Nine languages, from " +
+    "Python to SQL.",
+  homeCodePicture:
+    "A dark sheet lying askew with a Python console on it: a print command with the words " +
+    "Hello World, and the same Hello World printed below",
+  homeWhereTitle: "Where should your notes live?",
+  homeNoAccountTitle: "Without an account",
+  homeNoAccountBody:
+    "The app works without signing in. Notes stay on the device, in a folder you pick, " +
+    "as plain files. None of them goes to the server.",
+  homeWithAccountTitle: "With an account",
+  homeWithAccountBody:
+    "Notes go to the server. You open them on the website and in the app, and after " +
+    "a change of phone or tablet they come back on their own. The bin, folders and " +
+    "favourites are shared too.",
+  homeShareTitle: "Sharing",
+  homeShareBody:
+    "You share a note with a link or send it to an e-mail address. Anyone can read an " +
+    "open link in a browser, with no account and no app. The recipient gets a " +
+    "read-only preview, and e-mail sharing goes to a person with an account on this server.",
+  homeDownloadTitle: "The app for Android",
+  homeStepOne: "Download the file to your phone.",
+  homeStepTwo: "Allow installing from outside the Play Store. The phone will ask on its own.",
+  homeStepThree: "Open the downloaded file and you are done.",
+  homeDownloadFacts:
+    "Works from Android 8.0 on 64-bit processors (arm64). The download page lists the " +
+    "release notes, the file checksum and older releases.",
+  homeDownloadPage: "Open the download page",
+  homeDownloadFile: "Download the file",
+  homeInviteTitle: "An account by invitation",
+  homeInviteBody:
+    "You create an account only with an invite code. You get the code from whoever runs " +
+    "the server.",
 
   metaSharedNote: "Shared note – Kajet",
   linkEyebrow: "Link",
@@ -2516,9 +2741,8 @@ const en: Words = {
   mayChangeIt: "you may make changes",
   readOnlyMark: "read only",
   openAsOwner: "Open it as the owner",
-  canEditButNoEditor:
-    "You may edit this note. The in-browser editor is still being built, so for now you " +
-    "can only read it.",
+  codeRunOwnerOnly:
+    "Running code is available only to the note's owner. Saving changes works as usual.",
   thisIsAKajetNote: "This is a note from Kajet.",
   seeWhatItIs: "See what it is about",
 
@@ -2731,29 +2955,27 @@ const en: Words = {
   statSpaceNote: "across all accounts",
   statFreeCodes: "Unused codes",
   statFreeCodesNote: "still valid",
-  settingsEyebrow: "Settings",
-  rowSiteAddress: "Site address",
-  rowPort: "Port",
-  rowOutgoingMail: "Outgoing mail",
-  notSetUp: "not set up",
+  lastWeekEyebrow: "Last seven days",
+  statNewAccounts: "New accounts",
+  statNotesToday: "Notes today",
+  statCrashes: "App crashes",
+  statFreeSpace: "Free space",
+  statFreeSpaceNote: "on the server disk",
+  unknownWord: "unknown",
+  worthCheckingEyebrow: "Worth checking",
+  serverNearlyFullTitle: "The server is nearly full",
+  diskUnderLimitTitle: "The disk has less room than the server limit",
+  mailOffTitle: "Outgoing mail is not set up",
   noSmtpHint:
     "Without SMTP, invitations, confirmations and sharing notifications do not go out. " +
     "Links can still be copied from the website.",
-  rowGoogleSignIn: "Google sign-in",
-  enabledWord: "enabled",
-  disabledWord: "disabled",
+  googleOffTitle: "Google sign-in is disabled",
   googleEnvHint: "Fill in AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET in the .env file.",
-  rowDefaultQuota: "Default quota for a new account",
-  rowLargestFile: "Largest single file",
-  rowFilesDirectory: "Files directory",
-  rowAndroidApp: "Android app",
-  notPublished: "not published",
+  noReleaseTitle: "The app is not published",
   noReleaseHint:
     "Until something is here, the /download page tells visitors the app is not available " +
     "yet. You publish it under the “App” tab.",
-  rowRunningCode: "Running code",
-  inDockerContainer: "in a Docker container",
-  notWorking: "not working",
+  codeOffTitle: "Running code does not work",
   codeOffHint:
     "While this does not work, the app tells users that running is unavailable. Code can " +
     "still be written and saved.",
@@ -2868,6 +3090,14 @@ const en: Words = {
   versionPlaceholder: "e.g. 1.4.2",
   versionHint: "The number people see – the same as versionName in the app.",
   releaseNumberLabel: "Release number",
+  releaseNumberHint:
+    "versionCode from the file. The app knows it is behind by this number, so the server " +
+    "reads it itself and it cannot be swapped here.",
+  readFromFile: "read from the file",
+  couldNotReadRelease:
+    "The version could not be read from this file. Type the release number and the version " +
+    "by hand, exactly as they stand in build.gradle.kts – update notices depend on that " +
+    "number matching.",
   whatChangedLabel: "What changed",
   releaseNotesPlaceholder: "You may leave this empty. People downloading see this text.",
   replacePreviousHint:
@@ -2940,6 +3170,7 @@ const en: Words = {
   apiCrashTooOften: "Enough crash reports have come from this place already. Try later.",
   apiCrashTooBig: "The crash report is too big.",
   apiCrashUnreadable: "The crash report cannot be read.",
+  apiVersionTooOften: "Enough version questions have come from this place already. Try later.",
   apiNotSignedIn: "You are not signed in. Sign in from the app settings.",
   apiTokenDead: "This token no longer works. Sign in again.",
   apiTokenExpired: "The token has expired. Sign in again.",
@@ -2950,6 +3181,7 @@ const en: Words = {
   apiFolderNotYours: "This folder belongs to someone else.",
   apiLinkDead: "This link no longer works, or the note has been deleted.",
   apiLinkExpired: "This link has expired. Ask for a new one.",
+  apiShareReadOnly: "This link allows reading only, so the changes have not been saved.",
   apiSharedByName:
     "This note is shared by name. Sign in with the address the message was sent to.",
   apiSharedToSomeoneElse: "This note is shared with someone else. Sign in with the right address.",
@@ -2966,9 +3198,11 @@ const en: Words = {
   apiPreviewBelow: "The preview is below the code area.",
   apiRunningOff: "Running code is switched off on this server.",
   apiRunFailed: "The program could not be started.",
+  apiRunnerBroken: "Running code does not work on this server. The details are in the server log.",
   apiInstallDocker: "Install Docker, or switch running off in the server settings.",
   apiNoDockerRights: "The account Kajet runs as has no permission to use Docker. ",
   apiOffInServerSettings: "Switched off in the server settings.",
+  apiRunnerReady: "Ready to run code.",
   apiConflict:
     "This note has also changed somewhere else. Save your version alongside so nothing is lost.",
   apiNoteWithoutBody: "The note arrived with no content. Update the app.",
@@ -3127,6 +3361,64 @@ const en: Words = {
     "Too many failed sign-in attempts. For safety, wait 15 minutes and try again. " +
     "If you have forgotten your password, set a new one through “I forgot my password”.",
   forgotPassword: "I forgot my password",
+
+  footerTerms: "Terms of service",
+  footerPrivacy: "Privacy policy",
+  metaTerms: "Terms of service – Kajet",
+  metaPrivacy: "Privacy policy – Kajet",
+  acceptTerms: "I accept the terms of service and the privacy policy.",
+  mustAcceptTerms:
+    "To create an account you have to accept the terms of service and the privacy policy.",
+
+  footerContact: "Contact",
+  metaContact: "Contact – Kajet",
+  contactEyebrow: "Contact",
+  contactHeading: "Write to us",
+  contactLead:
+    "A question, an idea, something not working? Fill in the form and the message " +
+    "lands right with us. We answer to the address you give.",
+  contactNameLabel: "Name or nickname",
+  contactSubjectLabel: "Subject",
+  contactMessageLabel: "Your message",
+  contactSendButton: "Send the message",
+  contactSendingWord: "Sending",
+  contactSent: "The message is on its way. Thank you - we will answer to the address you gave.",
+  contactFillEverything: "Fill in every field and check the e-mail address.",
+  contactTooMany: "Too many messages in a short time. Wait a moment and try again.",
+  contactFailed: "The message could not be sent. Try again in a moment or write a plain e-mail.",
+  contactNotSet: "The form is not wired up here yet. Write a plain e-mail instead.",
+  contactMailInstead: "Prefer plain e-mail? Write to",
+  contactCaptchaMissing: "First confirm in the box that you are not a robot.",
+  contactCaptchaFailed: "We could not confirm that you are not a robot. Try again.",
+  contactCaptchaUnavailable:
+    "The box that checks you are not a robot could not load. " +
+    "Refresh the page and try again, or write a plain e-mail instead.",
+
+  deleteAccountEyebrow: "Deleting the account",
+  deleteAccountLead:
+    "Deleting an account takes two steps: first we send a code to your address, " +
+    "then you type it in here. Once the code is in, everything goes at once.",
+  deleteAccountWhatGoes:
+    "What goes: every note with its contents, every attachment, folders, shared " +
+    "links (they stop working immediately) and signed-in devices. This cannot be " +
+    "undone. Export whatever you want to keep before you delete the account.",
+  sendDeletionCodeButton: "Send the code by e-mail",
+  sendingDeletionCode: "Sending the code",
+  deletionCodeSent:
+    "The code has gone to your account's address. It is valid for an hour and works once.",
+  deletionCodeLabel: "Code from the message",
+  deletionCodeHint: "Eight characters, for example ABCD-EFGH. Letter case does not matter.",
+  deleteAccountForever: "Delete the account for good",
+  deletingAccount: "Deleting the account",
+  confirmDeleteAccount: "Delete the account with all your notes? This cannot be undone.",
+  deletionGiveCode: "Type in the code from the message.",
+  deletionCodeWrong: "Wrong code. Check the message or send a new code.",
+  deletionCodeExpired: "This code is no longer valid. Send a new one.",
+  deletionTooManyTries: "Too many failed attempts. Wait fifteen minutes and try again.",
+  deletionMailFailed:
+    "The message with the code could not be sent. Try again in a moment - the account stays as it is.",
+  byeAccountDeleted:
+    "The account has been deleted together with all its notes. Thank you and see you around.",
 };
 
 /*
@@ -3154,6 +3446,16 @@ export function trashKeptFor(words: Words, days: number): string {
     return `The bin empties itself: a note older than ${days} ${days === 1 ? "day" : "days"} here goes away for good, together with its files.`;
   }
   return `Kosz opróżnia się sam: notatka, która leży tu dłużej niż ${days} ${polishPlural(days, "dzień", "dni", "dni")}, znika na zawsze razem z plikami.`;
+}
+
+/**
+ * Odliczanie przy wpisie kosza — te same zdania co w koszu aplikacji.
+ * „Dziś" i „jutro" osobno; po polsku każda liczba od dwóch bierze „dni".
+ */
+export function disappearsIn(words: Words, days: number): string {
+  if (days <= 0) return words.locale === "en-GB" ? "Disappears today" : "Zniknie dziś";
+  if (days === 1) return words.locale === "en-GB" ? "Disappears tomorrow" : "Zniknie jutro";
+  return words.locale === "en-GB" ? `Disappears in ${days} days` : `Zniknie za ${days} dni`;
 }
 
 export function attachmentsCount(words: Words, count: number): string {
@@ -3210,6 +3512,58 @@ export function outOfSpaceReason(words: Words, used: string, quota: string): str
         "administratora o większy limit.";
 }
 
+/*
+  Miejsce skończyło się na całym serwerze, nie na koncie.
+
+  Osobne zdanie od `outOfSpaceReason`, bo rada jest inna: kasowanie własnych
+  notatek tu nie pomoże i szkoda, żeby ktoś je kasował na darmo. Notatki na
+  urządzeniu piszą się dalej, więc mówimy o tym wprost - to jedyne, co
+  człowieka w tej chwili obchodzi.
+*/
+export function serverOutOfSpaceReason(words: Words, used: string, limit: string): string {
+  return words.locale === "en-GB"
+    ? `The server has run out of space (${used} of ${limit} used), so it is not taking new ` +
+        "notes right now. Nothing has been lost, and writing on your device works as usual. " +
+        "Let the administrator know."
+    : `Na serwerze skończyło się miejsce (zajęte ${used} z ${limit}) i nowe notatki na razie ` +
+        "się na nim nie zapiszą. Nic nie przepadło, a pisanie na urządzeniu działa jak zawsze. " +
+        "Daj znać administratorowi.";
+}
+
+/** Podpis pod zajętym miejscem w panelu: ile z tego, co serwer w ogóle przyjmie. */
+export function spaceOfServerLimit(words: Words, limit: string): string {
+  return words.locale === "en-GB" ? `of the server's ${limit}` : `z ${limit} dla serwera`;
+}
+
+/** Podpis pod wolnym miejscem w panelu: ile z granicy serwera jeszcze zostało. */
+export function freeOfServerLimit(words: Words, limit: string): string {
+  return words.locale === "en-GB" ? `still free of the server's ${limit}` : `jeszcze wolne z ${limit}`;
+}
+
+/**
+ * Ostrzeżenie, gdy na dysku zostało mniej miejsca, niż granica serwera jeszcze
+ * pozwala zapisać. Panel pokazuje wtedy w kafelku liczbę z granicy, a zapisy
+ * i tak zatrzyma wcześniej dysk - o tym trzeba powiedzieć wprost.
+ */
+export function diskUnderLimitHint(words: Words, disk: string, limit: string): string {
+  return words.locale === "en-GB"
+    ? `The disk has ${disk} left, while the server limit still allows ${limit}. Writing will ` +
+        "stop when the disk fills up, before the limit is reached. Free up space on the disk, " +
+        "or lower SERVER_QUOTA_BYTES in the .env file."
+    : `Na dysku zostało ${disk}, a granica serwera pozwala zapisać jeszcze ${limit}. Zapisywanie ` +
+        "zatrzyma się na dysku, zanim dojdzie do granicy. Zwolnij miejsce na dysku albo obniż " +
+        "SERVER_QUOTA_BYTES w pliku .env.";
+}
+
+/** Ostrzeżenie w panelu, zanim granica serwera zacznie odrzucać zapisy. */
+export function serverNearlyFullHint(words: Words, used: string, limit: string): string {
+  return words.locale === "en-GB"
+    ? `${used} of ${limit} used. Once the limit is reached, the server stops taking new notes ` +
+        "from everyone. Free some space, or raise SERVER_QUOTA_BYTES in the .env file."
+    : `Zajęte ${used} z ${limit}. Po przekroczeniu granicy serwer przestanie przyjmować nowe ` +
+        "notatki od wszystkich. Zwolnij miejsce albo podnieś SERVER_QUOTA_BYTES w pliku .env.";
+}
+
 /** Za dużo uruchomień kodu w ciągu minuty. */
 export function tooManyRuns(words: Words, limit: number, retryInSeconds: number): string {
   if (words.locale === "en-GB") {
@@ -3235,31 +3589,6 @@ export function releaseTooBig(words: Words, size: string): string {
 }
 
 /** Limity uruchamiania kodu - wiersz w przeglądzie serwera. */
-export function codeLimitsHint(
-  words: Words,
-  memoryMb: number,
-  processes: number,
-  seconds: number,
-  most: number,
-  peakMemory: string,
-  running: number,
-): string {
-  if (words.locale === "en-GB") {
-    return (
-      `Every program runs with no network, ${memoryMb} MB of memory and ${processes} processes, ` +
-      `for at most ${seconds} s. No more than ${most} run at once, which is ${peakMemory} of ` +
-      `memory at peak. ${running} running now.`
-    );
-  }
-  const mostNoun = polishPlural(most, "program", "programy", "programów");
-  const runVerb = polishPlural(running, "działa", "działają", "działa");
-  const runNoun = polishPlural(running, "program", "programy", "programów");
-  return (
-    `Każdy program działa bez dostępu do sieci, z limitem ${memoryMb} MB pamięci ` +
-    `i ${processes} procesów, przez najwyżej ${seconds} s. Naraz uruchamia się najwyżej ` +
-    `${most} ${mostNoun}, czyli w szczycie ${peakMemory} pamięci. Teraz ${runVerb} ${running} ${runNoun}.`
-  );
-}
 
 export function folderSettingsLabel(words: Words, name: string): string {
   return words.locale === "en-GB"
@@ -3361,19 +3690,26 @@ export function blockedOfWhich(words: Words, count: number): string {
     : `w tym ${count} zablokowanych`;
 }
 
-export function releaseWithDownloads(words: Words, version: string, downloads: number): string {
-  return words.locale === "en-GB"
-    ? `${version} (${downloads} downloads)`
-    : `${version} (${downloads} pobrań)`;
+/** „ostatnie 7.08.2026” pod liczbą nowych kont; bez żadnego konta - inaczej. */
+export function lastAccountOn(words: Words, when: Date | null): string {
+  if (!when) return words.locale === "en-GB" ? "none yet" : "jeszcze żadnego";
+  const date = when.toLocaleDateString(words.locale);
+  return words.locale === "en-GB" ? `latest ${date}` : `ostatnie ${date}`;
 }
 
-export function releaseFileHint(words: Words, size: string): string {
-  return words.locale === "en-GB"
-    ? `The file sits on the /download page and weighs ${size}. Publish a newer version ` +
-        "under the “App” tab."
-    : `Plik leży na stronie /download, waży ${size}. Nowszą wersję wystawisz w zakładce ` +
-        "„Aplikacja”.";
+/** „ostatnia 4.08.2026” pod liczbą awarii; przy pustym dzienniku - cisza. */
+export function lastCrashOn(words: Words, when: Date | null): string {
+  if (!when) return words.locale === "en-GB" ? "none ever reported" : "nigdy żadnej";
+  const date = when.toLocaleDateString(words.locale);
+  return words.locale === "en-GB" ? `latest ${date}` : `ostatnia ${date}`;
 }
+
+/** Notatki z całego tygodnia, pod liczbą dzisiejszych. */
+export function notesThisWeek(words: Words, count: number): string {
+  return words.locale === "en-GB" ? `${count} this week` : `w tym tygodniu ${count}`;
+}
+
+
 
 
 export function accountSummary(

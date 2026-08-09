@@ -14,6 +14,87 @@ userId: string | null;
 
 export type AccessResult = { ok: true; access: Access } | { ok: false; reason: string };
 
+/** Pola udostępnienia, od których zależy decyzja o wpuszczeniu. */
+export type ShareRules = {
+  permission: Permission;
+  email: string | null;
+  anonymousAllowed: boolean;
+  expiresAt: Date | null;
+};
+
+/** Kto stoi przed drzwiami: sesja albo nikt (odnośnik bez konta). */
+export type ShareViewer = {
+  userId: string | null;
+  email: string | null;
+};
+
+export type ShareDecision =
+  | { allowed: true; canEdit: boolean; isOwner: boolean }
+  /*
+    Powody odmowy, w słowach dopiero u wołającego - czysta funkcja nie ma
+    dostępu do języka strony:
+    - "expired"        - odnośnik wygasł,
+    - "sign-in"        - trzeba się zalogować (odnośnik imienny albo z
+                         wyłączonym wejściem bez konta),
+    - "someone-else"   - odnośnik imienny otwarty z innego konta.
+  */
+  | { allowed: false; reason: "expired" | "sign-in" | "someone-else" };
+
+/**
+ * Jedna decyzja dla odczytu i zapisu: czy ten człowiek może otworzyć to
+ * udostępnienie i czy wolno mu poprawiać. Zapis przechodzi wyłącznie przez
+ * {@link shareWriteDecision}, które dokłada warunek uprawnienia EDIT -
+ * dzięki temu odnośnik „tylko do czytania" nie zapisze nawet przy wywołaniu
+ * akcji wprost, z pominięciem interfejsu.
+ */
+export function shareAccessDecision(
+  share: ShareRules,
+  ownerId: string,
+  viewer: ShareViewer,
+  now: Date,
+): ShareDecision {
+  if (share.expiresAt && share.expiresAt < now) {
+    return { allowed: false, reason: "expired" };
+  }
+
+  // Właściciel wchodzący własnym odnośnikiem ma pełne prawa, niezależnie od
+  // tego, co ustawił pozostałym.
+  if (viewer.userId && viewer.userId === ownerId) {
+    return { allowed: true, canEdit: true, isOwner: true };
+  }
+
+  if (share.email) {
+    // Udostępnienie imienne. Liczy się, kto naprawdę jest zalogowany, nie to,
+    // co ktoś wpisał w formularz.
+    const address = viewer.email?.toLowerCase();
+    if (!address) return { allowed: false, reason: "sign-in" };
+    if (address !== share.email.toLowerCase()) {
+      return { allowed: false, reason: "someone-else" };
+    }
+  } else if (!share.anonymousAllowed && !viewer.userId) {
+    return { allowed: false, reason: "sign-in" };
+  }
+
+  return { allowed: true, canEdit: share.permission === "EDIT", isOwner: false };
+}
+
+export type ShareWriteDecision =
+  | { allowed: true; isOwner: boolean }
+  | { allowed: false; reason: "expired" | "sign-in" | "someone-else" | "read-only" };
+
+/** Decyzja o zapisie: wejście plus uprawnienie EDIT. */
+export function shareWriteDecision(
+  share: ShareRules,
+  ownerId: string,
+  viewer: ShareViewer,
+  now: Date,
+): ShareWriteDecision {
+  const decision = shareAccessDecision(share, ownerId, viewer, now);
+  if (!decision.allowed) return decision;
+  if (!decision.canEdit) return { allowed: false, reason: "read-only" };
+  return { allowed: true, isOwner: decision.isOwner };
+}
+
 export async function ownerAccess(noteId: string): Promise<AccessResult> {
   const session = await auth();
   if (!session?.user?.id) return { ok: false, reason: (await apiWords()).apiMustSignIn };
@@ -36,6 +117,25 @@ export async function ownerAccess(noteId: string): Promise<AccessResult> {
   };
 }
 
+/** Słowo odmowy dla powodu z decyzji. Odnośnik imienny bez sesji dostaje
+ *  zdanie o zaproszeniu, zwykły z wyłączonym wejściem bez konta - o logowaniu. */
+async function denialReason(
+  reason: "expired" | "sign-in" | "someone-else" | "read-only",
+  personal: boolean,
+): Promise<string> {
+  const words = await apiWords();
+  switch (reason) {
+    case "expired":
+      return words.apiLinkExpired;
+    case "sign-in":
+      return personal ? words.apiSharedByName : words.apiSignInToOpen;
+    case "someone-else":
+      return words.apiSharedToSomeoneElse;
+    case "read-only":
+      return words.apiShareReadOnly;
+  }
+}
+
 export async function tokenAccess(token: string): Promise<AccessResult> {
   const share = await prisma.share.findUnique({
     where: { token },
@@ -45,16 +145,22 @@ export async function tokenAccess(token: string): Promise<AccessResult> {
   if (!share || share.note.deletedAt) {
     return { ok: false, reason: (await apiWords()).apiLinkDead };
   }
-  if (share.expiresAt && share.expiresAt < new Date()) {
-    return { ok: false, reason: (await apiWords()).apiLinkExpired };
-  }
 
   const session = await auth();
   const userId = session?.user?.id ?? null;
 
-  // An owner arriving through their own link has full rights, regardless of
-  // what they set for everybody else.
-  if (userId === share.note.ownerId) {
+  const decision = shareAccessDecision(
+    share,
+    share.note.ownerId,
+    { userId, email: session?.user?.email ?? null },
+    new Date(),
+  );
+
+  if (!decision.allowed) {
+    return { ok: false, reason: await denialReason(decision.reason, Boolean(share.email)) };
+  }
+
+  if (decision.isOwner) {
     return {
       ok: true,
       access: {
@@ -67,27 +173,6 @@ export async function tokenAccess(token: string): Promise<AccessResult> {
     };
   }
 
-  if (share.email) {
-    // Personal share. We check who is really signed in, not what somebody
-    // typed into a form.
-    const sessionAddress = session?.user?.email?.toLowerCase();
-    if (!sessionAddress) {
-      return {
-        ok: false,
-        reason:
-          (await apiWords()).apiSharedByName,
-      };
-    }
-    if (sessionAddress !== share.email.toLowerCase()) {
-      return {
-        ok: false,
-        reason: (await apiWords()).apiSharedToSomeoneElse,
-      };
-    }
-  } else if (!share.anonymousAllowed && !userId) {
-    return { ok: false, reason: (await apiWords()).apiSignInToOpen };
-  }
-
   void prisma.share
     .update({ where: { id: share.id }, data: { lastUsedAt: new Date() } })
     .catch(() => undefined);
@@ -96,9 +181,58 @@ export async function tokenAccess(token: string): Promise<AccessResult> {
     ok: true,
     access: {
       note: share.note,
-      canEdit: share.permission === "EDIT",
+      canEdit: decision.canEdit,
       isOwner: false,
       writerName: session?.user?.login ?? session?.user?.name ?? (await apiWords()).guestWord,
+      userId,
+    },
+  };
+}
+
+/**
+ * Dostęp do ZAPISU przez odnośnik. Wołane przy każdym zapisie od nowa, więc
+ * cofnięcie udostępnienia albo jego wygaśnięcie odbiera zapis natychmiast -
+ * także osobie, która trzyma stronę otwartą.
+ */
+export async function tokenWriteAccess(token: string): Promise<AccessResult> {
+  const share = await prisma.share.findUnique({
+    where: { token },
+    include: { note: true },
+  });
+
+  if (!share || share.note.deletedAt) {
+    return { ok: false, reason: (await apiWords()).apiLinkDead };
+  }
+
+  const session = await auth();
+  const userId = session?.user?.id ?? null;
+
+  const decision = shareWriteDecision(
+    share,
+    share.note.ownerId,
+    { userId, email: session?.user?.email ?? null },
+    new Date(),
+  );
+
+  if (!decision.allowed) {
+    return { ok: false, reason: await denialReason(decision.reason, Boolean(share.email)) };
+  }
+
+  // Zapis to też użycie odnośnika - panel pokazuje przy nim ostatnie otwarcie.
+  if (!decision.isOwner) {
+    void prisma.share
+      .update({ where: { id: share.id }, data: { lastUsedAt: new Date() } })
+      .catch(() => undefined);
+  }
+
+  return {
+    ok: true,
+    access: {
+      note: share.note,
+      canEdit: true,
+      isOwner: decision.isOwner,
+      writerName:
+        session?.user?.login ?? session?.user?.name ?? (await apiWords()).guestWord,
       userId,
     },
   };
