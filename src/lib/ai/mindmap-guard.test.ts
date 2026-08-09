@@ -86,6 +86,37 @@ describe("dodawanie węzłów", () => {
     expect(result.edges).toHaveLength(0);
   });
 
+  /*
+    Mapa założona w aplikacji jest PUSTA - strona zakłada ją z gotowym
+    korzeniem „Temat", aplikacja nie zakłada niczego. Dlatego „zrób mapę myśli
+    o czymś" na tablecie buduje w jednej paczce i korzeń, i wszystko pod nim.
+
+    Ten przypadek padał za każdym razem: korzeń trafiał do zbioru dodanych,
+    rodzica nie miał, a mapa miała już więcej niż jeden węzeł - więc końcowe
+    sprawdzenie odrzucało całość. Przechodziła wyłącznie paczka z jednym
+    węzłem i tylko ona była w testach.
+  */
+  it("do pustej mapy wolno wstawić całe drzewo jedną paczką", () => {
+    const result = applyMindMapOperations({ nodes: [], edges: [] }, [
+      { rodzaj: "dodaj", id: "korzen", text: "Fotosynteza" },
+      { rodzaj: "dodaj", id: "a", text: "Substraty", rodzicId: "korzen" },
+      { rodzaj: "dodaj", id: "b", text: "Produkty", rodzicId: "korzen" },
+      { rodzaj: "dodaj", id: "a1", text: "Woda", rodzicId: "a" },
+    ]);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.nodes).toHaveLength(4);
+    expect(result.edges).toHaveLength(3);
+
+    // Korzeń jest jeden i to on nie ma rodzica.
+    const bezRodzica = result.nodes.filter(
+      (n) => !result.edges.some((e) => e.toId === n.id),
+    );
+    expect(bezRodzica).toHaveLength(1);
+    expect(bezRodzica[0].text).toBe("Fotosynteza");
+  });
+
   it("odmawia, gdy rodzic nie istnieje", () => {
     const result = applyMindMapOperations(MAPA, [
       { rodzaj: "dodaj", id: "x", text: "coś", rodzicId: "nie-ma-takiego" },
@@ -209,19 +240,22 @@ describe("sprawdzanie gotowej mapy", () => {
     ).toContain("którego już nie ma");
   });
 
-  it("łapie węzeł o dwóch rodzicach", () => {
+  // Poniższe dwie mapy da się narysować ręcznie w obu edytorach, więc strażnik
+  // nie ma prawa ich odrzucać. Kiedyś odrzucał - i przez to asystent odmawiał
+  // pracy przy takiej mapie na zawsze, choćby polecenie dotyczyło innej gałęzi.
+  it("przepuszcza węzeł podwieszony w dwóch miejscach", () => {
     expect(
       checkMindMap({ nodes: MAPA.nodes, edges: [...MAPA.edges, edge("warzywa", "jablko")] }),
-    ).toContain("dwóch rodziców");
+    ).toBeNull();
   });
 
-  it("łapie pierścień", () => {
+  it("przepuszcza gałąź zamkniętą w pierścień", () => {
     expect(
       checkMindMap({
         nodes: [node("a"), node("b")],
         edges: [edge("a", "b"), edge("b", "a")],
       }),
-    ).toContain("pierścień");
+    ).toBeNull();
   });
 
   it("łapie dwa węzły o tym samym identyfikatorze", () => {

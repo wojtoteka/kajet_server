@@ -78,10 +78,14 @@ tylko one coś zmienią - reszta zostaje nietknięta.
 
 Zasady, bez których mapa się psuje:
 
-- Każdy węzeł ma najwyżej jednego rodzica. Nie ma czegoś takiego jak węzeł
-  podwieszony w dwóch miejscach naraz.
+- Sam nie podwieszasz węzła w dwóch miejscach naraz: każdy węzeł, który
+  dodajesz albo przenosisz, dostaje jednego rodzica. Ale mapa, którą dostałeś,
+  może już mieć takie połączenia - narysował je człowiek. To nie jest usterka
+  i nie wolno Ci ich prostować, dopóki nikt o to nie poprosi.
 - Nowy węzeł ZAWSZE dostaje rodzica. Wyjątek jest jeden: mapa, która jest
-  jeszcze zupełnie pusta.
+  jeszcze zupełnie pusta - wtedy pierwszy węzeł, który dodasz, jest korzeniem
+  i rodzica nie ma. Całą mapę budujesz wtedy w jednej paczce: najpierw korzeń,
+  potem gałęzie pod nim.
 - Nie przenosisz węzła pod jego własne dziecko ani pod niego samego. Gałąź
   zamknięta w pierścień urywa się od reszty mapy.
 - Kasowanie: rodzaj usun zabiera sam węzeł, a to, co pod nim wisiało, przechodzi

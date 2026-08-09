@@ -48,9 +48,14 @@ function gotowe(material: string): NoteView {
  *
  * Identyfikatory muszą tu być, bo operacje odwołują się właśnie do nich -
  * gdyby model widział same napisy, nie miałby czym wskazać, który węzeł
- * przenieść. Węzły bez rodzica stoją na pierwszym poziomie; te, które przy
- * uszkodzonej mapie nie dały się obejść z żadnego korzenia, dopisujemy na
- * końcu, żeby model o nich wiedział zamiast zgadywać.
+ * przenieść. Węzły bez rodzica stoją na pierwszym poziomie; te, które nie dały
+ * się obejść z żadnego korzenia, dopisujemy na końcu, żeby model o nich
+ * wiedział zamiast zgadywać.
+ *
+ * Węzeł podwieszony w dwóch miejscach rysujemy raz, a w drugim miejscu
+ * zostawiamy odnośnik. Milczenie w tym miejscu byłoby gorsze niż powtórzenie:
+ * model zmieniałby mapę, której obraz ma niepełny, i mógłby uznać brakującą
+ * gałąź za coś do dopisania jeszcze raz.
  */
 export function drawMindMap(nodes: MindNode[], edges: MindEdge[]): string {
   if (nodes.length === 0) return "(mapa jest pusta)";
@@ -66,20 +71,31 @@ export function drawMindMap(nodes: MindNode[], edges: MindEdge[]): string {
   const seen = new Set<string>();
 
   const walk = (id: string, depth: number) => {
-    if (seen.has(id)) return;
-    seen.add(id);
     const node = byId.get(id);
     if (!node) return;
-    lines.push(`${"  ".repeat(depth)}[${id}] ${describe(node)}`);
+    const indent = "  ".repeat(depth);
+    if (seen.has(id)) {
+      // Drugie (i kolejne) miejsce, w którym ten sam węzeł wisi. Rysujemy sam
+      // odnośnik, żeby nie powielać całej gałęzi pod spodem.
+      lines.push(`${indent}[${id}] ${describe(node)}   (ten sam węzeł, opisany wyżej)`);
+      return;
+    }
+    seen.add(id);
+    lines.push(`${indent}[${id}] ${describe(node)}`);
     for (const child of children.get(id) ?? []) walk(child, depth + 1);
   };
 
   for (const node of nodes) if (!hasParent.has(node.id)) walk(node.id, 0);
+  // Zostały te, do których nie da się dojść z żadnego korzenia - czyli węzły
+  // zamknięte w pierścieniu. Rodzica mają, więc nie wolno powiedzieć, że nie
+  // wiszą pod niczym; trzeba nazwać rzecz po imieniu.
   for (const node of nodes) {
-    if (!seen.has(node.id)) {
-      seen.add(node.id);
-      lines.push(`[${node.id}] ${describe(node)}   (nie wisi pod żadnym węzłem)`);
-    }
+    if (seen.has(node.id)) continue;
+    const zaczyna = lines.length;
+    walk(node.id, 0);
+    lines[zaczyna] += hasParent.has(node.id)
+      ? "   (gałąź zamknięta w pierścień)"
+      : "   (nie wisi pod żadnym węzłem)";
   }
 
   return lines.join("\n");

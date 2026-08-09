@@ -11,13 +11,23 @@
   i tyle. Cała reszta - identyfikatory, położenie na kartce, pismo odręczne
   w węźle, kolory - zostaje tam, gdzie była, bo model nigdy jej nie dotyka.
 
-  Mapa jest lasem, nie dowolnym grafem: każdy węzeł ma najwyżej jednego
-  rodzica. Tak liczy ją edytor (childrenOf, arrange) i tak też ją tu
-  sprawdzamy - przy jednym rodzicu i braku cykli „każdy węzeł osiągalny
-  z jakiegoś korzenia" wychodzi samo.
+  Czego tu NIE sprawdzamy, choć kiedyś sprawdzaliśmy: że węzeł ma najwyżej
+  jednego rodzica i że gałąź nie zamyka się w pierścień. Oba edytory - i na
+  stronie, i na tablecie - pozwalają takie mapy narysować i umieją je rysować
+  dalej (druga krawędź jest przy układaniu pomijana, obchodzenie drzewa ma
+  zabezpieczenie przed pętlą). Skoro człowiek ma prawo taką mapę zrobić, to
+  asystent nie ma prawa odmówić przy niej pracy - a odmawiał, i to na zawsze,
+  bo sprawdzenie szło po CAŁEJ mapie, nie po tym, co sam zmienił.
+
+  Zostaje to, co naprawdę psuje plik: węzeł bez identyfikatora, powtórzony
+  identyfikator, krawędź do węzła, którego nie ma, i węzeł podwieszony sam pod
+  siebie. Przed zawiązaniem pierścienia bronimy się przy samej operacji
+  „przenieś" - asystent nie ma prawa go zrobić, ale nie ma też prawa uznać za
+  usterkę tego, który zrobił człowiek.
 */
 
 import { createMindEdge, createMindNode } from "@/lib/mindmap-note";
+import { arrangeMindMap } from "@/lib/mindmap-layout";
 import type { MindEdge, MindNode } from "@/lib/document";
 
 /** Odstępy przepisane z edytora, żeby dostawiony węzeł stanął tam, gdzie stanąłby ręcznie. */
@@ -72,9 +82,13 @@ export function applyMindMapOperations(
   const parentOf = (id: string) => edges.find((edge) => edge.toId === id);
   const childrenOf = (id: string) => edges.filter((edge) => edge.fromId === id);
 
+  // Zdejmujemy WSZYSTKIE krawędzie wchodzące, nie pierwszą z brzegu. Węzeł
+  // narysowany ręcznie potrafi mieć ich kilka, a „przenieś pod X" znaczy, że
+  // po zmianie wisi pod X - nie pod X i jeszcze pod tym, co było wcześniej.
   const detach = (id: string) => {
-    const at = edges.findIndex((edge) => edge.toId === id);
-    if (at >= 0) edges.splice(at, 1);
+    for (let i = edges.length - 1; i >= 0; i -= 1) {
+      if (edges[i].toId === id) edges.splice(i, 1);
+    }
   };
 
   const attach = (childId: string, parentId: string | null) => {
@@ -104,8 +118,9 @@ export function applyMindMapOperations(
         };
       }
       // Poza pustą mapą każdy nowy węzeł musi mieć rodzica - inaczej właśnie
-      // to się dzieje, czego pilnujemy: powstaje sierota.
-      if (!parentId && !mapWasEmpty && nodes.length > 0) {
+      // to się dzieje, czego pilnujemy: powstaje sierota. Mapa zakładana od
+      // zera jest wyjątkiem: jej pierwszy węzeł nie ma pod co pójść.
+      if (!parentId && !mapWasEmpty) {
         return {
           ok: false,
           powod: "Asystent chciał dodać węzeł, który do niczego nie jest podłączony.",
@@ -171,8 +186,21 @@ export function applyMindMapOperations(
     if (rodzaj === "usun") {
       // Dzieci przechodzą tam, gdzie wisiał kasowany węzeł. Bez tego jedno
       // „usuń ten punkt" zabierałoby ze sobą całą gałąź pod spodem.
+      //
+      // Przepinamy SAMĄ krawędź od kasowanego węzła, zamiast wołać attach:
+      // attach zdjąłby dziecku wszystkie krawędzie wchodzące, więc dziecko
+      // podwieszone ręcznie w dwóch miejscach straciłoby przy okazji to
+      // drugie połączenie, które z kasowaniem nie ma nic wspólnego.
       const grandparent = parentOf(id)?.fromId ?? null;
-      for (const edge of childrenOf(id)) attach(edge.toId, grandparent);
+      for (const edge of childrenOf(id)) {
+        const wouldLoop = grandparent === edge.toId;
+        const alreadyThere = edges.some(
+          (other) => other !== edge && other.fromId === grandparent && other.toId === edge.toId,
+        );
+        // Bez dziadka nie ma dokąd przepiąć - krawędź znika razem z węzłem,
+        // a dziecko zostaje korzeniem.
+        if (grandparent && !wouldLoop && !alreadyThere) edge.fromId = grandparent;
+      }
       removeNode(nodes, edges, id);
       continue;
     }
@@ -185,8 +213,22 @@ export function applyMindMapOperations(
     return { ok: false, powod: `Asystent poprosił o nieznaną zmianę „${rodzaj}".` };
   }
 
-  const complaint = checkMindMap({ nodes, edges }, added);
+  const complaint = checkMindMap({ nodes, edges }, added, mapWasEmpty);
   if (complaint) return { ok: false, powod: complaint };
+
+  /*
+    Po zmianie budowy mapa idzie do rozłożenia od nowa. Pozycje wymyślane przy
+    pojedynczej operacji nie widzą całości i to one robiły plątaninę: węzły
+    spod różnych rodziców trafiały w ten sam punkt, a „przenieś" zmieniało
+    rodzica, zostawiając węzeł tam, gdzie stał.
+
+    Sama zmiana napisu układu nie rusza - nie ma po co, a przesuwanie mapy
+    przy poprawianiu literówki byłoby wścibskie.
+  */
+  const zmienionaBudowa = operations.some((operation) => operation.rodzaj !== "zmien_tekst");
+  if (zmienionaBudowa) {
+    return { ok: true, nodes: arrangeMindMap(nodes, edges), edges };
+  }
 
   return { ok: true, nodes, edges };
 }
@@ -200,6 +242,12 @@ export function applyMindMapOperations(
 export function checkMindMap(
   map: MindMapBefore,
   added: ReadonlySet<string> = new Set(),
+  /**
+   * Czy mapa przed zmianą była zupełnie pusta. Wtedy węzeł dodany bez rodzica
+   * jest korzeniem, a nie sierotą - i to jest jedyny przypadek, w którym wolno
+   * mu zostać bez połączenia.
+   */
+  mapWasEmpty = false,
 ): string | null {
   const ids = new Set<string>();
   for (const node of map.nodes) {
@@ -218,27 +266,20 @@ export function checkMindMap(
       return "W mapie została krawędź prowadząca do węzła, którego już nie ma.";
     }
     if (edge.fromId === edge.toId) return "W mapie jest węzeł podwieszony sam pod siebie.";
-    if (parents.has(edge.toId)) {
-      return `Węzeł „${edge.toId}" ma dwóch rodziców naraz.`;
-    }
-    parents.set(edge.toId, edge.fromId);
+    // Węzeł z dwoma rodzicami i gałąź zamknięta w pierścień to mapy, które
+    // człowiek ma prawo narysować w obu edytorach - patrz komentarz na górze
+    // pliku. Zapamiętujemy pierwszego rodzica, żeby dało się rozpoznać sierotę.
+    if (!parents.has(edge.toId)) parents.set(edge.toId, edge.fromId);
   }
 
-  // Cykl. Przy najwyżej jednym rodzicu wystarczy iść w górę od każdego węzła:
-  // droga albo dojdzie do korzenia, albo wróci tam, gdzie już była.
-  for (const id of ids) {
-    const walked = new Set<string>([id]);
-    let current = parents.get(id);
-    while (current) {
-      if (walked.has(current)) return "Gałąź mapy zamyka się w pierścień.";
-      walked.add(current);
-      current = parents.get(current);
-    }
-  }
-
-  for (const id of added) {
-    if (ids.has(id) && !parents.has(id) && map.nodes.length > 1) {
-      return "Asystent zostawił dodany węzeł bez połączenia z resztą mapy.";
+  // Sierota: węzeł, który asystent właśnie dodał, a który do niczego nie
+  // prowadzi. Mapa zakładana od zera jest wyjątkiem - jej pierwszy węzeł nie
+  // ma pod co pójść i właśnie on jest korzeniem.
+  if (!mapWasEmpty) {
+    for (const id of added) {
+      if (ids.has(id) && !parents.has(id) && map.nodes.length > 1) {
+        return "Asystent zostawił dodany węzeł bez połączenia z resztą mapy.";
+      }
     }
   }
 
