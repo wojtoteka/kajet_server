@@ -1,4 +1,5 @@
 import { settings } from "./settings";
+import { tooManyRuns } from "./i18n";
 import type { Words } from "./i18n";
 
 type Window = { start: number; count: number };
@@ -14,7 +15,7 @@ export type LimitResult =
   | { allowed: true; remaining: number }
   | { allowed: false; retryInSeconds: number; message: string };
 
-export function checkLimit(userId: string): LimitResult {
+export function checkLimit(userId: string, words: Words): LimitResult {
   const now = Date.now();
   const limit = settings.code.runsPerMinute;
 
@@ -32,9 +33,7 @@ export function checkLimit(userId: string): LimitResult {
     return {
       allowed: false,
       retryInSeconds: retryIn,
-      message:
-        `Uruchomiłeś kod ${limit} razy w ciągu minuty. ` +
-        `Odczekaj ${retryIn} s i spróbuj jeszcze raz.`,
+      message: tooManyRuns(words, limit, retryIn),
     };
   }
 

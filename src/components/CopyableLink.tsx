@@ -13,6 +13,7 @@ export function CopyButton({
   label?: string;
   copiedLabel?: string;
 }) {
+  const words = useWords();
   const [copied, setCopied] = useState(false);
 
   return (
@@ -30,7 +31,7 @@ export function CopyButton({
         }
       }}
     >
-      {copied ? copiedLabel : label}
+      {copied ? (copiedLabel ?? words.copiedWord) : (label ?? words.copyWord)}
     </button>
   );
 }

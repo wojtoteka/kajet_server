@@ -2,11 +2,13 @@ import { readDocument, type NoteDocument } from "./document";
 
 /*
   Whole-note appearance of a TEXT note - the same fields the tablet stores in
-  content.json (TextContent in the app). fontSize 0 means the default size.
+  content.json (TextContent in the app). fontSize 0 means the default size,
+  textColor is an Android ARGB int (0 = default colour).
 */
 export type TextAppearance = {
   font: string;
   fontSize: number;
+  textColor: number;
   align: string;
 };
 
@@ -45,7 +47,7 @@ export function buildTextNoteContent(options: {
       drawings: existing?.text?.drawings ?? [],
       font: options.appearance?.font ?? existing?.text?.font ?? "body",
       fontSize: options.appearance?.fontSize ?? existing?.text?.fontSize ?? 0,
-      textColor: existing?.text?.textColor ?? 0,
+      textColor: options.appearance?.textColor ?? existing?.text?.textColor ?? 0,
       align: options.appearance?.align ?? existing?.text?.align ?? "left",
     },
   });
@@ -61,6 +63,7 @@ export function textAppearanceFromContent(content: string): TextAppearance {
   return {
     font: document?.text?.font ?? "body",
     fontSize: document?.text?.fontSize ?? 0,
+    textColor: document?.text?.textColor ?? 0,
     align: document?.text?.align ?? "left",
   };
 }

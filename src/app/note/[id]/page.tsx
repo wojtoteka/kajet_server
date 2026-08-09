@@ -271,8 +271,7 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
                 <input id="email" name="email" type="email" placeholder={words.orJustTheLink} />
                 {!mailWorks() ? (
                   <p className="small" style={{ marginTop: 4 }}>
-                    Poczta nie jest ustawiona, więc wiadomość nie wyjdzie. Odnośnik skopiujesz
-                    z listy niżej.
+                    {words.mailNotSet}
                   </p>
                 ) : null}
               </div>

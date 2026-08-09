@@ -1,0 +1,7 @@
+# Skrypty jada na Linuksa i musza miec koncowki LF.
+#
+# W repo stoi core.autocrlf=true, wiec bez tego pliku swiezy checkout na
+# Windowsie dostalby CRLF, a bash na serwerze przywitalby to bledem
+# "$'\r': command not found" - w polowie wdrozenia.
+*.sh text eol=lf
+*.mjs text eol=lf

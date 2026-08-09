@@ -1,3 +1,5 @@
+import type { Shape } from "./shapes";
+
 export type NoteKind = "HANDWRITTEN" | "TEXT" | "MINDMAP" | "CODE";
 
 export const VALUES_PER_POINT = 6;
@@ -45,6 +47,8 @@ export type Page = {
   height?: number;
   background?: string | null;
   strokes?: Stroke[];
+  /** Kształty wstawione ręcznie - obiekty, nie wypalone kreski. */
+  shapes?: Shape[];
   texts?: TextBox[];
   images?: Image[];
   recognized?: { id: string; text: string }[];
@@ -89,6 +93,10 @@ export type NoteDocument = {
   text?: {
     markdown?: string;
     drawings?: { asset: string; source: string; width: number; height: number }[];
+    font?: string;
+    fontSize?: number;
+    textColor?: number;
+    align?: string;
   } | null;
   mindMap?: {
     nodes?: MindNode[];
@@ -129,6 +137,36 @@ export function cssColor(argb: number | undefined, fallback = "#23211d"): string
   return `rgb(${r} ${g} ${b} / ${(a / 255).toFixed(3)})`;
 }
 
+/*
+  Known ink colours, keyed by their 24-bit RGB. Both the light and the dark
+  variant of a colour point at the same CSS variable, so a stroke drawn in the
+  light theme (on the tablet or here) stays readable on a dark sheet, and the
+  other way round. Unknown colours pass through unchanged.
+*/
+const INK_VARIABLES = new Map<number, string>([
+  [0x23211d, "var(--ink)"],
+  [0xe8e4da, "var(--ink)"],
+  [0x0f6b5c, "var(--ink-sea)"],
+  [0x4fb39c, "var(--ink-sea)"],
+  [0xa6392e, "var(--ink-red)"],
+  [0xe2857a, "var(--ink-red)"],
+  [0x2850a0, "var(--ink-blue)"],
+  [0x8fb4e8, "var(--ink-blue)"],
+]);
+
+export function displayInkColor(
+  argb: number | undefined,
+  fallback = "var(--text)",
+): string {
+  if (argb === undefined || argb === null || Number.isNaN(argb)) return fallback;
+  const unsigned = argb >>> 0;
+  if ((unsigned >>> 24) === 0xff) {
+    const themed = INK_VARIABLES.get(unsigned & 0xffffff);
+    if (themed) return themed;
+  }
+  return cssColor(argb, fallback);
+}
+
 export function cssFont(font: string | undefined): string {
   switch (font) {
     case "heading":
@@ -149,6 +187,18 @@ export function cssAlign(align: string | undefined): "left" | "center" | "right"
     default:
       return "left";
   }
+}
+
+/**
+ * Adres pliku przy notatce: z otwartej notatki albo - gdy jest token - z
+ * odnośnika do udostępnienia. Tym samym adresem karmimy podgląd i zdjęcia
+ * w polu do pisania.
+ */
+export function attachmentUrl(noteId: string, name: string, token?: string): string {
+  const encoded = encodeURIComponent(name);
+  return token
+    ? `/n/${token}/attachment?name=${encoded}`
+    : `/note/${noteId}/attachment?name=${encoded}`;
 }
 
 /** Pack one stylus/mouse sample into the six floats the app expects. */
@@ -173,6 +223,36 @@ export function packStrokePoint(
 /** ARGB as a signed 32-bit int (Android / Kajet colour). */
 export function argbColor(r: number, g: number, b: number, a = 255): number {
   return ((a << 24) | (r << 16) | (g << 8) | b) | 0;
+}
+
+/**
+ * Kolor z pola `<input type="color">` (#rrggbb) na liczbę ARGB, jaką trzyma
+ * plik notatki. Zero znaczy „brak własnego koloru", więc w pełni przezroczysta
+ * czerń nigdy stąd nie wyjdzie.
+ */
+export function argbFromHex(hex: string): number {
+  const clean = hex.trim().replace(/^#/, "");
+  const full =
+    clean.length === 3
+      ? clean
+          .split("")
+          .map((sign) => sign + sign)
+          .join("")
+      : clean;
+  if (!/^[0-9a-f]{6}$/i.test(full)) return 0;
+  return argbColor(
+    parseInt(full.slice(0, 2), 16),
+    parseInt(full.slice(2, 4), 16),
+    parseInt(full.slice(4, 6), 16),
+  );
+}
+
+/** Odwrotnie: liczba ARGB na #rrggbb dla pola wyboru koloru. */
+export function hexFromArgb(argb: number | undefined, fallback = "#0f6b5c"): string {
+  if (!argb) return fallback;
+  const unsigned = argb >>> 0;
+  const value = unsigned & 0xffffff;
+  return `#${value.toString(16).padStart(6, "0")}`;
 }
 
 export function strokeHitsCircle(

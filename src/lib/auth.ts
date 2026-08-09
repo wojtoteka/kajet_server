@@ -123,6 +123,9 @@ function kajetAdapter(): Adapter {
             login,
             quotaBytes: code.quotaBytes ?? undefined,
             permanentQuotaBytes: code.quotaBytes ?? undefined,
+            // To samo co przy zakładaniu konta na hasło: kod niesie samo
+            // uprawnienie, zgodę na wysyłanie treści potwierdza się osobno.
+            canUseAi: code.grantsAi,
           },
         });
 

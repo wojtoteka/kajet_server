@@ -3,14 +3,26 @@ import {
   cssColor,
   cssFont,
   cssAlign,
+  displayInkColor,
   strokePath,
   type Stroke,
   type Page,
   type MindNode,
 } from "@/lib/document";
+import {
+  isOpenShape,
+  shapeFillOpacity,
+  shapePath,
+  shapeStrokeOpacity,
+  shapeStrokeWidth,
+  shapeTransform,
+  type Shape,
+} from "@/lib/shapes";
 import { MarkdownPreview } from "@/components/MarkdownPreview";
+import { currentWords } from "@/lib/language";
+import type { Words } from "@/lib/i18n";
 
-export function NotePreview({
+export async function NotePreview({
   content,
   noteId,
   token,
@@ -19,12 +31,13 @@ export function NotePreview({
   noteId: string;
 token?: string;
 }) {
+  const words = await currentWords();
   const document = readDocument(content);
 
   if (!document) {
     return (
       <p className="error">
-        Nie udało się odczytać tej notatki. Być może została zapisana nowszą wersją aplikacji.
+        {words.noteUnreadableHere}
       </p>
     );
   }
@@ -48,7 +61,7 @@ token?: string;
   }
 
   if (document.mindMap?.nodes?.length) {
-    return <MindMap map={document.mindMap} />;
+    return <MindMap map={document.mindMap} words={words} />;
   }
 
   if (document.text) {
@@ -57,6 +70,7 @@ token?: string;
         markdown={document.text.markdown ?? ""}
         noteId={noteId}
         token={token}
+        appearance={document.text}
       />
     );
   }
@@ -80,7 +94,7 @@ token?: string;
     );
   }
 
-  return <p className="lead">Ta notatka jest pusta.</p>;
+  return <p className="lead">{words.emptyNoteText}</p>;
 }
 
 // --- Handwriting ---
@@ -137,6 +151,11 @@ function HandwrittenPage({
           />
         ))}
 
+        {/* Kształty leżą nad zdjęciami, ale pod atramentem - tak samo jak na tablecie. */}
+        {(page.shapes ?? []).map((shape) => (
+          <ShapeSvg key={shape.id} shape={shape} />
+        ))}
+
         {(page.strokes ?? []).map((stroke) => (
           <StrokeSvg key={stroke.id} stroke={stroke} />
         ))}
@@ -154,7 +173,7 @@ function HandwrittenPage({
                 fontFamily: cssFont(box.font),
                 fontSize: `${box.fontSize ?? 14}px`,
                 lineHeight: 1.35,
-                color: cssColor(box.color),
+                color: displayInkColor(box.color),
                 fontWeight: box.bold ? 600 : 400,
                 fontStyle: box.italic ? "italic" : "normal",
                 textDecoration: box.underline ? "underline" : "none",
@@ -179,6 +198,31 @@ function HandwrittenPage({
   );
 }
 
+/**
+ * Kształt wstawiony ręcznie. Obrys i wypełnienie idą przez barwy atramentu, więc
+ * figura narysowana na jasnej kartce zostaje czytelna na ciemnej. Krycie wchodzi
+ * osobnym atrybutem: barwa bywa zmienną motywu, w której nie da się go ukryć.
+ */
+export function ShapeSvg({ shape }: { shape: Shape }) {
+  const path = shapePath(shape);
+  if (!path) return null;
+  const fill = shape.fill ?? 0;
+
+  return (
+    <path
+      d={path}
+      transform={shapeTransform(shape)}
+      fill={!isOpenShape(shape.kind) && fill ? displayInkColor(fill, "none") : "none"}
+      fillOpacity={!isOpenShape(shape.kind) && fill ? shapeFillOpacity(shape) : undefined}
+      stroke={displayInkColor(shape.color)}
+      strokeOpacity={shapeStrokeOpacity(shape)}
+      strokeWidth={shapeStrokeWidth(shape)}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  );
+}
+
 function StrokeSvg({ stroke }: { stroke: Stroke }) {
   const path = strokePath(stroke);
   if (!path) return null;
@@ -189,13 +233,13 @@ function StrokeSvg({ stroke }: { stroke: Stroke }) {
     <path
       d={path}
       fill="none"
-      stroke={cssColor(stroke.color)}
+      stroke={displayInkColor(stroke.color)}
       strokeWidth={stroke.size || 2}
       strokeLinecap="round"
       strokeLinejoin="round"
       // A highlighter should go under the text, not over it. SVG has no layers,
-      // so we give it multiply blending: the stroke lets through what is beneath.
-      style={highlighter ? { mixBlendMode: "multiply" } : undefined}
+      // so it gets a blend mode: multiply on paper, screen on a dark sheet.
+      className={highlighter ? "stroke-highlighter" : undefined}
       strokeDasharray={stroke.tool === "dashed" ? `${(stroke.size || 2) * 3}` : undefined}
     />
   );
@@ -286,9 +330,11 @@ function PageBackground({
 // --- Mind map ---
 
 function MindMap({
+  words,
   map,
 }: {
   map: { nodes?: MindNode[]; edges?: { id: string; fromId: string; toId: string }[] };
+  words: Words;
 }) {
   const nodes = map.nodes ?? [];
   const edges = map.edges ?? [];
@@ -305,7 +351,7 @@ function MindMap({
     <svg
       viewBox={`${left} ${top} ${right - left} ${bottom - top}`}
       role="img"
-      aria-label="Mapa myśli"
+      aria-label={words.mindMapLabel}
       style={{
         width: "100%",
         height: "auto",
@@ -341,7 +387,7 @@ function MindMap({
       {nodes.map((node) => {
         const width = node.width ?? 160;
         const height = node.height ?? 64;
-        const colour = node.customColor ? cssColor(node.customColor) : "var(--accent)";
+        const colour = node.customColor ? displayInkColor(node.customColor) : "var(--accent)";
         const align = cssAlign(node.align);
 
         return (
@@ -389,7 +435,7 @@ function MindMap({
                   lineHeight: 1.3,
                   fontWeight: node.bold ? 600 : 400,
                   fontStyle: node.italic ? "italic" : "normal",
-                  color: node.textColor ? cssColor(node.textColor) : "var(--text)",
+                  color: node.textColor ? displayInkColor(node.textColor) : "var(--text)",
                   textAlign: align,
                   overflow: "hidden",
                 }}

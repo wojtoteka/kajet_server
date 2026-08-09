@@ -25,6 +25,7 @@ import { prisma } from "./prisma";
 import { humanSize } from "./quota";
 import { settings } from "./settings";
 import { apiWords } from "./language";
+import { releaseTooBig } from "./i18n";
 
 /** Plik APK to spakowany katalog, więc zaczyna się tak jak każdy zip. */
 const ZIP_MAGIC = Buffer.from([0x50, 0x4b, 0x03, 0x04]);
@@ -71,9 +72,7 @@ export async function receiveUpload(body: ReadableStream<Uint8Array>): Promise<U
 
       size += data.byteLength;
       if (size > settings.app.maxBytes) {
-        refusal =
-          `Plik jest za duży. Największy przyjmowany rozmiar to ` +
-          `${humanSize(settings.app.maxBytes)}. Zmienisz to w MAX_APP_BYTES w pliku .env.`;
+        refusal = releaseTooBig(words, humanSize(settings.app.maxBytes));
         done(new Error("too-big"));
         return;
       }

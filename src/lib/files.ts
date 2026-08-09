@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { settings } from "./settings";
+import { apiWords } from "./language";
+import { fileTooBig } from "./i18n";
 
 function rootDirectory(): string {
   return path.resolve(process.cwd(), settings.files.directory);
@@ -59,6 +61,13 @@ path: string;
   sizeBytes: number;
 };
 
+/**
+ * Odmowa zapisu z komunikatem przeznaczonym dla użytkownika. Każdy inny
+ * wyjątek z zapisu (błędy dysku) niesie w treści ścieżki serwera i ma
+ * zostać w dzienniku, nie w odpowiedzi.
+ */
+export class RefusedUpload extends Error {}
+
 export async function storeAttachment(
   ownerId: string,
   noteId: string,
@@ -66,9 +75,8 @@ export async function storeAttachment(
   data: Buffer,
 ): Promise<StoredFile> {
   if (data.byteLength > settings.files.maxFileBytes) {
-    throw new Error(
-      `Plik jest za duży. Największy przyjmowany rozmiar to ${Math.round(settings.files.maxFileBytes / 1024 / 1024)} MB.`,
-    );
+    const most = `${Math.round(settings.files.maxFileBytes / 1024 / 1024)} MB`;
+    throw new RefusedUpload(fileTooBig(await apiWords(), most));
   }
 
   const hash = contentHash(data);

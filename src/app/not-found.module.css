@@ -1,0 +1,86 @@
+/*
+  Strona „nie ma takiej strony" w mowie strony tytułowej, nie panelu: ten sam
+  nagłówek ze znakiem, podkreślone słowo i zielona kreska. Wspólne kawałki idą
+  z home.module.css - tutaj siedzi tylko układ dwóch kolumn i rysunek: kreska,
+  która próbuje napisać „404", a przy ostatniej cyfrze schodzi w bezradny
+  zawijas. Ten sam gest co w hero strony tytułowej, tylko tym razem pióro
+  niczego nie znalazło.
+*/
+
+.otwarcie {
+  display: grid;
+  gap: 28px;
+  padding-block: 8px 84px;
+}
+
+@media (min-width: 880px) {
+  .otwarcie {
+    grid-template-columns: 6fr 6fr;
+    gap: 56px;
+    align-items: center;
+    min-height: 62vh;
+    padding-block: 28px 96px;
+  }
+}
+
+.opowiesc h1 {
+  margin-bottom: 20px;
+  max-width: 16ch;
+}
+
+/*
+  W odróżnieniu od kreski w hero i samolocika z kontaktu ten rysunek zostaje
+  także na telefonie: jest zamkniętą całością (napisane „404" z zawijasem),
+  a nie fragmentem, który bez drugiej kolumny traci sens. Na wąskim ekranie
+  staje pod tekstem, trochę mniejszy.
+*/
+.rysunek {
+  margin-top: 8px;
+}
+
+.rysunek svg {
+  display: block;
+  width: min(460px, 100%);
+  height: auto;
+  color: var(--text);
+}
+
+@media (max-width: 879px) {
+  .rysunek svg {
+    width: min(360px, 100%);
+  }
+}
+
+/*
+  Pióro maluje „404" przy wczytaniu jedną ciągłą linią: równe tempo po
+  rzeczywistej długości (linear i pathLength=1 na kresce, jak lot na stronie
+  kontaktu), więc widać kolejno czwórkę, pętlę zera i ostatnią czwórkę
+  z zawijasem. Pytajnik wyskakuje dopiero, gdy zawijas stanie - pióro się
+  poddało. Rusza się tylko u ludzi, którzy nie prosili o spokój.
+*/
+@media (prefers-reduced-motion: no-preference) {
+  .kreska {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: pisanie 2.2s linear 0.25s forwards;
+  }
+
+  .pytajnik {
+    opacity: 0;
+    transform: translate(0, 10px);
+    animation: zdziwienie 0.35s ease-out 2.6s forwards;
+  }
+
+  @keyframes pisanie {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes zdziwienie {
+    to {
+      opacity: 0.85;
+      transform: translate(0, 0);
+    }
+  }
+}

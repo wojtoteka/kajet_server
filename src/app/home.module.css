@@ -342,10 +342,36 @@
   color: var(--text);
 }
 
-/* Pasmo tekstu jest celowo niskie i wąskie. Cisza też jest rytmem. */
+/* Pasmo tekstu stoi w tej samej siatce co pismo odręczne, tylko niżej
+   i bez oddechu wokół rysunku - trzy linijki są niskie, więc same robią
+   przerwę między domkiem a mapą myśli. */
 .pasmoTekst {
-  max-width: 560px;
+  display: grid;
+  gap: 18px;
   padding-block: 10px 40px;
+}
+
+@media (min-width: 880px) {
+  .pasmoTekst {
+    grid-template-columns: 5fr 7fr;
+    gap: 48px;
+    align-items: center;
+  }
+}
+
+.pasmoTekst figure {
+  margin: 0;
+}
+
+.pasmoTekst figure svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  color: var(--text);
+}
+
+.pasmoTekst p:last-child {
+  margin-bottom: 0;
 }
 
 .pasmoMapa {
@@ -383,19 +409,84 @@
   }
 }
 
-/* Ciemna wkładka z kodem zapowiada motyw ciemny, zanim ktoś kliknie
-   przełącznik. Kod to kreski w układzie wcięć, nie trzeci krój pisma. */
+/*
+  Ciemna wkładka z kodem zapowiada motyw ciemny, zanim ktoś kliknie
+  przełącznik. Leży krzywo jak domek w paśmie pisma - rogi się mijają,
+  a cała kartka jest przechylona - ale to, co na niej stoi, jest już
+  maszynowe: prawdziwy kod pismem maszynowym, nie kreski.
+
+  Pismo i zieleń są tu wpisane na sztywno, bo ta kartka jest ciemna
+  w obu motywach: barwy jasnego motywu byłyby na niej nieczytelne.
+
+  Trójkąt nie stoi na pozycji bezwzględnej, tylko jest drugim elementem
+  zginanego rzędu - na wąskim ekranie schodzi pod kod, zamiast wejść
+  na niego.
+*/
 .wkladka {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px 24px;
   margin: 0;
   background: var(--wkladka);
-  border-radius: var(--radius);
-  padding: 22px 24px;
+  padding: 26px 26px 24px;
+  clip-path: polygon(0% 4%, 100% 0%, 99% 96%, 0.8% 100%);
+  transform: rotate(-1.1deg);
+
+  --kod-pismo: #f4f1ea;
+  --kod-zielen: #4fb39c;
 }
 
-.wkladka svg {
+.wkladka > div {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.znacznikKodu {
   display: block;
-  width: 100%;
+  margin-bottom: 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--kod-pismo) 40%, transparent);
+}
+
+.kod {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--kod-pismo);
+  white-space: pre;
+}
+
+@media (min-width: 880px) {
+  .kod {
+    font-size: 17px;
+  }
+}
+
+/* Napis w cudzysłowie jest cichszy od wywołania, znaki zachęty jeszcze
+   cichsze - to one mają tłumaczyć, a nie przyciągać wzrok. */
+.napis {
+  color: color-mix(in srgb, var(--kod-pismo) 62%, transparent);
+}
+
+.zacheta {
+  color: color-mix(in srgb, var(--kod-pismo) 32%, transparent);
+}
+
+.wyjscie {
+  color: var(--kod-zielen);
+}
+
+.uruchom {
+  display: block;
+  flex: 0 0 auto;
+  width: 52px;
   height: auto;
+  margin-left: auto;
 }
 
 /* --- Rozwidlenie: katalog na urządzeniu albo konto na serwerze --- */

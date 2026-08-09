@@ -4,6 +4,7 @@ import {
   outgoingNoteSchema,
   upsertNoteForUser,
   setNoteDeletedForUser,
+  purgeNoteForUser,
   type OutgoingNote,
 } from "./note-write";
 
@@ -16,6 +17,14 @@ vi.mock("@/lib/prisma", () => ({
       update: vi.fn(),
       delete: vi.fn(),
     },
+    // Nagrobki po notatkach skasowanych na zawsze. Zapis notatki pod
+    // identyfikatorem, który ma nagrobek, ten nagrobek zdejmuje.
+    deletedNote: {
+      deleteMany: vi.fn(),
+      upsert: vi.fn(),
+      findMany: vi.fn(),
+    },
+    $transaction: vi.fn(async (operations: unknown[]) => operations),
   },
 }));
 
@@ -27,6 +36,8 @@ vi.mock("@/lib/quota", () => ({
 vi.mock("@/lib/files", () => ({
   contentHash: (data: string | Buffer) =>
     `hash:${typeof data === "string" ? data : data.toString("utf8")}`,
+  deleteAttachment: vi.fn(async () => undefined),
+  deleteNoteDirectory: vi.fn(async () => undefined),
 }));
 
 import { prisma } from "@/lib/prisma";
@@ -505,5 +516,67 @@ describe("setNoteDeletedForUser", () => {
         }),
       }),
     );
+  });
+});
+
+describe("purgeNoteForUser", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("leaves a tombstone in the same write as the deletion", async () => {
+    vi.mocked(prisma.note.findUnique).mockResolvedValue({
+      id: "note-1",
+      ownerId: owner,
+      deletedAt: new Date(1_700_000_000_000),
+      sizeBytes: 100,
+      attachments: [],
+    } as never);
+
+    const result = await purgeNoteForUser(owner, "note-1");
+
+    expect(result).toEqual({ status: "ok", version: 0 });
+    // Wiersz i nagrobek jednym zapisem: rozerwane w połowie dałyby albo
+    // ciche zniknięcie, albo nagrobek po żywej notatce.
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(prisma.note.delete).toHaveBeenCalledWith({ where: { id: "note-1" } });
+    expect(prisma.deletedNote.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { noteId: "note-1" },
+        create: { noteId: "note-1", ownerId: owner },
+      }),
+    );
+  });
+
+  it("refuses a note that is not in the bin yet", async () => {
+    vi.mocked(prisma.note.findUnique).mockResolvedValue({
+      id: "note-1",
+      ownerId: owner,
+      deletedAt: null,
+      sizeBytes: 100,
+      attachments: [],
+    } as never);
+
+    const result = await purgeNoteForUser(owner, "note-1");
+
+    expect(result.status).toBe("error");
+    expect(prisma.deletedNote.upsert).not.toHaveBeenCalled();
+  });
+
+  it("takes the tombstone back when the note is created again", async () => {
+    vi.mocked(reserveBytes).mockResolvedValue({ ok: true });
+    vi.mocked(prisma.note.findUnique).mockResolvedValue(null);
+    vi.mocked(prisma.note.upsert).mockResolvedValue({
+      version: 1,
+      updatedAt: new Date(1_700_000_000_000),
+    } as never);
+
+    // Tak wygląda odesłanie notatki po przelogowaniu: urządzenie zapomniało
+    // wersje, więc jedzie z baseVersion 0 i serwer zakłada ją od nowa.
+    await upsertNoteForUser(owner, note({ content: "{}", baseVersion: 0 }));
+
+    expect(prisma.deletedNote.deleteMany).toHaveBeenCalledWith({
+      where: { noteId: "note-1" },
+    });
   });
 });

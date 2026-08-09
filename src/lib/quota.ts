@@ -1,5 +1,7 @@
 import { prisma } from "./prisma";
 import { settings } from "./settings";
+import { apiWords } from "./language";
+import { outOfSpaceReason, serverOutOfSpaceReason } from "./i18n";
 
 export type QuotaState = {
   quota: bigint;
@@ -48,17 +50,47 @@ export async function fitsInQuota(userId: string, addedBytes: number): Promise<Q
   if (addedBytes <= 0) return { ok: true };
 
   const state = await quotaState(userId);
-  if (state.unlimited) return { ok: true };
 
-  if (state.free !== null && BigInt(addedBytes) > state.free) {
+  if (!state.unlimited && state.free !== null && BigInt(addedBytes) > state.free) {
     return {
       ok: false,
-      reason:
-        `Brakuje miejsca na koncie. Zajęte ${humanSize(state.used)} z ${humanSize(state.quota)}. ` +
-        `Skasuj coś z kosza albo poproś administratora o większy limit.`,
+      reason: outOfSpaceReason(await apiWords(), humanSize(state.used), humanSize(state.quota)),
     };
   }
+
+  const total = await usedOnServer();
+  if (overServerLimit(total, addedBytes)) {
+    return {
+      ok: false,
+      reason: serverOutOfSpaceReason(await apiWords(), humanSize(total), humanSize(SERVER_QUOTA)),
+    };
+  }
+
   return { ok: true };
+}
+
+/**
+ * Granica dla całego serwera. Trzymana jako bigint, bo zajętość kont też nią
+ * jest - i sumy bajtów nie mają prawa przejść przez liczbę zmiennoprzecinkową.
+ */
+export const SERVER_QUOTA = BigInt(settings.quotas.server);
+
+/** Ile zajmują wszystkie konta razem. */
+export async function usedOnServer(): Promise<bigint> {
+  const totals = await prisma.user.aggregate({ _sum: { usedBytes: true } });
+  return totals._sum.usedBytes ?? 0n;
+}
+
+/**
+ * Czy ten zapis przekroczyłby granicę serwera.
+ *
+ * Osobna, czysta funkcja, bo to jedno porównanie decyduje o przyjęciu albo
+ * odrzuceniu każdego zapisu i musi dać się sprawdzić testem bez bazy.
+ */
+export function overServerLimit(usedTotal: bigint, addedBytes: number): boolean {
+  if (SERVER_QUOTA <= 0n) return false;
+  if (addedBytes <= 0) return false;
+  return usedTotal + BigInt(addedBytes) > SERVER_QUOTA;
 }
 
 export async function changeUsed(userId: string, differenceBytes: number): Promise<void> {
@@ -84,6 +116,10 @@ export async function reserveBytes(userId: string, addedBytes: number): Promise<
     return { ok: true };
   }
 
+  // Słownik bierzemy przed transakcją: w jej środku każde zbędne czekanie
+  // trzyma wiersz konta zablokowany dłużej, niż trzeba.
+  const words = await apiWords();
+
   try {
     await prisma.$transaction(async (tx) => {
       const rows = await tx.$queryRaw<
@@ -98,7 +134,7 @@ export async function reserveBytes(userId: string, addedBytes: number): Promise<
       const user = rows[0];
       if (!user) {
         throw Object.assign(new Error("missing-user"), {
-          quotaReason: "Nie ma takiego konta.",
+          quotaReason: words.apiNoSuchAccount,
         });
       }
 
@@ -115,11 +151,26 @@ export async function reserveBytes(userId: string, addedBytes: number): Promise<
         const free = quota - user.usedBytes;
         if (BigInt(addedBytes) > free) {
           throw Object.assign(new Error("out-of-space"), {
-            quotaReason:
-              `Brakuje miejsca na koncie. Zajęte ${humanSize(user.usedBytes)} z ${humanSize(quota)}. ` +
-              `Skasuj coś z kosza albo poproś administratora o większy limit.`,
+            quotaReason: outOfSpaceReason(words, humanSize(user.usedBytes), humanSize(quota)),
           });
         }
+      }
+
+      /*
+        Granica całego serwera - ostatnia zapora przed zapełnieniem dysku.
+        Liczymy ją w tej samej transakcji, co limit konta, żeby brała pod uwagę
+        wyłącznie zapisy już zatwierdzone. Dwa zapisy z RÓŻNYCH kont, biegnące
+        dokładnie równocześnie, mogą przez tę granicę przejść razem - blokada
+        wiersza trzyma tylko jedno konto. Przekroczenie sięga wtedy najwyżej
+        wielkości tych zapisów (pojedynczy plik to najwyżej 25 MB), a następny
+        zapis zostaje już odrzucony. Pełna szczelność wymagałaby blokady na
+        całej tabeli kont, czyli ustawienia wszystkich piszących w kolejkę.
+      */
+      const total = (await tx.user.aggregate({ _sum: { usedBytes: true } }))._sum.usedBytes ?? 0n;
+      if (overServerLimit(total, addedBytes)) {
+        throw Object.assign(new Error("server-full"), {
+          quotaReason: serverOutOfSpaceReason(words, humanSize(total), humanSize(SERVER_QUOTA)),
+        });
       }
 
       await tx.user.update({

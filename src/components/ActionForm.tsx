@@ -124,11 +124,18 @@ export function ActionForm({
     </>
   ) : (
     <>
-      {state.error ? <p className="error">{state.error}</p> : null}
+      {state.error ? (
+        <p className="error" style={{ margin: "12px 0 0 0" }}>
+          {state.error}
+        </p>
+      ) : null}
       {/* We keep the line breaks, because some answers are a printed token or
           a link given on its own line. */}
       {state.success ? (
-        <div className="success" style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+        <div
+          className="success"
+          style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", margin: "12px 0 0 0" }}
+        >
           {state.success}
           {state.copyable ? (
             <span
@@ -179,9 +186,6 @@ export function ActionForm({
           }}
         />
       ) : null}
-      {/* W cichym trybie i w dymku odpowiedź idzie za przycisk, żeby nie
-          przesuwać go w dół przy każdym kliknięciu. */}
-      {quiet || toast ? null : feedback}
       {children}
       <button
         type="submit"
@@ -193,7 +197,11 @@ export function ActionForm({
         {icon ? <Icon name={busy ? "hourglass_top" : icon} filled={on} /> : null}
         {iconOnly ? null : busy ? (busyLabel ?? words.justAMoment) : label}
       </button>
-      {quiet || toast ? feedback : null}
+      {/* Odpowiedź serwera stoi POD przyciskiem w każdym trybie. Nad polami
+          wskakiwała między nagłówek a formularz i spychała pola razem z
+          przyciskiem w dół - na stronie hasła o wysokość czterech linijek,
+          dokładnie spod palca, który właśnie kliknął. */}
+      {feedback}
     </form>
   );
 }

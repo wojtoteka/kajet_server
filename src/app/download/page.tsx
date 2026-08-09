@@ -47,11 +47,16 @@ export default async function DownloadPage() {
                 <Icon name="download" />
                 {words.downloadWord} {release.fileName}
               </a>
-              <span className="small">
-                {humanSize(release.sizeBytes)} · {words.publishedWord}{" "}
-                {release.createdAt.toLocaleDateString(words.locale)}
-              </span>
+              <Link className="button" href="/library">
+                {words.myNotes}
+              </Link>
             </div>
+            {/* Co to za plik — system, rozmiar i data — w osobnej linijce
+                pod przyciskami, a nie wciśnięte obok nich. */}
+            <p className="small" style={{ margin: "10px 0 0 0" }}>
+              Android · {humanSize(release.sizeBytes)} · {words.publishedWord}{" "}
+              {release.createdAt.toLocaleDateString(words.locale)}
+            </p>
 
             {release.notes ? (
               <div style={{ marginTop: 24 }}>

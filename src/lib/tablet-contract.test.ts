@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { outgoingNoteSchema, SYNC_KINDS } from "./note-write";
 import { json } from "./api";
+import { crashBody } from "./crash-report";
+import { LONGEST_REPORT } from "./crash-limits";
+import {
+  buildTextNoteContent,
+  parseExistingTextDocument,
+  textAppearanceFromContent,
+} from "./text-note";
 
 /**
  * Contract tests against the tablet app (cloud/…/CloudClient.kt).
@@ -37,6 +44,27 @@ describe("tablet contract", () => {
       baseVersion: 0,
     });
     expect(parsed.success).toBe(true);
+  });
+
+  it("round-trips the text colour the tablet writes into content.json", () => {
+    // TextContent from NoteDocument.kt with a non-zero textColor: a signed
+    // 32-bit ARGB, exactly as kotlinx.serialization encodes it.
+    const content =
+      '{"format":1,"id":"n1","kind":"text","title":"Tekst",' +
+      '"createdAt":1,"updatedAt":2,"tags":[],"favorite":false,' +
+      '"text":{"markdown":"abc","drawings":[],"font":"body","fontSize":0,' +
+      '"textColor":-10079710,"align":"left"}}';
+
+    const appearance = textAppearanceFromContent(content);
+    expect(appearance.textColor).toBe(-10079710);
+
+    const resaved = buildTextNoteContent({
+      id: "n1",
+      title: "Tekst",
+      markdown: "abcd",
+      existing: parseExistingTextDocument(content),
+    });
+    expect(JSON.parse(resaved).text.textColor).toBe(-10079710);
   });
 
   it("keeps CODE outside the legacy GET kinds but accepts it on PUT", () => {
@@ -83,6 +111,43 @@ describe("tablet contract", () => {
     if (parsedFolder.success) expect(parsedFolder.data.folderId).toBe("f-123");
     expect(parsedRoot.success).toBe(true);
     if (parsedRoot.success) expect(parsedRoot.data.folderId).toBe("");
+  });
+
+  // --- POST /api/v1/crash ---
+
+  it("accepts the crash report the tablet sends", () => {
+    // CrashReporter.Body encoded by CloudClient.json: explicitNulls is off, so
+    // fields the app could not read from the header are simply absent.
+    const body =
+      '{"report":"Kajet 1.0 (2)\\nWątek: main\\n\\njava.lang.IllegalStateException: pękło",' +
+      '"appVersion":"1.0","versionCode":2,"device":"LENOVO TB520FU","android":"16",' +
+      '"thread":"main"}';
+
+    const parsed = crashBody.safeParse(JSON.parse(body));
+
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.versionCode).toBe(2);
+      expect(parsed.data.device).toBe("LENOVO TB520FU");
+    }
+  });
+
+  it("accepts a crash report stripped down to the report itself", () => {
+    // An older file whose header the app could not read: everything optional
+    // falls away and only the text is left. It must still get through, because
+    // a report nobody can classify is still a report.
+    const parsed = crashBody.safeParse(JSON.parse('{"report":"java.lang.OutOfMemoryError"}'));
+
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.appVersion).toBeUndefined();
+      expect(parsed.data.versionCode).toBeUndefined();
+    }
+  });
+
+  it("turns away an empty or oversized crash report", () => {
+    expect(crashBody.safeParse({ report: "" }).success).toBe(false);
+    expect(crashBody.safeParse({ report: "x".repeat(LONGEST_REPORT + 1) }).success).toBe(false);
   });
 
   it("serialises BigInt quotas as text, the way the tablet reads them", async () => {

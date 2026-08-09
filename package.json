@@ -12,9 +12,12 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "db:push": "node scripts/prisma.mjs db push",
+    "db:diff": "node scripts/prisma.mjs migrate diff --from-schema-datasource prisma/schema.prisma --to-schema-datamodel prisma/schema.prisma --script",
+    "db:apply": "bash scripts/zastosuj-schemat.sh",
     "db:migrate": "node scripts/prisma.mjs migrate deploy",
     "db:studio": "node scripts/prisma.mjs studio",
     "sprawdz": "node scripts/sprawdz-serwer.mjs",
+    "sprawdz:pliki": "node scripts/sprawdz-pliki.mjs",
     "admin": "tsx scripts/grant-admin.ts"
   },
   "dependencies": {

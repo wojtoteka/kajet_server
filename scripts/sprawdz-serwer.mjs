@@ -80,10 +80,25 @@ say(
   device.status === 200 && Boolean(device.body?.code),
   "POST /api/v1/signin/device (logowanie Google i przez stronę)",
   missingTable
-    ? "baza jest starsza niż program — na serwerze brakuje „npm run db:push”"
+    ? "baza jest starsza niż program — na serwerze brakuje „npm run db:apply”"
     : device.status === 200
       ? "kod logowania wydany"
       : `HTTP ${device.status} ${device.body?.message ?? device.text.slice(0, 160)}`,
+);
+
+// 5. Formularz kontaktowy. Bez CONTACT_API_KEY w .env serwera strona /contact
+//    chowa formularz i pokazuje zapasowy napis - łapiemy go w HTML. Napis jest
+//    po polsku, bo bez ciasteczka język strony to polski.
+const contact = await ask("/contact");
+const contactOff = contact.text.includes("Formularz nie jest tu jeszcze pod");
+say(
+  contact.status === 200 && !contactOff,
+  "formularz kontaktowy (/contact)",
+  contactOff
+    ? "w .env na serwerze brakuje CONTACT_API_KEY — dopisz (wartość jest w lokalnym .env) i przeładuj usługę"
+    : contact.status === 200
+      ? "formularz jest podłączony"
+      : `HTTP ${contact.status}`,
 );
 
 console.log("");
@@ -93,7 +108,7 @@ if (problems === 0) {
 } else {
   console.log(`Do naprawy: ${problems}. Kolejność na serwerze:\n`);
   console.log("  1. wgraj kod RAZEM z katalogiem public/");
-  console.log("  2. npm ci && npm run db:push");
+  console.log("  2. npm ci, a przy zmianie schematu npm run db:apply");
   console.log("  3. npm run build && restart usługi\n");
   process.exitCode = 1;
 }

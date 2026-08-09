@@ -41,6 +41,18 @@ model User {
   /// a single account when someone starts straining the machine.
   canRunCode    Boolean   @default(true)
 
+  /// Czy konto może prosić asystenta o zmianę notatki. Odwrotnie niż przy
+  /// uruchamianiu kodu domyślnie NIE: treść notatki jedzie wtedy do Google,
+  /// więc dostęp nadaje administrator po jednym koncie naraz.
+  canUseAi      Boolean   @default(false)
+  /// Kiedy właściciel konta zgodził się na wysyłanie treści notatek do Google.
+  /// Puste znaczy brak zgody, a wtedy asystent nie ruszy, choćby uprawnienie
+  /// wyżej było nadane. Wycofanie zgody czyści to pole.
+  aiConsentAt   DateTime?
+  /// Ile wywołań asystenta na dobę wolno temu kontu. Zero bierze wartość
+  /// domyślną z ustawień serwera - tak samo jak zero w limicie miejsca.
+  aiDailyLimit  Int       @default(0)
+
   /// Storage quota in bytes. Zero means no quota.
   quotaBytes    BigInt    @default(524288000)
   /// How long the quota above applies. Empty means permanently.
@@ -67,6 +79,12 @@ model User {
   createdAt     DateTime  @default(now())
   lastSignInAt  DateTime?
 
+  /// Kiedy poszło ostrzeżenie, że konto jest nieużywane i zostanie skasowane.
+  /// Puste znaczy, że nic jeszcze nie wysłaliśmy. Sprzątanie kasuje konto
+  /// dopiero po upływie karencji liczonej od tego znacznika, a gdy ktoś w
+  /// międzyczasie wróci, znacznik znika i wszystko zaczyna się od nowa.
+  inactiveWarnedAt DateTime?
+
   /// Moment wylogowania ze wszystkich urządzeń. Sesje strony to podpisane
   /// ciasteczka (JWT), więc nie da się ich skasować w bazie — zamiast tego
   /// odrzucamy każdą wydaną wcześniej niż ten znacznik. Ustawia się przy
@@ -79,10 +97,13 @@ model User {
   loginChallenges LoginChallenge[]
   folders       Folder[]
   notes         Note[]
+  deletedNotes  DeletedNote[]
   issuedCodes   InviteCode[] @relation("IssuedCodes")
   usedCode      InviteCode?  @relation("UsedCode")
   shares        Share[]      @relation("SharedBy")
   releases      AppRelease[] @relation("UploadedReleases")
+  aiTurns       AiTurn[]
+  aiCalls       AiCall[]
 
   @@index([email])
   @@map("users")
@@ -190,6 +211,10 @@ model InviteCode {
   usedSeats    Int       @default(0)
   /// Storage quota an account created with this code will get.
   quotaBytes   BigInt?
+  /// Czy konto założone tym kodem od razu może prosić asystenta o zmianę
+  /// notatki. Samą zgodę na wysyłanie treści do Google i tak trzeba potem
+  /// potwierdzić - kod nadaje uprawnienie, nie zgodę za człowieka.
+  grantsAi     Boolean   @default(false)
   description  String?   @db.Text
   expiresAt    DateTime?
   createdAt    DateTime  @default(now())
@@ -265,12 +290,39 @@ model Note {
   attachments Attachment[]
   shares      Share[]
   changes     LiveChange[]
+  aiTurns     AiTurn[]
 
   @@index([ownerId, updatedAt])
   /// Bin: listing and counting a user's deleted notes.
   @@index([ownerId, deletedAt])
   @@index([folderId])
   @@map("notes")
+}
+
+/// Nagrobek po notatce skasowanej na zawsze.
+///
+/// Trwałe kasowanie usuwa wiersz notatki, więc przyrostowe pobieranie („co się
+/// zmieniło od tej pory") nie ma jak powiedzieć urządzeniu, że notatka
+/// zniknęła — wiersza po prostu nie ma i nie ma czego oddać. Zostaje po niej
+/// ten wpis: sam identyfikator i data. Aplikacja pyta o nagrobki od swojego
+/// znacznika czasu i kasuje u siebie dokładnie to, co serwer zgłosił, zamiast
+/// zgadywać z brakującej pozycji na liście.
+///
+/// Wpisy nie mają terminu ważności. Jeden zajmuje kilkadziesiąt bajtów, a
+/// każdy termin oznaczałby, że urządzenie milczące dłużej niż on nigdy nie
+/// dowie się tą drogą o skasowaniu. Nagrobki znikają razem z kontem.
+model DeletedNote {
+  /// Identyfikator skasowanej notatki. Bez klucza obcego — wiersza notatki
+  /// już nie ma, po to jest ten wpis.
+  noteId    String   @id
+  ownerId   String
+  deletedAt DateTime @default(now())
+
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  /// Odpytywanie po znaczniku czasu: „co skasowano od tej pory".
+  @@index([ownerId, deletedAt])
+  @@map("deleted_notes")
 }
 
 /// A photo or drawing belonging to a note. The file sits on disk and only the
@@ -402,4 +454,104 @@ model AuditEntry {
 
   @@index([createdAt])
   @@map("audit_log")
+}
+
+// --- Awarie aplikacji na Androida ---
+
+/// Raport o awarii przysłany przez aplikację.
+///
+/// Bez konta i bez tokenu: awaria trafia się także przed zalogowaniem, a
+/// wtedy najbardziej trzeba wiedzieć, co się stało. Aplikacja wysyła to sama
+/// przy najbliższym uruchomieniu, gdy jest sieć.
+model CrashReport {
+  id          BigInt   @id @default(autoincrement())
+  /// versionName z aplikacji, na przykład 1.0.
+  appVersion  String?  @db.VarChar(40)
+  /// versionCode z pliku .apk. Liczba, więc od razu widać, która wersja.
+  versionCode Int?
+  /// Producent i model, na przykład LENOVO TB520FU.
+  device      String?  @db.VarChar(120)
+  /// Wersja Androida.
+  android     String?  @db.VarChar(40)
+  /// Wątek, na którym poleciał wyjątek.
+  thread      String?  @db.VarChar(80)
+  /// Pierwsza linia wyjątku razem ze szczytem stosu. Ta sama awaria zgłoszona
+  /// wiele razy ma ten sam odcisk, więc powtórki dają się policzyć.
+  fingerprint String   @db.VarChar(200)
+  /// Cały raport, dokładnie taki, jaki widać na ekranie po awarii.
+  report      String   @db.Text
+  /// Adres, z którego przyszedł raport. Do wypatrzenia nadużyć - punkt jest
+  /// otwarty dla każdego.
+  fromAddress String?  @db.VarChar(60)
+  /// Wypełnione tylko wtedy, gdy przy raporcie akurat był ważny token.
+  /// Puste nie znaczy nic złego: wysyłka nie wymaga zalogowania.
+  userId      String?
+  /// Odhaczone w panelu administratora.
+  seen        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([fingerprint])
+  @@map("crash_reports")
+}
+
+// --- Asystent KajetAI ---
+
+/// Jedna wymiana zdań z asystentem przy jednej notatce.
+///
+/// Historia jest po to, żeby „a teraz skróć to jeszcze bardziej" miało do
+/// czego się odnieść. Trzyma się jej przy PARZE (konto, notatka), bo dwie
+/// osoby pracujące nad tą samą udostępnioną notatką prowadzą dwie osobne
+/// rozmowy, a ta sama osoba przy dwóch notatkach - też.
+///
+/// Wiersze tylko przybywają, nigdy się ich nie nadpisuje: obcięcie do
+/// ostatnich kilku wymian robi się przy czytaniu, a stare znikają razem ze
+/// sprzątaniem. Treści notatki tu nie ma - jest polecenie człowieka i zdanie,
+/// którym asystent odpowiedział.
+model AiTurn {
+  id        BigInt   @id @default(autoincrement())
+  userId    String
+  noteId    String
+  /// Polecenie, które napisał człowiek.
+  request   String   @db.Text
+  /// Odpowiedź asystenta: co zmienił albo o co dopytuje.
+  reply     String   @db.Text
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  /// Czytanie historii jednej rozmowy, od najnowszej.
+  @@index([userId, noteId, id])
+  /// Sprzątanie tego, co się przeterminowało.
+  @@index([createdAt])
+  @@map("ai_turns")
+}
+
+/// Zapis jednego wywołania modelu, do rozliczeń i do limitów.
+///
+/// Bez treści notatki, bez polecenia i bez identyfikatora notatki. Ma tu być
+/// widać, ILE i ZA ILE, a nie co kto pisze - od rozmowy jest AiTurn, którą
+/// człowiek może wyczyścić, a tego wiersza już nie.
+model AiCall {
+  id           BigInt   @id @default(autoincrement())
+  userId       String
+  /// Typ notatki: TEXT, MINDMAP albo CODE.
+  kind         String   @db.VarChar(20)
+  /// Nazwa modelu, na przykład gemini-3.6-flash. Ceny różnią się między
+  /// modelami, więc bez tego rachunku nie da się złożyć.
+  model        String   @db.VarChar(60)
+  inputTokens  Int      @default(0)
+  /// Razem z tokenami myślenia - Google liczy je do wyjścia.
+  outputTokens Int      @default(0)
+  tookMs       Int      @default(0)
+  /// Puste, gdy się udało. Inaczej krótki powód: timeout, refused, invalid.
+  failure      String?  @db.VarChar(40)
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Liczenie limitu godzinowego i dobowego, i zużycie w panelu.
+  @@index([userId, createdAt])
+  @@map("ai_calls")
 }

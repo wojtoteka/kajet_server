@@ -3,6 +3,7 @@ import "./globals.css";
 import { DESK_DARK, DESK_LIGHT, THEME_BOOT_SCRIPT } from "@/lib/theme";
 import { currentLanguage, currentWords } from "@/lib/language";
 import { LanguageProvider } from "@/components/LanguageProvider";
+import { SiteFooter } from "@/components/SiteFooter";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -44,12 +45,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {/*
           Pismo strony. Do tej pory arkusz prosił o Archivo i IBM Plex, ale nikt
           ich nie wczytywał, więc wszystko lądowało na zapasowym Segoe UI.
+          Bricolage Grotesque nosi nagłówki strony tytułowej (home.module.css).
         */}
         <link
           rel="stylesheet"
           href={
             "https://fonts.googleapis.com/css2" +
             "?family=Archivo:wght@400;500;600;700" +
+            "&family=Bricolage+Grotesque:wght@600;700" +
             "&family=IBM+Plex+Sans:wght@400;500;600" +
             "&family=IBM+Plex+Mono:wght@400;500" +
             "&display=swap"
@@ -70,7 +73,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       {/* Edytory są klienckie i nie dosięgną ciasteczek serwera - język,
           który serwer już zna, podajemy im tędy. */}
       <body>
-        <LanguageProvider language={language}>{children}</LanguageProvider>
+        <LanguageProvider language={language}>
+          {/* Treść strony w osobnym pudełku, żeby mogła urosnąć do wysokości
+              okna - inaczej na krótkiej stronie stopka wisiałaby w połowie
+              ekranu zamiast siedzieć na samym dole. */}
+          <div className="site-main">{children}</div>
+          <SiteFooter />
+        </LanguageProvider>
       </body>
     </html>
   );

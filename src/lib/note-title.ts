@@ -36,8 +36,11 @@ const LEADING_SYNTAX = /^\s*(#{1,6}\s+|>\s?|[-*+]\s+(\[[ xX]\]\s+)?|\d+[.)]\s+)/
 /** Znaczniki w środku wiersza. Zdejmujemy je, zostawiając samą treść. */
 function withoutMarkers(line: string): string {
   return line
-    // Barwne słowo i podkreślenie zapisujemy znacznikiem HTML - patrz rich-text.ts.
-    .replace(/<span style="color:[^"]*">([\s\S]*?)<\/span>/gi, "$1")
+    // Barwę, rozmiar i podkreślenie zapisujemy znacznikami HTML - patrz
+    // rich-text.ts. Otwarcia i domknięcia zdejmujemy osobno, żeby poradzić
+    // sobie też z zapisem zagnieżdżonym (barwa w rozmiarze).
+    .replace(/<span style="[^"]*">/gi, "")
+    .replace(/<\/span>/gi, "")
     .replace(/<\/?u>/gi, "")
     // Odnośnik i zdjęcie: zostaje sam opis.
     .replace(/!?\[([^\]]*)]\([^)]*\)/g, "$1")

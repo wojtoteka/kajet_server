@@ -9,8 +9,9 @@ import { prisma } from "@/lib/prisma";
 import { recomputeUsed } from "@/lib/quota";
 import { confirmationMail, inviteMail, passwordResetMail, send } from "@/lib/mail";
 import { settings } from "@/lib/settings";
-import { forgetFile, sweepUnused, uploadedFile } from "@/lib/app-release";
-import { deleteUserDirectory } from "@/lib/files";
+import { forgetFile, releasePath, sweepUnused, uploadedFile } from "@/lib/app-release";
+import { apkVersion } from "@/lib/apk";
+import { removeAccount } from "@/lib/account-delete";
 import { currentWords } from "@/lib/language";
 import type { Words } from "@/lib/i18n";
 
@@ -47,6 +48,7 @@ const codeForm = z.object({
   validDays: z.coerce.number().int().min(0).max(3650),
   description: z.string().trim().max(200).optional(),
   email: z.string().trim().toLowerCase().email().optional().or(z.literal("")),
+  grantsAi: z.boolean(),
 });
 
 export async function createCode(_previous: Result, data: FormData): Promise<Result> {
@@ -58,10 +60,11 @@ export async function createCode(_previous: Result, data: FormData): Promise<Res
     validDays: data.get("validDays") || 0,
     description: data.get("description") || "",
     email: data.get("email") || "",
+    grantsAi: data.get("grantsAi") === "on",
   });
   if (!parsed.success) return { error: (await currentWords()).actCheckNumbers };
 
-  const { seats, quotaMb, validDays, description, email } = parsed.data;
+  const { seats, quotaMb, validDays, description, email, grantsAi } = parsed.data;
   const code = newCode();
 
   await prisma.inviteCode.create({
@@ -71,13 +74,18 @@ export async function createCode(_previous: Result, data: FormData): Promise<Res
       // Zero in the quota field means "as by default", not "no quota".
       // No quota is set on the account itself, once it has been created.
       quotaBytes: quotaMb > 0 ? BigInt(quotaMb) * 1024n * 1024n : null,
+      grantsAi,
       expiresAt: validDays > 0 ? new Date(Date.now() + validDays * 86_400_000) : null,
       description: description || null,
       issuedById: admin.id,
     },
   });
 
-  await writeToLog(admin.id, "code.created", `${code}, seats: ${seats}`);
+  await writeToLog(
+    admin.id,
+    "code.created",
+    `${code}, seats: ${seats}${grantsAi ? ", z asystentem AI" : ""}`,
+  );
 
   let note = "";
   if (email) {
@@ -427,6 +435,39 @@ export async function toggleCodeRunning(_previous: Result, data: FormData): Prom
   };
 }
 
+/**
+ * Nadanie i odebranie asystenta AI.
+ *
+ * Odwrotnie niż uruchamianie kodu, które każdy dostaje z góry: tu domyślnie
+ * nikt nie ma dostępu i to jest jedyne miejsce, w którym się go nadaje.
+ * Zabranie uprawnienia nie kasuje zgody na wysyłanie treści do Google - to
+ * decyzja właściciela konta, nie administratora, i nie ma powodu, żeby po
+ * przywróceniu dostępu pytać o nią drugi raz.
+ */
+export async function toggleAi(_previous: Result, data: FormData): Promise<Result> {
+  const admin = await requireAdmin();
+  const userId = String(data.get("userId") ?? "");
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) return { error: "Nie ma takiego konta." };
+
+  const allowed = !user.canUseAi;
+  await prisma.user.update({
+    where: { id: userId },
+    data: { canUseAi: allowed },
+  });
+
+  await writeToLog(admin.id, allowed ? "account.ai.enabled" : "account.ai.disabled", user.login);
+
+  revalidatePath("/admin/accounts");
+  return {
+    success: allowed
+      ? `${user.login} może teraz prosić asystenta o zmiany w notatkach.` +
+        (user.aiConsentAt ? "" : " Zgodę na wysyłanie treści potwierdzi u siebie w ustawieniach.")
+      : `${user.login} nie ma już dostępu do asystenta. Notatki zostają nietknięte.`,
+  };
+}
+
 export async function recomputeStorage(_previous: Result, data: FormData): Promise<Result> {
   await requireAdmin();
   const userId = String(data.get("userId") ?? "");
@@ -441,36 +482,19 @@ export async function deleteUser(_previous: Result, data: FormData): Promise<Res
   const admin = await requireAdmin();
   const userId = String(data.get("userId") ?? "");
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    include: { _count: { select: { notes: true } } },
-  });
-  if (!user) return { error: "Nie ma takiego konta." };
-  if (user.id === admin.id) return { error: (await currentWords()).actCannotDeleteOwnAccount };
+  if (userId === admin.id) return { error: (await currentWords()).actCannotDeleteOwnAccount };
 
-  await prisma.$transaction([
-    // Odnośniki z maili nie mają klucza obcego, więc kaskada ich nie sprzątnie.
-    prisma.verificationToken.deleteMany({
-      where: {
-        identifier: {
-          in: [`password:${user.email}`, `confirm:${user.email}`],
-        },
-      },
-    }),
-    prisma.user.delete({ where: { id: userId } }),
-  ]);
-
-  // Baza poszła kaskadą, na dysku został jeszcze katalog z załącznikami.
-  await deleteUserDirectory(userId);
+  const removed = await removeAccount(userId);
+  if (!removed) return { error: "Nie ma takiego konta." };
 
   await writeToLog(
     admin.id,
     "account.deleted",
-    `${user.login} (${user.email}), notatek: ${user._count.notes}`,
+    `${removed.login}, notatek: ${removed.noteCount}`,
   );
 
   revalidatePath("/admin/accounts");
-  return { success: `Konto ${user.login} skasowane razem ze wszystkim, co na nim było.` };
+  return { success: `Konto ${removed.login} skasowane razem ze wszystkim, co na nim było.` };
 }
 
 // --- Android application ---
@@ -522,10 +546,25 @@ export async function publishRelease(_previous: Result, data: FormData): Promise
     return { error: (await currentWords()).actUploadLost };
   }
 
-  const clash = await prisma.appRelease.findUnique({ where: { versionCode } });
+  /*
+    Numer wydania bierzemy z pliku, nie z formularza.
+
+    Aplikacja porównuje SWÓJ versionCode z tym, co odda serwer, więc pomyłka
+    przy przepisywaniu znaczy albo komunikat o aktualizacji nie do zbicia, albo
+    taki, który nie pojawi się nigdy. Formularz pokazuje odczytaną liczbę zaraz
+    po wgraniu pliku i podaje ją tutaj z powrotem, ale ostatnie słowo ma i tak
+    plik - przez to nie ma jak zapisać się numer wzięty z sufitu.
+
+    Gdy odczyt się nie uda (plik z innego narzędzia, nieznana odmiana zapisu),
+    zostaje to, co wpisał człowiek. Lepsze to niż odmowa wystawienia wydania.
+  */
+  const fromFile = await apkVersion(releasePath(upload));
+  const releaseNumber = fromFile?.versionCode ?? versionCode;
+
+  const clash = await prisma.appRelease.findUnique({ where: { versionCode: releaseNumber } });
   if (clash) {
     return {
-      error: `Numer wydania ${versionCode} ma już wersja ${clash.version}. Podnieś numer albo skasuj tamto wydanie.`,
+      error: `Numer wydania ${releaseNumber} ma już wersja ${clash.version}. Podnieś numer albo skasuj tamto wydanie.`,
     };
   }
 
@@ -535,7 +574,7 @@ export async function publishRelease(_previous: Result, data: FormData): Promise
     return tx.appRelease.create({
       data: {
         version,
-        versionCode,
+        versionCode: releaseNumber,
         notes: notes || null,
         fileName: fileName || `kajet-${version}.apk`,
         hash: upload,
@@ -560,7 +599,7 @@ export async function publishRelease(_previous: Result, data: FormData): Promise
   }
 
   await sweepUnused();
-  await writeToLog(admin.id, "app.published", `${version} (${versionCode})`);
+  await writeToLog(admin.id, "app.published", `${version} (${releaseNumber})`);
 
   refreshAppPages();
   return {

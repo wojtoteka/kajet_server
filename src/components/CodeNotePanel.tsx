@@ -1,6 +1,7 @@
 "use client";
 
 import { startTransition, useActionState, useRef, useState } from "react";
+import { assistKey, type CodeAssistEdit } from "@/lib/code-assist";
 import { useWords } from "@/components/LanguageProvider";
 import { SaveStatus } from "@/components/SaveStatus";
 import { useAutosave } from "@/components/useAutosave";
@@ -85,6 +86,30 @@ export function CodeNotePanel({
   });
 
   /*
+    Pomoc przy pisaniu kodu: domykanie nawiasów i znaczników, wcięcia. Reguły
+    siedzą w lib/code-assist.ts i są te same, co w aplikacji na tablecie.
+    Sam klawisz przechwytujemy tutaj, bo tylko tu wiadomo, w jakim języku
+    pisany jest plik - `>` domyka znacznik wyłącznie w HTML.
+  */
+  function assist(event: React.KeyboardEvent<HTMLTextAreaElement>) {
+    // Skróty klawiszowe (Ctrl+V, Ctrl+Z) zostawiamy przeglądarce.
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+    const area = event.currentTarget;
+    const edit = assistKey({
+      key: event.key,
+      text: area.value,
+      start: area.selectionStart,
+      end: area.selectionEnd,
+      html: currentLanguage === "html",
+    });
+    if (!edit) return;
+
+    event.preventDefault();
+    applyAssist(area, edit, setCurrentSource);
+  }
+
+  /*
     Zapis przyciskiem idzie tą samą drogą co autozapis. Gdyby szedł przez
     action={...} formularza, React po każdym zapisie czyściłby pola i zabierał
     kursor z kodu.
@@ -107,22 +132,12 @@ export function CodeNotePanel({
         className="sheet"
         style={{ padding: "22px 24px" }}
       >
-        {/* Powodzenie zapisu pokazuje napis przy przycisku - zielona ramka nad
-            kodem przeskakiwałaby przy każdym autozapisie. */}
-        {saveState.error ? <p className="error">{saveState.error}</p> : null}
-
         {saved.noteId ? <input type="hidden" name="noteId" value={saved.noteId} /> : null}
         {saved.version != null ? (
           <input type="hidden" name="baseVersion" value={String(saved.version)} />
         ) : null}
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "minmax(0, 1fr) 180px",
-            gap: 14,
-          }}
-        >
+        <div className="code-note-head">
           <div className="field" style={{ margin: 0 }}>
             <label htmlFor="code-title">{words.codeTitle}</label>
             <input
@@ -157,20 +172,28 @@ export function CodeNotePanel({
           <textarea
             id="code-source"
             name="source"
+            className="mono-field"
             value={currentSource}
             onChange={(event) => setCurrentSource(event.target.value)}
+            onKeyDown={assist}
             rows={18}
             spellCheck={false}
             style={{
               width: "100%",
-              fontFamily: "var(--font-mono)",
-              fontSize: 13,
-              lineHeight: 1.45,
               resize: "vertical",
               minHeight: 280,
             }}
           />
         </div>
+
+        {/* Powodzenie zapisu pokazuje napis przy przycisku - zielona ramka nad
+            kodem przeskakiwałaby przy każdym autozapisie. Pełny błąd też stoi
+            tutaj, przy przycisku: na górze spychał cały kod w dół. */}
+        {saveState.error ? (
+          <p className="error" style={{ margin: "0 0 10px 0" }}>
+            {saveState.error}
+          </p>
+        ) : null}
 
         <div className="save-row">
           <button type="submit" className="primary" disabled={saveBusy}>
@@ -243,12 +266,11 @@ export function CodeNotePanel({
               <textarea
                 id="code-stdin"
                 name="input"
+                className="mono-field"
                 rows={3}
                 placeholder={words.stdinPlaceholder}
                 style={{
                   width: "100%",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 13,
                   resize: "vertical",
                 }}
               />
@@ -260,7 +282,11 @@ export function CodeNotePanel({
           </form>
         )}
 
-        {runState.error ? <p className="error">{runState.error}</p> : null}
+        {runState.error ? (
+          <p className="error" style={{ margin: "12px 0 0 0" }}>
+            {runState.error}
+          </p>
+        ) : null}
 
         {runState.output != null || runState.errors ? (
           <div style={{ marginTop: 16 }}>
@@ -307,4 +333,52 @@ export function CodeNotePanel({
       </section>
     </div>
   );
+}
+
+/*
+  Wprowadzenie podpowiedzianej zmiany do pola.
+
+  Idzie przez `execCommand`, mimo że to wysłużone wywołanie: jako jedyne
+  zostawia nietkniętą historię cofania przeglądarki. Podmiana `value` z ręki
+  kasuje ją bez śladu, a wtedy Ctrl+Z po domkniętym nawiasie cofałoby całe
+  pisanie zamiast ostatniego znaku. Gdyby przeglądarka odmówiła, zostaje
+  zapasowa droga - lepiej stracić cofanie niż pomoc przy pisaniu.
+*/
+function applyAssist(
+  area: HTMLTextAreaElement,
+  edit: CodeAssistEdit,
+  onText: (text: string) => void,
+) {
+  const start = area.selectionStart;
+  const end = area.selectionEnd;
+  const command = (name: string, value?: string) => {
+    if (typeof document.execCommand !== "function") return false;
+    try {
+      return document.execCommand(name, false, value);
+    } catch {
+      return false;
+    }
+  };
+
+  if (edit.kind === "skip") {
+    area.setSelectionRange(start + 1, start + 1);
+    return;
+  }
+
+  if (edit.kind === "deletePair") {
+    area.setSelectionRange(start - 1, start + 1);
+    if (!command("delete")) {
+      area.setRangeText("", start - 1, start + 1, "end");
+      onText(area.value);
+    }
+    return;
+  }
+
+  if (!command("insertText", edit.text)) {
+    area.setRangeText(edit.text, start, end, "end");
+    onText(area.value);
+  }
+
+  const caret = area.selectionStart - edit.caretBack;
+  area.setSelectionRange(caret, caret);
 }

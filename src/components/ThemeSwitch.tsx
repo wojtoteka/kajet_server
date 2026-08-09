@@ -9,6 +9,8 @@
 
 import { useEffect, useState } from "react";
 import { Icon } from "./Icon";
+import { useWords } from "@/components/LanguageProvider";
+import { themeOf } from "@/lib/i18n";
 import {
   applyTheme,
   knownTheme,
@@ -18,12 +20,20 @@ import {
 } from "@/lib/theme";
 
 export function ThemeSwitch() {
+  const words = useWords();
+
   /*
     Zaczynamy od „systemowego", bo tyle wie serwer. Zapisany wybór dojeżdża
     zaraz po wczytaniu - barwy strony ma już wtedy dobre, bo postawił je skrypt
     z <head>, więc dopisuje się tu tylko obwódka na właściwym przycisku.
   */
   const [choice, setChoice] = useState<ThemeChoice>("system");
+
+  function themeName(id: ThemeChoice): string {
+    if (id === "light") return words.themeLight;
+    if (id === "dark") return words.themeDark;
+    return words.themeSystem;
+  }
 
   useEffect(() => {
     try {
@@ -54,13 +64,13 @@ export function ThemeSwitch() {
   }
 
   return (
-    <div className="theme-switch" role="group" aria-label="Motyw strony">
+    <div className="theme-switch" role="group" aria-label={words.themeLabel}>
       {THEME_CHOICES.map((entry) => (
         <button
           key={entry.id}
           type="button"
-          title={`Motyw: ${entry.label.toLowerCase()}`}
-          aria-label={entry.label}
+          title={themeOf(words, themeName(entry.id))}
+          aria-label={themeName(entry.id)}
           aria-pressed={choice === entry.id}
           className={choice === entry.id ? "on" : undefined}
           onClick={() => pick(entry.id)}

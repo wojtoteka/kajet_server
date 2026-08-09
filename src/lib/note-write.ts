@@ -291,6 +291,10 @@ export async function upsertNoteForUser(
       select: { version: true, updatedAt: true },
     });
 
+    // Notatka powstała na nowo pod starym identyfikatorem — nagrobek po niej
+    // przestaje obowiązywać.
+    if (!existing) await forgetTombstone(note.id);
+
     return {
       status: existing ? "saved" : "created",
       version: saved.version,
@@ -300,6 +304,19 @@ export async function upsertNoteForUser(
     await changeUsed(userId, -plan.addedBytes);
     throw problem;
   }
+}
+
+/**
+ * Zdejmuje nagrobek po notatce, która właśnie powstała na nowo pod tym samym
+ * identyfikatorem.
+ *
+ * Zdarza się to po wylogowaniu i ponownym zalogowaniu: urządzenie zapomina
+ * wtedy zapamiętane wersje i odsyła notatkę, którą wciąż ma u siebie, jako
+ * nieznaną serwerowi. Notatka znowu istnieje, więc stary nagrobek jest
+ * nieprawdą — zostawiony kazałby urządzeniom skasować żywą notatkę.
+ */
+async function forgetTombstone(noteId: string): Promise<void> {
+  await prisma.deletedNote.deleteMany({ where: { noteId } });
 }
 
 export type NoteMetaResult =
@@ -523,6 +540,10 @@ export async function upsertCodeNoteForUser(
       select: { version: true, updatedAt: true },
     });
 
+    // Tak samo jak przy zwykłej notatce: plik z kodem odesłany po
+    // przelogowaniu unieważnia nagrobek po sobie.
+    if (!existing) await forgetTombstone(note.id);
+
     return {
       status: existing ? "saved" : "created",
       version: saved.version,
@@ -570,7 +591,20 @@ export async function purgeNoteForUser(
     await deleteAttachment(attachment.path);
   }
   await deleteNoteDirectory(userId, noteId);
-  await prisma.note.delete({ where: { id: noteId } });
+
+  // Wiersz i nagrobek jednym zapisem. Osobno dałoby się rozerwać w połowie:
+  // notatka skasowana bez nagrobka znika po cichu i żadne urządzenie się o
+  // tym nie dowie, a nagrobek bez skasowania kazałby urządzeniom wyrzucić
+  // notatkę, która na serwerze dalej stoi.
+  await prisma.$transaction([
+    prisma.note.delete({ where: { id: noteId } }),
+    prisma.deletedNote.upsert({
+      where: { noteId },
+      create: { noteId, ownerId: userId },
+      update: { deletedAt: new Date(), ownerId: userId },
+    }),
+  ]);
+
   await changeUsed(userId, -freed);
 
   return { status: "ok", version: 0 };

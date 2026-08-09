@@ -3,8 +3,41 @@
 import { useActionState, useState } from "react";
 import { register, startGoogleWithCode, type RegistrationResult } from "./actions";
 import { useWords } from "@/components/LanguageProvider";
+import { PRIVACY_URL, TERMS_URL } from "@/lib/documents";
 
 const empty: RegistrationResult = {};
+
+/*
+  Zgoda na regulamin.
+
+  Musi być przy obu drogach zakładania konta, także przy Google - umowa
+  zawiera się w chwili powstania konta, więc dokumenty trzeba przyjąć zanim
+  ktokolwiek gdziekolwiek odejdzie. Pole nie jest domyślnie zaznaczone i
+  serwer sprawdza je jeszcze raz, bo `required` w przeglądarce da się obejść.
+*/
+function TermsConsent({ id }: { id: string }) {
+  const words = useWords();
+
+  return (
+    <div className="field">
+      <label
+        htmlFor={id}
+        style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}
+      >
+        <input id={id} name="terms" type="checkbox" required style={{ marginTop: 3 }} />
+        <span>{words.acceptTerms}</span>
+      </label>
+      <p className="small" style={{ marginTop: 6, display: "flex", gap: 16 }}>
+        <a href={TERMS_URL} target="_blank" rel="noopener">
+          {words.footerTerms}
+        </a>
+        <a href={PRIVACY_URL} target="_blank" rel="noopener">
+          {words.footerPrivacy}
+        </a>
+      </p>
+    </div>
+  );
+}
 
 export function RegistrationForm({
   codeFromLink,
@@ -19,13 +52,6 @@ export function RegistrationForm({
 
   return (
     <>
-      {state.error ? <p className="error">{state.error}</p> : null}
-      {state.success ? (
-        <p className="success">
-          {state.success} <a href="/signin">{words.goToSignIn}</a>
-        </p>
-      ) : null}
-
       <form action={submitForm}>
         <div className="field">
           <label htmlFor="code">{words.inviteCode}</label>
@@ -88,10 +114,25 @@ export function RegistrationForm({
           />
         </div>
 
+        <TermsConsent id="terms" />
+
         <button type="submit" className="primary" disabled={busy} style={{ width: "100%" }}>
           {busy ? words.creatingAccount : words.createAccountButton}
         </button>
       </form>
+
+      {/* Odpowiedź pod przyciskiem - nad polami spychała cały formularz w dół
+          w chwili wysłania. */}
+      {state.error ? (
+        <p className="error" style={{ margin: "14px 0 0 0" }}>
+          {state.error}
+        </p>
+      ) : null}
+      {state.success ? (
+        <p className="success" style={{ margin: "14px 0 0 0" }}>
+          {state.success} <a href="/signin">{words.goToSignIn}</a>
+        </p>
+      ) : null}
 
       {googleAvailable ? (
         <>
@@ -121,8 +162,6 @@ function GoogleForm({ codeFromLink }: { codeFromLink: string }) {
         {words.googleAccountAbout}
       </p>
 
-      {state.error ? <p className="error">{state.error}</p> : null}
-
       <form action={submitForm}>
         <div className="field">
           <label htmlFor="googleCode">{words.inviteCode}</label>
@@ -136,10 +175,19 @@ function GoogleForm({ codeFromLink }: { codeFromLink: string }) {
             placeholder={words.inviteCodePlaceholder}
           />
         </div>
+
+        <TermsConsent id="googleTerms" />
+
         <button type="submit" className="primary" disabled={busy} style={{ width: "100%" }}>
           {busy ? words.checkingCode : words.onWithGoogle}
         </button>
       </form>
+
+      {state.error ? (
+        <p className="error" style={{ margin: "14px 0 0 0" }}>
+          {state.error}
+        </p>
+      ) : null}
     </div>
   );
 }

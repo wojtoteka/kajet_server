@@ -691,6 +691,7 @@ export type Words = {
   tagAdministrator: string;
   tagBlocked: string;
   tagNoCodeRunning: string;
+  tagAiAllowed: string;
   accountSinceShort: string;
   blockReasonLabel: string;
   quotaSection: string;
@@ -713,6 +714,8 @@ export type Words = {
   makeAdmin: string;
   takeCodeRunning: string;
   allowCodeRunning: string;
+  takeAiAccess: string;
+  allowAiAccess: string;
   recomputeStorage: string;
   deleteAccount: string;
 
@@ -724,6 +727,8 @@ export type Words = {
   issuingCode: string;
   howManyAccounts: string;
   quotaMbLabel: string;
+  codeGrantsAi: string;
+  codeGrantsAiHint: string;
   validForDaysLabel: string;
   mailNotSetCodes: string;
   descriptionForYou: string;
@@ -896,6 +901,7 @@ export type Words = {
   apiGiveLanguageAndCode: string;
   apiNothingToRun: string;
   apiUnknownAddress: string;
+  apiAiNoConsent: string;
 
 
   apiServerBusy: string;
@@ -1809,6 +1815,7 @@ const pl: Words = {
   tagAdministrator: "administrator",
   tagBlocked: "zablokowane",
   tagNoCodeRunning: "bez uruchamiania kodu",
+  tagAiAllowed: "asystent AI",
   accountSinceShort: "konto z",
   blockReasonLabel: "Powód blokady",
   quotaSection: "Limit miejsca",
@@ -1831,6 +1838,8 @@ const pl: Words = {
   makeAdmin: "Zrób administratorem",
   takeCodeRunning: "Zabierz uruchamianie kodu",
   allowCodeRunning: "Pozwól uruchamiać kod",
+  takeAiAccess: "Zabierz asystenta AI",
+  allowAiAccess: "Pozwól korzystać z asystenta AI",
   recomputeStorage: "Przelicz miejsce",
   deleteAccount: "Skasuj konto",
 
@@ -1843,6 +1852,8 @@ const pl: Words = {
   issuingCode: "Wydaję...",
   howManyAccounts: "Na ile kont",
   quotaMbLabel: "Limit miejsca w MB",
+  codeGrantsAi: "Z asystentem AI",
+  codeGrantsAiHint: "Konto założone tym kodem od razu będzie mogło prosić asystenta o zmiany.",
   validForDaysLabel: "Ważny przez (dni)",
   mailNotSetCodes:
     "Poczta nie jest ustawiona, więc wiadomość nie wyjdzie. Odnośnik skopiujesz z listy poniżej.",
@@ -2058,6 +2069,9 @@ const pl: Words = {
   apiUnknownAddress:
     "Serwer nie zna takiego adresu. Sprawdź adres serwera w ustawieniach albo zaktualizuj " +
     "aplikację – ta wersja prosi o coś, czego serwer jeszcze nie ma.",
+  apiAiNoConsent:
+    "Zanim asystent ruszy, trzeba potwierdzić zgodę na wysyłanie treści notatki do Google. " +
+    "Zgoda jest w ustawieniach konta.",
 
   apiServerBusy: "Serwer uruchamia już tyle programów naraz, ile może.",
   apiTryInSeconds: "Spróbuj za kilka sekund.",
@@ -2991,6 +3005,7 @@ const en: Words = {
   tagAdministrator: "administrator",
   tagBlocked: "blocked",
   tagNoCodeRunning: "no code running",
+  tagAiAllowed: "AI assistant",
   accountSinceShort: "account from",
   blockReasonLabel: "Reason for the block",
   quotaSection: "Space quota",
@@ -3013,6 +3028,8 @@ const en: Words = {
   makeAdmin: "Make administrator",
   takeCodeRunning: "Take away code running",
   allowCodeRunning: "Allow code running",
+  takeAiAccess: "Take away the AI assistant",
+  allowAiAccess: "Allow the AI assistant",
   recomputeStorage: "Recompute the space",
   deleteAccount: "Delete the account",
 
@@ -3025,6 +3042,8 @@ const en: Words = {
   issuingCode: "Issuing...",
   howManyAccounts: "How many accounts",
   quotaMbLabel: "Space quota in MB",
+  codeGrantsAi: "With the AI assistant",
+  codeGrantsAiHint: "An account created with this code will be able to ask the assistant for changes right away.",
   validForDaysLabel: "Valid for (days)",
   mailNotSetCodes:
     "E-mail is not set up, so no message will go out. You can copy the link from the list below.",
@@ -3241,6 +3260,9 @@ const en: Words = {
   apiUnknownAddress:
     "The server does not know this address. Check the server address in settings, or " +
     "update the app – this version is asking for something the server does not have yet.",
+  apiAiNoConsent:
+    "Before the assistant will work, consent to sending note content to Google has to be " +
+    "confirmed. The consent sits in account settings.",
 
   apiServerBusy: "The server is already running as many programs at once as it can.",
   apiTryInSeconds: "Try again in a few seconds.",

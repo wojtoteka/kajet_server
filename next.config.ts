@@ -25,6 +25,8 @@ const config: NextConfig = {
       { source: "/pobierz", destination: "/download", permanent: true },
       { source: "/pobierz/plik", destination: "/download/file", permanent: true },
       { source: "/admin/aplikacja", destination: "/admin/app", permanent: true },
+      { source: "/regulamin", destination: "/terms", permanent: true },
+      { source: "/polityka-prywatnosci", destination: "/privacy", permanent: true },
     ];
   },
 

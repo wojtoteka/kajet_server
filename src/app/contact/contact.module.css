@@ -1,0 +1,126 @@
+/*
+  Strona kontaktu w mowie strony tytułowej, nie panelu: ten sam krój, ta sama
+  zielona kreska i cisza między elementami zamiast ramek. Wspólne kawałki
+  (nagłówek ze znakiem, podkreślenie słowa, drobne pismo) idą wprost
+  z home.module.css - tutaj siedzi tylko to, czego strona tytułowa nie ma:
+  układ dwóch kolumn, kartka z formularzem i papierowy samolocik.
+*/
+
+.otwarcie {
+  display: grid;
+  gap: 28px;
+  padding-block: 8px 84px;
+}
+
+@media (min-width: 880px) {
+  .otwarcie {
+    grid-template-columns: 6fr 6fr;
+    gap: 64px;
+    align-items: start;
+    padding-block: 28px 96px;
+  }
+}
+
+.opowiesc h1 {
+  margin-bottom: 20px;
+  max-width: 16ch;
+}
+
+/*
+  Papierowy samolocik z kreską lotu - kreska występuje na tej stronie dwa
+  razy (podkreślenie w nagłówku i ten lot) i oba razy pokazuje to samo:
+  wiadomość, która ma dolecieć. Lot celuje w formularz po prawej.
+  Na telefonie formularz stoi zaraz pod tekstem, więc samolocik odpada -
+  wskazywałby stopkę.
+*/
+.samolot {
+  margin-top: 40px;
+  display: none;
+}
+
+@media (min-width: 880px) {
+  .samolot {
+    display: block;
+  }
+}
+
+.samolot svg {
+  display: block;
+  width: min(440px, 100%);
+  height: auto;
+  color: var(--text);
+}
+
+/*
+  Lot kreśli się raz przy wczytaniu, w tempie zbliżonym do kreski w hero
+  strony tytułowej: pióro jedzie równym tempem (linear po rzeczywistej
+  długości, stąd pathLength=1 na kresce), po drodze zamyka koło z ogonkiem jak pisane Q,
+  a samolocik dolatuje na sam koniec. Rusza się tylko u ludzi, którzy nie
+  prosili o spokój - przy prefers-reduced-motion rysunek stoi gotowy od razu.
+*/
+@media (prefers-reduced-motion: no-preference) {
+  .lot {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: kreslenieLotu 1.05s linear 0.2s forwards;
+  }
+
+  .maszyna {
+    opacity: 0;
+    transform: translate(-12px, 8px);
+    animation: przylot 0.35s ease-out 1.15s forwards;
+  }
+
+  @keyframes kreslenieLotu {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes przylot {
+    to {
+      opacity: 0.85;
+      transform: translate(0, 0);
+    }
+  }
+}
+
+/* Jaśniejsza kartka położona na biurku - jak arkusz konta na stronie
+   tytułowej. Bez ramki; kartkę od tła odróżnia sam kolor. min-width zdejmuje
+   siatkową dolną granicę szerokości, żeby sztywna ramka hCaptchy nie mogła
+   rozepchnąć kartki poza kolumnę. */
+.arkusz {
+  background: var(--sheet);
+  border-radius: var(--radius);
+  padding: 28px 30px;
+  min-width: 0;
+}
+
+@media (max-width: 879px) {
+  .arkusz {
+    padding: 22px 20px;
+  }
+}
+
+/* Przycisk wysyłania w głośniejszej mowie strony tytułowej - większe pismo
+   niż guziki panelu i cała szerokość kartki, bo to jedyne działanie tutaj. */
+.arkusz :global(button[type="submit"]) {
+  width: 100%;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* Okienko hCaptchy - obca ramka o stałych wymiarach (~303 x 78). Zaklepane
+   miejsce, żeby kartka nie podskoczyła, gdy skrypt w końcu je narysuje. */
+.captcha {
+  min-height: 78px;
+  margin-bottom: 16px;
+}
+
+/* Na wąskim telefonie formularz rysuje ciasną odmianę okienka (164 x 144) -
+   patrz paint() w ContactForm.tsx - więc i zaklepane miejsce jest wyższe. */
+@media (max-width: 400px) {
+  .captcha {
+    min-height: 144px;
+  }
+}

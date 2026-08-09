@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { humanSize } from "@/lib/quota";
-import { mailWorks, settings } from "@/lib/settings";
+import { aiWorks, mailWorks, settings } from "@/lib/settings";
 import { ActionForm } from "@/components/ActionForm";
 import { CopyableLink, CopyButton } from "@/components/CopyableLink";
 import { deleteCode, createCode } from "../actions";
@@ -8,6 +8,8 @@ import { currentWords } from "@/lib/language";
 
 export default async function CodesPage() {
   const words = await currentWords();
+  // Tak samo jak na liście kont: bez klucza asystenta nie ma czego obiecywać.
+  const assistantHere = aiWorks();
   const codes = await prisma.inviteCode.findMany({
     orderBy: { createdAt: "desc" },
     include: {
@@ -74,6 +76,26 @@ export default async function CodesPage() {
               placeholder={words.descriptionPlaceholder}
             />
           </div>
+
+          {assistantHere ? (
+            <div className="field">
+              <label
+                htmlFor="grantsAi"
+                style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}
+              >
+                <input
+                  id="grantsAi"
+                  name="grantsAi"
+                  type="checkbox"
+                  style={{ width: "auto", margin: 0 }}
+                />
+                <span>{words.codeGrantsAi}</span>
+              </label>
+              <p className="small" style={{ marginTop: 4 }}>
+                {words.codeGrantsAiHint}
+              </p>
+            </div>
+          ) : null}
         </ActionForm>
       </div>
 
@@ -125,10 +147,17 @@ export default async function CodesPage() {
                       )}
                       <p className="small" style={{ margin: "4px 0 0 0" }}>
                         {code.usedSeats} {words.ofWord} {code.seats}
-                        {code.usedBy ? `, ${words.usedByWord}: ${code.usedBy.login}` : ""}
+                        {code.usedBy ? `, ${words.usedByWord} ${code.usedBy.login}` : ""}
                       </p>
                     </td>
-                    <td>{code.quotaBytes ? humanSize(code.quotaBytes) : words.defaultWord}</td>
+                    <td>
+                      {code.quotaBytes ? humanSize(code.quotaBytes) : words.defaultWord}
+                      {assistantHere && code.grantsAi ? (
+                        <p className="small" style={{ margin: "4px 0 0 0" }}>
+                          <span className="tag accent">{words.tagAiAllowed}</span>
+                        </p>
+                      ) : null}
+                    </td>
                     <td>
                       {code.expiresAt ? code.expiresAt.toLocaleDateString(words.locale) : words.noDeadline}
                     </td>

@@ -6,6 +6,18 @@ import { z } from "zod";
 import { currentUser, signOut } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { issueToken } from "@/lib/app-token";
+import { removeAccount } from "@/lib/account-delete";
+import { accountDeletionMail, send } from "@/lib/mail";
+import {
+  CODE_MINUTES,
+  clearDeletionTries,
+  deletionTryAllowed,
+  forgetDeletionCode,
+  formatCode,
+  issueDeletionCode,
+  noteFailedDeletionTry,
+  useDeletionCode,
+} from "@/lib/deletion-code";
 import { writingColumns, writingSettingsFromForm } from "@/lib/writing-settings";
 import { currentWords } from "@/lib/language";
 import { tokensRevokedMsg, type Words } from "@/lib/i18n";
@@ -193,6 +205,73 @@ export async function changePassword(_previous: Result, data: FormData): Promise
       ? "/signin?wylogowano=haslo"
       : "/signin?wylogowano=haslo-nowe",
   });
+  return {};
+}
+
+/*
+  Skasowanie własnego konta - dwa kroki.
+
+  Krok pierwszy wysyła kod na adres konta, krok drugi ten kod przyjmuje i od
+  razu kasuje wszystko. Dwa kroki, bo skasowania nie da się cofnąć, a samo
+  kliknięcie w panelu byłoby na łasce każdego, kto usiądzie przy cudzej
+  otwartej przeglądarce. Skrzynka pocztowa jest tu drugim kluczem.
+*/
+
+export async function sendDeletionCode(_previous: Result, _data: FormData): Promise<Result> {
+  const user = await currentUser();
+  if (!user) return { error: (await currentWords()).apiMustSignIn };
+
+  const code = await issueDeletionCode(user.email);
+  const sent = await send(accountDeletionMail(user.email, formatCode(code), CODE_MINUTES));
+
+  // Kod bez wiadomości jest bezużyteczny, a zostawiony w bazie tylko czeka na
+  // zgadnięcie. Skoro poczta nie poszła, niech nie zostaje po nim ślad.
+  if (!sent) {
+    await forgetDeletionCode(user.email);
+    return { error: (await currentWords()).deletionMailFailed };
+  }
+
+  return { success: (await currentWords()).deletionCodeSent };
+}
+
+export async function deleteOwnAccount(_previous: Result, data: FormData): Promise<Result> {
+  const user = await currentUser();
+  if (!user) return { error: (await currentWords()).apiMustSignIn };
+
+  const typed = String(data.get("code") ?? "").trim();
+  if (!typed) return { error: (await currentWords()).deletionGiveCode };
+
+  // Kod ma osiem znaków, więc bez zapory dałoby się go zgadywać w nieskończoność.
+  const gate = deletionTryAllowed(user.id);
+  if (!gate.allowed) return { error: (await currentWords()).deletionTooManyTries };
+
+  const check = await useDeletionCode(user.email, typed);
+  if (!check.ok) {
+    noteFailedDeletionTry(user.id);
+    return {
+      error:
+        check.reason === "expired"
+          ? (await currentWords()).deletionCodeExpired
+          : (await currentWords()).deletionCodeWrong,
+    };
+  }
+
+  clearDeletionTries(user.id);
+
+  const removed = await removeAccount(user.id);
+  if (!removed) return { error: (await currentWords()).apiMustSignIn };
+
+  // Ślad, że konto zniknęło z woli właściciela, a nie ręką administratora.
+  // Bez adresu e-mail i bez identyfikatora - konta już nie ma.
+  await prisma.auditEntry.create({
+    data: {
+      actorId: null,
+      action: "account.self.deleted",
+      details: `${removed.login}, notatek: ${removed.noteCount}`,
+    },
+  });
+
+  await signOut({ redirectTo: "/signin?wylogowano=konto-skasowane" });
   return {};
 }
 

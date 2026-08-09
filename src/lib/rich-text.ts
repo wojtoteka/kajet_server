@@ -47,6 +47,12 @@ export type Inline =
     czemu pokolorowane słowo wygląda tak samo po obu stronach.
   */
   | { kind: "colour"; colour: string; children: Inline[] }
+  /*
+    Rozmiar pisma dla kawałka tekstu. Tak samo jak barwa: markdown tego nie zna,
+    więc zapis idzie znacznikiem HTML - <span style="font-size:21px">tekst</span> -
+    dokładnie takim, jaki pisze aplikacja na tablecie.
+  */
+  | { kind: "size"; px: number; children: Inline[] }
   | { kind: InlineKind; children: Inline[] };
 
 /**
@@ -88,12 +94,51 @@ export function colourFromStyle(style: string): string | null {
   return match ? normaliseColour(match[1]) : null;
 }
 
+/** Rozmiar pisma wyjęty ze stylu znacznika („font-size: 21px”). Tylko piksele. */
+export function sizeFromStyle(style: string): number | null {
+  const match = /(?:^|;)\s*font-size\s*:\s*(\d+(?:\.\d+)?)px\s*(?:;|$)/i.exec(style);
+  if (!match) return null;
+  const px = Number(match[1]);
+  return Number.isFinite(px) && px > 0 ? px : null;
+}
+
 /**
- * Barwne słowo w treści notatki. Cudzysłów może być pojedynczy albo podwójny,
- * a przed „color" mogą stać inne własności - tak zapisuje to i strona, i tablet.
+ * Barwne albo przeskalowane słowo w treści notatki. Cudzysłów może być
+ * pojedynczy albo podwójny, a w stylu może stać kilka własności naraz -
+ * tak zapisuje to i strona, i tablet.
  */
-const COLOUR_SPAN =
-  /^<span\s+style\s*=\s*(?:"([^"]*)"|'([^']*)')\s*>([\s\S]*?)<\/span>/i;
+const SPAN_OPENING = /^<span\s+style\s*=\s*(?:"([^"]*)"|'([^']*)')\s*>/i;
+
+/**
+ * Znacznik span razem z jego domknięciem. Spany bywają zagnieżdżone (barwa
+ * w rozmiarze), więc domknięcia szukamy licząc otwarcia i zamknięcia, a nie
+ * pierwszym „</span>”. Zapis niedomknięty zostaje zwykłym tekstem - tak jak
+ * dotąd.
+ */
+function matchSpan(rest: string): { style: string; inner: string; length: number } | null {
+  const opening = SPAN_OPENING.exec(rest);
+  if (!opening) return null;
+  const lower = rest.toLowerCase();
+  let depth = 1;
+  let at = opening[0].length;
+  while (depth > 0) {
+    const open = lower.indexOf("<span", at);
+    const close = lower.indexOf("</span>", at);
+    if (close === -1) return null;
+    if (open !== -1 && open < close) {
+      depth += 1;
+      at = open + "<span".length;
+    } else {
+      depth -= 1;
+      at = close + "</span>".length;
+    }
+  }
+  return {
+    style: opening[1] ?? opening[2] ?? "",
+    inner: rest.slice(opening[0].length, at - "</span>".length),
+    length: at,
+  };
+}
 
 /** Znaczniki parzyste. Dłuższe muszą stać przed krótszymi: `**` przed `*`. */
 const PAIRS: { marker: string; kind: InlineKind }[] = [
@@ -185,14 +230,38 @@ export function parseInline(text: string): Inline[] {
       continue;
     }
 
-    // Barwa pisma. Stoi przed podkreśleniem, bo oba są znacznikami HTML.
-    const colour = COLOUR_SPAN.exec(rest);
-    if (colour) {
-      const value = colourFromStyle(colour[1] ?? colour[2] ?? "");
-      if (value) {
+    // Barwa i rozmiar pisma. Stoją przed podkreśleniem, bo to też znaczniki HTML.
+    const span = matchSpan(rest);
+    if (span) {
+      let colourValue = colourFromStyle(span.style);
+      let px = sizeFromStyle(span.style);
+      if (colourValue !== null || px !== null) {
         flush();
-        nodes.push({ kind: "colour", colour: value, children: parseInline(colour[3]) });
-        at += colour[0].length;
+        let children = parseInline(span.inner);
+        /*
+          Zagnieżdżone spany sprowadzamy do jednego porządku: rozmiar na
+          zewnątrz, barwa przy samej treści - obojętnie, w jakiej kolejności
+          ktoś je zapisał. Dzięki temu zapis w notatce jest zawsze taki sam.
+        */
+        while (children.length === 1) {
+          const only = children[0];
+          if (only.kind === "colour" && colourValue === null) {
+            colourValue = only.colour;
+            children = only.children;
+            continue;
+          }
+          if (only.kind === "size" && px === null) {
+            px = only.px;
+            children = only.children;
+            continue;
+          }
+          break;
+        }
+        let out: Inline[] = children;
+        if (colourValue) out = [{ kind: "colour", colour: colourValue, children: out }];
+        if (px !== null) out = [{ kind: "size", px, children: out }];
+        nodes.push(...out);
+        at += span.length;
         continue;
       }
     }
@@ -269,6 +338,10 @@ export function inlineToMarkdown(nodes: Inline[]): string {
           const inner = inlineToMarkdown(node.children);
           // Barwa bez treści nie ma czego pokolorować.
           return inner ? `<span style="color:${node.colour}">${inner}</span>` : "";
+        }
+        case "size": {
+          const inner = inlineToMarkdown(node.children);
+          return inner ? `<span style="font-size:${node.px}px">${inner}</span>` : "";
         }
         default: {
           const marker = MARKDOWN_MARKER[node.kind];
@@ -351,6 +424,8 @@ function inlineToHtml(nodes: Inline[], options: HtmlOptions = {}): string {
           return `<a href="${escapeHtml(safeUrl(node.target))}">${inlineToHtml(node.children, options)}</a>`;
         case "colour":
           return `<span style="color:${escapeHtml(node.colour)}">${inlineToHtml(node.children, options)}</span>`;
+        case "size":
+          return `<span style="font-size:${node.px}px">${inlineToHtml(node.children, options)}</span>`;
         default: {
           const tag = HTML_TAG[node.kind];
           return `<${tag}>${inlineToHtml(node.children, options)}</${tag}>`;
@@ -746,15 +821,17 @@ function inlineFromHtml(nodes: HtmlNode[]): Inline[] {
     const style = node.attrs.style ?? "";
     const styled = kindsFromStyle(style);
     const kinds = known ? [known, ...styled.filter((kind) => kind !== known)] : styled;
-    // Barwa pisma jest osobnym opakowaniem - i to ona ma być najbliżej treści,
-    // żeby zapis z notatki wyszedł taki sam po ponownym otwarciu.
+    // Barwa i rozmiar pisma są osobnymi opakowaniami - barwa ma być najbliżej
+    // treści, żeby zapis z notatki wyszedł taki sam po ponownym otwarciu.
     const colour = colourFromStyle(style);
+    const size = sizeFromStyle(style);
 
-    if (kinds.length > 0 || colour) {
+    if (kinds.length > 0 || colour || size !== null) {
       // Kilka wyglądów naraz (na przykład gruby i pochylony span) zawijamy
       // jeden w drugi, żeby w markdownie wyszły oba znaczniki.
       let inner = inlineFromHtml(node.children);
       if (colour) inner = [{ kind: "colour", colour, children: inner }];
+      if (size !== null) inner = [{ kind: "size", px: size, children: inner }];
       for (let i = kinds.length - 1; i >= 0; i -= 1) {
         inner = [{ kind: kinds[i], children: inner }];
       }

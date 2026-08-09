@@ -44,6 +44,19 @@ describe("tytuł podpowiedziany z treści", () => {
     expect(titleFromMarkdown("`kod` w zdaniu\n")).toBe("kod w zdaniu");
   });
 
+  it("zdejmuje też rozmiar pisma i zagnieżdżone znaczniki", () => {
+    expect(titleFromMarkdown('<span style="font-size:21px">Duże słowa</span> w zdaniu')).toBe(
+      "Duże słowa w zdaniu",
+    );
+    // Enter na końcu: wiersz jest dokończony, choć po zdjęciu znaczników
+    // zostaje mniej niż dwanaście znaków.
+    expect(
+      titleFromMarkdown(
+        '# <span style="font-size:21px"><span style="color:#665222">Ważne</span></span> słowo\n',
+      ),
+    ).toBe("Ważne słowo");
+  });
+
   it("z odnośnika zostaje sam opis", () => {
     expect(titleFromMarkdown("[Kajet](https://kajet.wojtoteka.ovh) to notatnik")).toBe(
       "Kajet to notatnik",

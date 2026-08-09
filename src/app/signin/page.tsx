@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { AuthError, CredentialsSignin } from "next-auth";
 import { auth, signIn } from "@/lib/auth";
 import { googleWorks } from "@/lib/settings";
 import { KajetMark } from "@/components/KajetMark";
@@ -34,6 +35,7 @@ function farewells(words: Words): Record<string, string> {
     wszedzie: words.byeEverywhere,
     haslo: words.byePasswordChanged,
     "haslo-nowe": words.byePasswordSet,
+    "konto-skasowane": words.byeAccountDeleted,
   };
 }
 
@@ -88,17 +90,39 @@ export default async function SignInPage({
           {words.signInLead}
         </p>
 
+        {/* Pożegnanie (wylogowano, hasło zmienione) może stać nad formularzem:
+            człowiek dopiero tu przyszedł i nic jeszcze nie wpisywał. Błąd
+            logowania stoi ZA formularzem - po nieudanej próbie strona wraca
+            z polami w tym samym miejscu, zamiast spychać je w dół. */}
         {goodbye ? <p className="success">{goodbye}</p> : null}
-        {message ? <p className="error">{message}</p> : null}
 
         <form
           action={async (data: FormData) => {
             "use server";
-            await signIn("credentials", {
-              email: String(data.get("email") ?? ""),
-              password: String(data.get("password") ?? ""),
-              redirectTo: params.next || "/library",
-            });
+            /*
+              Nieudane logowanie to u Auth.js rzucony wyjątek. Bez łapania
+              wychodzi z akcji jako awaria całej strony ("Application error"),
+              więc zamieniamy go z powrotem na adres z powodem - stąd bierze
+              się komunikat nad formularzem. Udane logowanie też rzuca
+              (przekierowaniem) i ono ma polecieć dalej.
+            */
+            try {
+              await signIn("credentials", {
+                email: String(data.get("email") ?? ""),
+                password: String(data.get("password") ?? ""),
+                redirectTo: params.next || "/library",
+              });
+            } catch (problem) {
+              if (problem instanceof AuthError) {
+                const back = new URLSearchParams({ error: problem.type });
+                if (problem instanceof CredentialsSignin && problem.code) {
+                  back.set("code", problem.code);
+                }
+                if (params.next) back.set("next", params.next);
+                redirect(`/signin?${back.toString()}`);
+              }
+              throw problem;
+            }
           }}
         >
           <div className="field">
@@ -122,13 +146,29 @@ export default async function SignInPage({
           </button>
         </form>
 
+        {message ? (
+          <p className="error" style={{ margin: "14px 0 0 0" }}>
+            {message}
+          </p>
+        ) : null}
+
         {googleWorks() ? (
           <>
             <hr className="divider" />
             <form
               action={async () => {
                 "use server";
-                await signIn("google", { redirectTo: params.next || "/library" });
+                // Ta sama zasada co przy haśle: błąd wraca tu jako komunikat.
+                try {
+                  await signIn("google", { redirectTo: params.next || "/library" });
+                } catch (problem) {
+                  if (problem instanceof AuthError) {
+                    const back = new URLSearchParams({ error: problem.type });
+                    if (params.next) back.set("next", params.next);
+                    redirect(`/signin?${back.toString()}`);
+                  }
+                  throw problem;
+                }
               }}
             >
               <button type="submit" style={{ width: "100%" }}>

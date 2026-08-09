@@ -44,6 +44,7 @@ export default async function NewTextNotePage() {
         appearance={{
           font: writing.font,
           fontSize: writing.fontSize,
+          textColor: 0,
           align: writing.align,
         }}
         autoSave={writing.autoSave}

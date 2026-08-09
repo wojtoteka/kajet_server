@@ -228,7 +228,7 @@ export default async function LibraryPage({
       </div>
 
       <div className="row-spread" style={{ marginBottom: 20 }}>
-        <div className="row" style={{ flexWrap: "wrap" }}>
+        <div className="row library-actions" style={{ flexWrap: "wrap" }}>
           <Link className="button compact primary" href="/note/new">
             <Icon name="post_add" size={18} />
             {words.newText}
@@ -270,6 +270,15 @@ export default async function LibraryPage({
       </div>
 
       <section className="sheet" style={{ padding: "16px 18px", marginBottom: 16 }}>
+        {/*
+          Zwijane na telefonie (sam CSS, patrz .filter-toggle w globals.css):
+          karta filtrów zabierała pół ekranu, zanim było widać notatki.
+          Na szerokim ekranie ta para znaczników jest niewidoczna.
+        */}
+        <input type="checkbox" id="filter-fold" className="filter-toggle" />
+        <label htmlFor="filter-fold" className="filter-summary">
+          {words.filtersLabel}
+        </label>
         <form method="get" className="library-filters">
           {/*
             W Ulubionych szukanie i rodzaj mają zawężać ulubione, a nie
@@ -391,7 +400,7 @@ export default async function LibraryPage({
             </div>
           ) : (
             <div className="sheet table-scroll">
-              <table>
+              <table className="notes-table">
                 <thead>
                   <tr>
                     <th>{words.columnNote}</th>
@@ -446,8 +455,9 @@ export default async function LibraryPage({
                       <td className="small">{humanSize(note.sizeBytes)}</td>
                       <td className="small">
                         {note.updatedAt.toLocaleString(words.locale)}
-                        <br />
-                        {words.versionWord} {note.version}
+                        <span className="note-version">
+                          {words.versionWord} {note.version}
+                        </span>
                       </td>
                       <td className="cell-actions">
                         <div className="row-actions">

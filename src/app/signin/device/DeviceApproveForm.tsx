@@ -46,8 +46,6 @@ export function DeviceApproveForm({
 
   return (
     <div>
-      {result.error ? <p className="error">{result.error}</p> : null}
-
       <form action={approveAction} style={{ marginTop: 8 }}>
         <input type="hidden" name="code" value={code} />
         <button type="submit" className="primary" style={{ width: "100%" }} disabled={approvePending || denyPending}>
@@ -61,6 +59,14 @@ export function DeviceApproveForm({
           {denyPending ? words.denying : words.notMeDeny}
         </button>
       </form>
+
+      {/* Odpowiedź pod przyciskami - nad nimi spychała je w dół w chwili
+          stuknięcia. */}
+      {result.error ? (
+        <p className="error" style={{ margin: "12px 0 0 0" }}>
+          {result.error}
+        </p>
+      ) : null}
 
       <p className="small" style={{ marginTop: 14 }}>
         {words.afterApprovalAbout}

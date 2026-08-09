@@ -149,6 +149,17 @@ export function MindMapEditor({
 
   const selected = nodes.find((node) => node.id === selectedId) ?? null;
 
+  /*
+    Pasek wyglądu i pole tekstu zostają na ekranie także wtedy, gdy nic nie jest
+    zaznaczone - wtedy tylko przygasają i nie da się w nie kliknąć. Wcześniej
+    znikały i wracały przy każdym kliknięciu, przez co cała strona podskakiwała.
+  */
+  const blankNode = useMemo(() => createMindNode({ x: 0, y: 0, text: "" }), []);
+  const lastSelected = useRef<MindNode | null>(null);
+  if (selected) lastSelected.current = selected;
+  const shown = selected ?? lastSelected.current ?? blankNode;
+  const idle = !selected;
+
   const worldView = useMemo(
     () => ({
       left: viewX,
@@ -622,10 +633,6 @@ export function MindMapEditor({
       className="sheet"
       style={{ padding: "22px 24px" }}
     >
-      {/* Powodzenie zapisu pokazuje napis przy przycisku - zielona ramka nad
-          mapą przeskakiwałaby przy każdym autozapisie. */}
-      {state.error ? <p className="error">{state.error}</p> : null}
-
       {saved.noteId ? <input type="hidden" name="noteId" value={saved.noteId} /> : null}
       {saved.version != null ? (
         <input type="hidden" name="baseVersion" value={String(saved.version)} />
@@ -641,7 +648,7 @@ export function MindMapEditor({
           value={noteTitle}
           onChange={(event) => setNoteTitle(event.target.value)}
           maxLength={300}
-          placeholder="Bez nazwy"
+          placeholder={words.untitled}
         />
       </div>
 
@@ -751,218 +758,222 @@ export function MindMapEditor({
       </div>
 
       {/* --- Pasek: wygląd zaznaczonego węzła --- */}
-      {selected ? (
-        <div
-          className="editor-toolbar"
-          role="toolbar"
-          aria-label={words.nodeLookToolbar}
-          style={{ marginTop: 8 }}
+      <div
+        className="editor-toolbar"
+        role="toolbar"
+        aria-label={words.nodeLookToolbar}
+        inert={idle}
+        style={{
+          marginTop: 8,
+          opacity: idle ? 0.4 : 1,
+          transition: "opacity 160ms ease",
+        }}
+      >
+        <button
+          type="button"
+          className="compact icon-only"
+          title={
+            shown.shape === "oval" ? words.turnIntoRectangle : words.turnIntoOval
+          }
+          aria-label={words.nodeShape}
+          onClick={() =>
+            updateNode(shown.id, {
+              shape: shown.shape === "oval" ? "rectangle" : "oval",
+            })
+          }
         >
-          <button
-            type="button"
-            className="compact icon-only"
-            title={
-              selected.shape === "oval" ? words.turnIntoRectangle : words.turnIntoOval
-            }
-            aria-label={words.nodeShape}
-            onClick={() =>
-              updateNode(selected.id, {
-                shape: selected.shape === "oval" ? "rectangle" : "oval",
-              })
-            }
-          >
-            <Icon name={selected.shape === "oval" ? "crop_square" : "circle"} />
-          </button>
+          <Icon name={shown.shape === "oval" ? "crop_square" : "circle"} />
+        </button>
 
-          <select
-            aria-label="Czcionka"
-            value={selected.font ?? "body"}
-            onChange={(event) => updateNode(selected.id, { font: event.target.value })}
-            style={{ width: "auto", minWidth: 140, padding: "6px 30px 6px 8px", fontSize: 12 }}
-          >
-            {nodeFonts(words).map((font) => (
-              <option key={font.id} value={font.id}>
-                {font.label}
-              </option>
-            ))}
-          </select>
-
-          <button
-            type="button"
-            className="compact icon-only"
-            title={words.smallerTextWord}
-            aria-label={words.smallerTextWord}
-            onClick={() =>
-              updateNode(selected.id, {
-                fontSize: Math.max(9, Math.round((selected.fontSize ?? 15) - 1)),
-              })
-            }
-          >
-            <Icon name="text_decrease" />
-          </button>
-          <span className="small" style={{ minWidth: 30, textAlign: "center" }}>
-            {Math.round(selected.fontSize ?? 15)}
-          </span>
-          <button
-            type="button"
-            className="compact icon-only"
-            title={words.largerTextWord}
-            aria-label={words.largerTextWord}
-            onClick={() =>
-              updateNode(selected.id, {
-                fontSize: Math.min(48, Math.round((selected.fontSize ?? 15) + 1)),
-              })
-            }
-          >
-            <Icon name="text_increase" />
-          </button>
-
-          <button
-            type="button"
-            className={`compact icon-only${selected.bold ? " on" : ""}`}
-            title="Pogrubienie"
-            aria-label="Pogrubienie"
-            onClick={() => updateNode(selected.id, { bold: !selected.bold })}
-          >
-            <Icon name="format_bold" />
-          </button>
-          <button
-            type="button"
-            className={`compact icon-only${selected.italic ? " on" : ""}`}
-            title="Kursywa"
-            aria-label="Kursywa"
-            onClick={() => updateNode(selected.id, { italic: !selected.italic })}
-          >
-            <Icon name="format_italic" />
-          </button>
-
-          {(
-            [
-              ["left", "format_align_left", words.alignLeft],
-              ["center", "format_align_center", words.alignCentre],
-              ["right", "format_align_right", words.alignRight],
-            ] as const
-          ).map(([value, icon, label]) => (
-            <button
-              key={value}
-              type="button"
-              className={`compact icon-only${(selected.align ?? "center") === value ? " on" : ""}`}
-              title={label}
-              aria-label={label}
-              onClick={() => updateNode(selected.id, { align: value })}
-            >
-              <Icon name={icon} />
-            </button>
+        <select
+          className="toolbar-select"
+          aria-label={words.fontLabel}
+          value={shown.font ?? "body"}
+          onChange={(event) => updateNode(shown.id, { font: event.target.value })}
+        >
+          {nodeFonts(words).map((font) => (
+            <option key={font.id} value={font.id}>
+              {font.label}
+            </option>
           ))}
+        </select>
 
-          <span className="toolbar-sep" />
+        <button
+          type="button"
+          className="compact icon-only"
+          title={words.smallerTextWord}
+          aria-label={words.smallerTextWord}
+          onClick={() =>
+            updateNode(shown.id, {
+              fontSize: Math.max(9, Math.round((shown.fontSize ?? 15) - 1)),
+            })
+          }
+        >
+          <Icon name="text_decrease" />
+        </button>
+        <span className="small" style={{ minWidth: 30, textAlign: "center" }}>
+          {Math.round(shown.fontSize ?? 15)}
+        </span>
+        <button
+          type="button"
+          className="compact icon-only"
+          title={words.largerTextWord}
+          aria-label={words.largerTextWord}
+          onClick={() =>
+            updateNode(shown.id, {
+              fontSize: Math.min(48, Math.round((shown.fontSize ?? 15) + 1)),
+            })
+          }
+        >
+          <Icon name="text_increase" />
+        </button>
 
-          {nodeColours(words).map((colour) => (
-            <button
-              key={colour.id}
-              type="button"
-              className="ink-swatch"
-              title={colour.label}
-              aria-label={`Kolor: ${colour.label}`}
-              onClick={() =>
-                updateNode(selected.id, {
-                  colorId: colour.id,
-                  customColor: argbFromHex(colour.hex),
-                })
-              }
-              style={{
-                background: colour.hex,
-                borderColor:
-                  hexFromArgb(selected.customColor, "") === colour.hex
-                    ? "var(--accent)"
-                    : "var(--rule)",
-              }}
-            />
-          ))}
+        <button
+          type="button"
+          className={`compact icon-only${shown.bold ? " on" : ""}`}
+          title={words.bold}
+          aria-label={words.bold}
+          onClick={() => updateNode(shown.id, { bold: !shown.bold })}
+        >
+          <Icon name="format_bold" />
+        </button>
+        <button
+          type="button"
+          className={`compact icon-only${shown.italic ? " on" : ""}`}
+          title={words.italic}
+          aria-label={words.italic}
+          onClick={() => updateNode(shown.id, { italic: !shown.italic })}
+        >
+          <Icon name="format_italic" />
+        </button>
 
-          <label
-            className="small"
-            style={{ display: "inline-flex", alignItems: "center", gap: 6, margin: 0 }}
+        {(
+          [
+            ["left", "format_align_left", words.alignLeft],
+            ["center", "format_align_center", words.alignCentre],
+            ["right", "format_align_right", words.alignRight],
+          ] as const
+        ).map(([value, icon, label]) => (
+          <button
+            key={value}
+            type="button"
+            className={`compact icon-only${(shown.align ?? "center") === value ? " on" : ""}`}
+            title={label}
+            aria-label={label}
+            onClick={() => updateNode(shown.id, { align: value })}
           >
-            <Icon name="palette" size={18} />
-            {words.frameWord}
-            <input
-              type="color"
-              aria-label={words.ownFrameColour}
-              value={hexFromArgb(selected.customColor, "#0f6b5c")}
-              onChange={(event) =>
-                updateNode(selected.id, {
-                  colorId: "wlasny",
-                  customColor: argbFromHex(event.target.value),
-                })
-              }
-              style={{
-                width: 34,
-                height: 28,
-                padding: 0,
-                border: "var(--hairline) solid var(--rule)",
-                borderRadius: "var(--radius)",
-                background: "transparent",
-                cursor: "pointer",
-              }}
-            />
-          </label>
+            <Icon name={icon} />
+          </button>
+        ))}
 
-          <label
-            className="small"
-            style={{ display: "inline-flex", alignItems: "center", gap: 6, margin: 0 }}
-          >
-            <Icon name="format_color_text" size={18} />
-            {words.writingWord}
-            <input
-              type="color"
-              aria-label={words.ownNodeTextColour}
-              value={hexFromArgb(selected.textColor, "#23211d")}
-              onChange={(event) =>
-                updateNode(selected.id, { textColor: argbFromHex(event.target.value) })
-              }
-              style={{
-                width: 34,
-                height: 28,
-                padding: 0,
-                border: "var(--hairline) solid var(--rule)",
-                borderRadius: "var(--radius)",
-                background: "transparent",
-                cursor: "pointer",
-              }}
-            />
-          </label>
+        <span className="toolbar-sep" />
 
-          {(childrenOf.get(selected.id)?.length ?? 0) > 0 ? (
-            <button
-              type="button"
-              className={`compact icon-only${selected.collapsed ? " on" : ""}`}
-              title={selected.collapsed ? words.expandBranch : words.collapseBranch}
-              aria-label={selected.collapsed ? words.expandBranch : words.collapseBranch}
-              onClick={() => updateNode(selected.id, { collapsed: !selected.collapsed })}
-            >
-              <Icon name={selected.collapsed ? "unfold_more" : "unfold_less"} />
-            </button>
-          ) : null}
-        </div>
-      ) : null}
-
-      {selected ? (
-        <div className="field" style={{ marginTop: 12 }}>
-          <label htmlFor="node-text">{words.nodeTextLabel}</label>
-          <textarea
-            id="node-text"
-            rows={2}
-            value={selected.text ?? ""}
-            onChange={(event) => updateNode(selected.id, { text: event.target.value }, true)}
-            maxLength={500}
+        {nodeColours(words).map((colour) => (
+          <button
+            key={colour.id}
+            type="button"
+            className="ink-swatch"
+            title={colour.label}
+            aria-label={`Kolor: ${colour.label}`}
+            onClick={() =>
+              updateNode(shown.id, {
+                colorId: colour.id,
+                customColor: argbFromHex(colour.hex),
+              })
+            }
+            style={{
+              background: colour.hex,
+              borderColor:
+                hexFromArgb(shown.customColor, "") === colour.hex
+                  ? "var(--accent)"
+                  : "var(--rule)",
+            }}
           />
-        </div>
-      ) : (
-        <p className="small" style={{ marginTop: 8 }}>
-          Kliknij węzeł, żeby go zaznaczyć. Podwójne kliknięcie pustego miejsca dodaje nowy.
-        </p>
-      )}
+        ))}
+
+        <label
+          className="small"
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, margin: 0 }}
+        >
+          <Icon name="palette" size={18} />
+          {words.frameWord}
+          <input
+            type="color"
+            aria-label={words.ownFrameColour}
+            value={hexFromArgb(shown.customColor, "#0f6b5c")}
+            onChange={(event) =>
+              updateNode(shown.id, {
+                colorId: "wlasny",
+                customColor: argbFromHex(event.target.value),
+              })
+            }
+            style={{
+              width: 34,
+              height: 28,
+              padding: 0,
+              border: "var(--hairline) solid var(--rule)",
+              borderRadius: "var(--radius)",
+              background: "transparent",
+              cursor: "pointer",
+            }}
+          />
+        </label>
+
+        <label
+          className="small"
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, margin: 0 }}
+        >
+          <Icon name="format_color_text" size={18} />
+          {words.writingWord}
+          <input
+            type="color"
+            aria-label={words.ownNodeTextColour}
+            value={hexFromArgb(shown.textColor, "#23211d")}
+            onChange={(event) =>
+              updateNode(shown.id, { textColor: argbFromHex(event.target.value) })
+            }
+            style={{
+              width: 34,
+              height: 28,
+              padding: 0,
+              border: "var(--hairline) solid var(--rule)",
+              borderRadius: "var(--radius)",
+              background: "transparent",
+              cursor: "pointer",
+            }}
+          />
+        </label>
+
+        <button
+          type="button"
+          className={`compact icon-only${shown.collapsed ? " on" : ""}`}
+          title={shown.collapsed ? words.expandBranch : words.collapseBranch}
+          aria-label={shown.collapsed ? words.expandBranch : words.collapseBranch}
+          disabled={(childrenOf.get(shown.id)?.length ?? 0) === 0}
+          onClick={() => updateNode(shown.id, { collapsed: !shown.collapsed })}
+        >
+          <Icon name={shown.collapsed ? "unfold_more" : "unfold_less"} />
+        </button>
+      </div>
+
+      <div
+        className="field"
+        style={{ marginTop: 12, opacity: idle ? 0.55 : 1, transition: "opacity 160ms ease" }}
+      >
+        <label htmlFor="node-text">
+          {idle
+            ? "Kliknij węzeł, żeby go zaznaczyć. Podwójne kliknięcie pustego miejsca dodaje nowy."
+            : words.nodeTextLabel}
+        </label>
+        <textarea
+          id="node-text"
+          rows={2}
+          value={idle ? "" : shown.text ?? ""}
+          disabled={idle}
+          onChange={(event) => updateNode(shown.id, { text: event.target.value }, true)}
+          maxLength={500}
+        />
+      </div>
 
       <div
         ref={boxRef}
@@ -1199,6 +1210,15 @@ export function MindMapEditor({
       <p className="small" style={{ marginTop: -8, marginBottom: 14 }}>
         {mapTally(words, nodes.length, edges.length)} · {words.mindMapHints}
       </p>
+
+      {/* Powodzenie zapisu pokazuje napis przy przycisku - zielona ramka nad
+          mapą przeskakiwałaby przy każdym autozapisie. Pełny błąd też stoi
+          tutaj, przy przycisku: na górze spychał całą mapę w dół. */}
+      {state.error ? (
+        <p className="error" style={{ margin: "0 0 10px 0" }}>
+          {state.error}
+        </p>
+      ) : null}
 
       <div className="save-row">
         <button type="submit" className="primary" disabled={busy}>

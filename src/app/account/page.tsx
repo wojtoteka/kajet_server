@@ -20,6 +20,8 @@ import {
   logOut,
   logOutEverywhere,
   saveWritingSettings,
+  sendDeletionCode,
+  deleteOwnAccount,
 } from "./actions";
 
 export const metadata = { title: "Moje konto - Kajet" };
@@ -237,10 +239,7 @@ export default async function AccountPage() {
         </ActionForm>
       </section>
 
-      <section
-        className="sheet-ruled"
-        style={{ paddingBlock: 24, paddingInlineEnd: 26, marginBottom: 20 }}
-      >
+      <section className="sheet" style={{ padding: "22px 24px", marginBottom: 20 }}>
         <p className="eyebrow">{words.deviceTokensEyebrow}</p>
         <h2 style={{ marginBottom: 8 }}>{words.tokenSignIn}</h2>
         <p className="lead" style={{ marginBottom: 16 }}>
@@ -257,65 +256,59 @@ export default async function AccountPage() {
         {devices.length > 0 ? (
           <>
             <hr className="divider" />
-            <div className="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>{words.columnDevice}</th>
-                    <th style={{ width: 160 }}>{words.columnLastUse}</th>
-                    <th style={{ width: 140 }} />
-                  </tr>
-                </thead>
-                <tbody>
-                  {devices.map((device) => (
-                    <tr key={device.id}>
-                      <td>
-                        {/*
-                          Nazwa jest do zmiany na miejscu. Aplikacja zgłasza się
-                          modelem sprzętu, a przy dwóch takich samych tabletach
-                          nie sposób poznać, który token do którego należy.
-                        */}
-                        <ActionForm
-                          action={renameDevice}
-                          label={words.saveName}
-                          icon="edit"
-                          compact
-                        >
-                          <input type="hidden" name="id" value={device.id} />
-                          <input
-                            name="device"
-                            type="text"
-                            defaultValue={device.device}
-                            maxLength={120}
-                            aria-label={deviceNameLabel(words, device.device)}
-                            style={{ minHeight: 34, padding: "4px 8px", fontWeight: 600 }}
-                          />
-                        </ActionForm>
-                        <p className="small" style={{ margin: "2px 0 0 0" }}>
-                          {words.issuedWord} {device.createdAt.toLocaleDateString(words.locale)}
-                        </p>
-                      </td>
-                      <td className="small">
-                        {device.lastUsedAt
-                          ? device.lastUsedAt.toLocaleString(words.locale)
-                          : words.neverUsed}
-                      </td>
-                      <td>
-                        <ActionForm
-                          action={revokeDevice}
-                          label={words.revokeToken}
-                          compact
-                          danger
-                          confirmation={words.confirmRevokeToken}
-                        >
-                          <input type="hidden" name="id" value={device.id} />
-                        </ActionForm>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <ul className="device-list">
+              {devices.map((device) => (
+                <li key={device.id} className="device-row">
+                  <div className="device-main">
+                    {/*
+                      Nazwa jest do zmiany na miejscu. Aplikacja zgłasza się
+                      modelem sprzętu, a przy dwóch takich samych tabletach
+                      nie sposób poznać, który token do którego należy.
+                    */}
+                    <ActionForm
+                      action={renameDevice}
+                      label={words.saveName}
+                      icon="check"
+                      iconOnly
+                      compact
+                      quiet
+                    >
+                      <input type="hidden" name="id" value={device.id} />
+                      <input
+                        name="device"
+                        type="text"
+                        defaultValue={device.device}
+                        maxLength={120}
+                        aria-label={deviceNameLabel(words, device.device)}
+                      />
+                    </ActionForm>
+                    <p className="small device-when">
+                      {words.issuedWord}{" "}
+                      {device.createdAt.toLocaleDateString(words.locale, { dateStyle: "short" })}
+                      {" · "}
+                      {device.lastUsedAt
+                        ? `${words.lastUseWord} ${device.lastUsedAt.toLocaleString(words.locale, {
+                            dateStyle: "short",
+                            timeStyle: "short",
+                          })}`
+                        : words.neverUsed}
+                    </p>
+                  </div>
+                  <div className="row-actions">
+                    <ActionForm
+                      action={revokeDevice}
+                      label={words.revokeToken}
+                      compact
+                      danger
+                      quiet
+                      confirmation={words.confirmRevokeToken}
+                    >
+                      <input type="hidden" name="id" value={device.id} />
+                    </ActionForm>
+                  </div>
+                </li>
+              ))}
+            </ul>
             <div style={{ marginTop: 16 }}>
               <ActionForm
                 action={revokeAllDevices}
@@ -407,6 +400,62 @@ export default async function AccountPage() {
         <p className="small" style={{ marginTop: 12, marginBottom: 0 }}>
           {words.signOutEverywhereAbout}
         </p>
+      </section>
+
+      {/*
+        Skasowanie konta stoi na samym końcu i pod czerwoną kreską, żeby nikt
+        nie trafił tu przypadkiem, szukając czego innego. Dwa kroki są osobnymi
+        formularzami: po wysłaniu kodu strona nie musi niczego pamiętać, bo kod
+        czeka w skrzynce i w bazie.
+      */}
+      <section
+        className="sheet"
+        style={{ padding: "22px 24px", marginTop: 20, borderLeft: "2px solid var(--warning)" }}
+      >
+        <p className="eyebrow" style={{ color: "var(--warning)" }}>
+          {words.deleteAccountEyebrow}
+        </p>
+        <p className="lead" style={{ marginBottom: 10 }}>
+          {words.deleteAccountLead}
+        </p>
+        <p className="small" style={{ marginBottom: 16 }}>
+          {words.deleteAccountWhatGoes}
+        </p>
+
+        <ActionForm
+          action={sendDeletionCode}
+          label={words.sendDeletionCodeButton}
+          busyLabel={words.sendingDeletionCode}
+          compact
+        />
+
+        <hr className="divider" />
+
+        <ActionForm
+          action={deleteOwnAccount}
+          label={words.deleteAccountForever}
+          busyLabel={words.deletingAccount}
+          danger
+          compact
+          confirmation={words.confirmDeleteAccount}
+        >
+          <div className="field">
+            <label htmlFor="deletionCode">{words.deletionCodeLabel}</label>
+            <input
+              id="deletionCode"
+              name="code"
+              type="text"
+              required
+              autoComplete="off"
+              spellCheck={false}
+              placeholder="ABCD-EFGH"
+              style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.12em" }}
+            />
+            <p className="small" style={{ marginTop: 4 }}>
+              {words.deletionCodeHint}
+            </p>
+          </div>
+        </ActionForm>
       </section>
     </main>
   );

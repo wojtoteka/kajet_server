@@ -11,6 +11,10 @@ export async function KajetMark({ caption }: { caption?: string }) {
         display: "flex",
         alignItems: "center",
         gap: 14,
+        rowGap: 8,
+        // Na telefonie przełączniki języka i motywu schodzą do drugiego
+        // rzędu, zamiast wypychać nagłówek poza ekran.
+        flexWrap: "wrap",
         padding: "0 0 26px 0",
       }}
     >
@@ -45,7 +49,8 @@ export async function KajetMark({ caption }: { caption?: string }) {
       </svg>
       <span
         style={{
-          fontFamily: "var(--font-heading)",
+          // Ten sam krój co nagłówki i znak na stronie tytułowej.
+          fontFamily: '"Bricolage Grotesque", var(--font-heading)',
           fontSize: 26,
           fontWeight: 600,
           letterSpacing: "-0.01em",

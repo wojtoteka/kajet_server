@@ -21,10 +21,11 @@ export const THEME_STORAGE_KEY = "kajet-motyw";
 export const DESK_LIGHT = "#e7e2d6";
 export const DESK_DARK = "#171614";
 
-export const THEME_CHOICES: { id: ThemeChoice; label: string; icon: string }[] = [
-  { id: "system", label: "Jak w systemie", icon: "brightness_auto" },
-  { id: "light", label: "Jasny", icon: "light_mode" },
-  { id: "dark", label: "Ciemny", icon: "dark_mode" },
+// Nazwy motywów stoją w słowniku (lib/i18n.ts), bo widzi je człowiek.
+export const THEME_CHOICES: { id: ThemeChoice; icon: string }[] = [
+  { id: "system", icon: "brightness_auto" },
+  { id: "light", icon: "light_mode" },
+  { id: "dark", icon: "dark_mode" },
 ];
 
 /** Nieznana albo pusta wartość (stary zapis, ręczna zabawa) na „systemowy". */

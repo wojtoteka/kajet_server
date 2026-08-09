@@ -35,10 +35,24 @@ export type RegistrationResult = {
   success?: string;
 };
 
+/**
+ * Czy w formularzu odhaczono regulamin. Przeglądarka pilnuje tego swoim
+ * `required`, ale zapytanie da się wysłać z pominięciem strony - a umowa
+ * zawiera się w chwili powstania konta, więc bramka musi stać tutaj.
+ */
+function termsAccepted(data: FormData): boolean {
+  const value = String(data.get("terms") ?? "");
+  return value === "on" || value === "true";
+}
+
 export async function register(
   _previous: RegistrationResult,
   data: FormData,
 ): Promise<RegistrationResult> {
+  if (!termsAccepted(data)) {
+    return { error: (await currentWords()).mustAcceptTerms };
+  }
+
   const parsed = form(await currentWords()).safeParse({
     code: data.get("code"),
     email: data.get("email"),
@@ -87,6 +101,10 @@ export async function register(
         passwordHash: await bcrypt.hash(password, 12),
         quotaBytes: quota,
         permanentQuotaBytes: quota,
+        // Kod może nieść ze sobą dostęp do asystenta. Samą zgodę na wysyłanie
+        // treści do Google trzeba i tak potwierdzić przy pierwszym użyciu -
+        // uprawnienie i zgoda to dwie różne rzeczy.
+        canUseAi: invite.grantsAi,
       },
       select: { id: true, email: true },
     });
@@ -119,6 +137,10 @@ export async function startGoogleWithCode(
   _previous: RegistrationResult,
   data: FormData,
 ): Promise<RegistrationResult> {
+  if (!termsAccepted(data)) {
+    return { error: (await currentWords()).mustAcceptTerms };
+  }
+
   const code = String(data.get("code") ?? "").trim();
 
   const checked = await checkInvite(code);

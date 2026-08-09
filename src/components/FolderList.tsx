@@ -126,7 +126,7 @@ export function FolderList({
               <div className="folder-editor">
                 <ActionForm action={renameAction} label={words.rename} icon="edit" compact>
                   <input type="hidden" name="folderId" value={folder.id} />
-                  <div className="field" style={{ marginBottom: 8 }}>
+                  <div className="field">
                     <input
                       name="name"
                       type="text"
@@ -163,13 +163,21 @@ export function FolderList({
       {adding ? (
         <div className="folder-editor" style={{ marginTop: 6 }}>
           <NewFolderForm action={createAction} />
-          <button type="button" className="compact" onClick={() => setAdding(false)}>
+          <button
+            type="button"
+            className="compact folder-add"
+            onClick={() => setAdding(false)}
+          >
             <Icon name="close" size={18} />
             {words.collapse}
           </button>
         </div>
       ) : (
-        <button type="button" className="compact" onClick={() => setAdding(true)}>
+        <button
+          type="button"
+          className="compact folder-add"
+          onClick={() => setAdding(true)}
+        >
           <Icon name="create_new_folder" size={18} />
           {words.newFolder}
         </button>
@@ -185,7 +193,7 @@ function NewFolderForm({ action }: { action: Action }) {
 
   return (
     <ActionForm action={action} label={words.createFolderButton} icon="create_new_folder" compact>
-      <div className="field" style={{ marginBottom: 8 }}>
+      <div className="field">
         <input name="name" type="text" placeholder={words.folderName} required maxLength={120} />
       </div>
       <LookFields
@@ -257,18 +265,18 @@ function LookFields({
         ))}
       </div>
 
-      <div
-        className="row"
-        style={{ gap: 8, marginBottom: 8, marginTop: 8 }}
-      >
-        <span className="folder-mark tinted" style={folderTint(colour)}>
+      <div className="folder-look">
+        {/* Podgląd: wybrana barwa razem z wybranym znaczkiem, zanim się zapisze. */}
+        <span
+          className="folder-mark tinted folder-look-preview"
+          style={folderTint(colour)}
+        >
           <Icon name={folderIcon(icon)} filled />
         </span>
         <select
           aria-label={words.folderIconGroup}
           value={icon}
           onChange={(event) => onIcon(event.target.value)}
-          style={{ fontSize: 12, minHeight: 36, padding: "4px 30px 4px 8px" }}
         >
           {FOLDER_ICONS.map((entry) => (
             <option key={entry.id} value={entry.id}>

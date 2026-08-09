@@ -15,6 +15,11 @@ data/
 # Paczka zrodel do wgrania na serwer (tworzona lokalnie, nie do repo).
 kajet-aktualizacja.tar.gz
 
+# Zrzuty bazy, gdyby kiedys jakis powstal - maja dane wszystkich uzytkownikow
+# i nie moga trafic do gita.
+*.sql
+*.sql.gz
+
 *.tsbuildinfo
 next-env.d.ts
 npm-debug.log*

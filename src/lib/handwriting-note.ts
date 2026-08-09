@@ -19,6 +19,9 @@ const A4_HEIGHT = 842;
 /** Default ink colour matching Kajet sheet text (#23211d). */
 export const DEFAULT_INK_COLOR = argbColor(35, 33, 29);
 
+/** Its dark-theme counterpart (#e8e4da) - the same pair as defaultInk in the app. */
+export const DARK_INK_COLOR = argbColor(232, 228, 218);
+
 /** Build content.json for a HANDWRITTEN note matching FORMAT.md. */
 export function buildHandwritingNoteContent(options: {
   id: string;
@@ -79,6 +82,7 @@ export function emptyPage(partial?: Partial<Page>): Page {
     height: partial?.height ?? A4_HEIGHT,
     background: partial?.background,
     strokes: partial?.strokes ?? [],
+    shapes: partial?.shapes ?? [],
     texts: partial?.texts ?? [],
     images: partial?.images ?? [],
     recognized: partial?.recognized ?? [],

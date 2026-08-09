@@ -5,8 +5,16 @@
 
   Idzie to w dwóch krokach, bo plik potrafi ważyć kilkadziesiąt megabajtów.
   Najpierw sam plik, zapytaniem z paskiem postępu - inaczej człowiek przez minutę
-  patrzy w nieruchomy przycisk i nie wie, czy cokolwiek się dzieje. Potem wersja
-  i opis zmian, zwykłą akcją formularza, ze skrótem pliku w ukrytym polu.
+  patrzy w nieruchomy przycisk i nie wie, czy cokolwiek się dzieje. Potem opis
+  zmian, zwykłą akcją formularza, ze skrótem pliku w ukrytym polu.
+
+  Plik jedzie ZARAZ po wskazaniu, a nie dopiero przy wysyłaniu formularza.
+  Powód nie jest kosmetyczny: serwer odczytuje z niego numer wydania i nazwę
+  wersji, a te dwie liczby mają być widoczne, zanim cokolwiek trafi do bazy.
+  Numer wydania jest tym, po którym aplikacja poznaje, że jest starsza - dopóki
+  przepisywało się go z pamięci, jedna pomyłka wystarczała, żeby powiadamianie
+  o aktualizacji przestało mieć sens. Plik wgrany i nieopisany nie zalega:
+  sprząta go sweepUnused() po sześciu godzinach.
 
   Pasek postępu wymaga XMLHttpRequest: fetch nie mówi, ile już poszło.
 */
@@ -16,6 +24,7 @@ import { CopyButton } from "@/components/CopyableLink";
 import { Icon } from "@/components/Icon";
 import { publishRelease } from "../actions";
 import { useWords } from "@/components/LanguageProvider";
+import type { Words } from "@/lib/i18n";
 
 type Answer = {
   error?: string;
@@ -23,8 +32,23 @@ type Answer = {
   copyable?: { value: string; label?: string };
 };
 
-function sendFile(file: File, onProgress: (fraction: number) => void): Promise<string> {
-  const words = useWords();
+/** Co serwer odczytał z wgranego pliku. */
+type Uploaded = {
+  hash: string;
+  versionCode: number | null;
+  versionName: string | null;
+};
+
+/*
+  Napisy przychodzą parametrem, nie z useWords(): to zwykła funkcja, nie
+  komponent, a hak wywołany poza komponentem wywraca całą stronę
+  (React #321) przy pierwszej próbie wysłania pliku.
+*/
+function sendFile(
+  file: File,
+  words: Words,
+  onProgress: (fraction: number) => void,
+): Promise<Uploaded> {
   return new Promise((resolve, reject) => {
     const request = new XMLHttpRequest();
     request.open("POST", "/admin/app/upload");
@@ -34,14 +58,23 @@ function sendFile(file: File, onProgress: (fraction: number) => void): Promise<s
     });
 
     request.addEventListener("load", () => {
-      let answer: { upload?: string; error?: string } = {};
+      let answer: {
+        upload?: string;
+        error?: string;
+        versionCode?: number | null;
+        versionName?: string | null;
+      } = {};
       try {
         answer = JSON.parse(request.responseText);
       } catch {
         // Odpowiedź nie jest JSON-em: prawie na pewno strona błędu z nginxa.
       }
       if (request.status >= 200 && request.status < 300 && answer.upload) {
-        resolve(answer.upload);
+        resolve({
+          hash: answer.upload,
+          versionCode: answer.versionCode ?? null,
+          versionName: answer.versionName ?? null,
+        });
         return;
       }
       reject(
@@ -66,12 +99,41 @@ function sendFile(file: File, onProgress: (fraction: number) => void): Promise<s
 export function ReleaseForm({ nextVersionCode }: { nextVersionCode: number }) {
   const words = useWords();
   const form = useRef<HTMLFormElement>(null);
-  const [file, setFile] = useState<File | null>(null);
+  const [fileName, setFileName] = useState("");
+  const [uploaded, setUploaded] = useState<Uploaded | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
   const [stage, setStage] = useState("");
   const [answer, setAnswer] = useState<Answer>({});
 
+  // Pola wersji: wypełniane z pliku, a gdy odczyt zawiódł - do wpisania ręcznie.
+  const [version, setVersion] = useState("");
+  const [versionCode, setVersionCode] = useState(String(nextVersionCode));
+
   const busy = progress !== null;
+  /** Plik leży na serwerze, ale nie dał się odczytać. Wtedy wersję podaje człowiek. */
+  const unreadable = uploaded !== null && uploaded.versionCode === null;
+
+  async function pick(file: File | null) {
+    setAnswer({});
+    setUploaded(null);
+    setFileName(file?.name ?? "");
+    if (!file) return;
+
+    setProgress(0);
+    setStage(words.sendingFileStage);
+
+    try {
+      const outcome = await sendFile(file, words, setProgress);
+      setUploaded(outcome);
+      if (outcome.versionCode !== null) setVersionCode(String(outcome.versionCode));
+      if (outcome.versionName) setVersion(outcome.versionName);
+    } catch (problem) {
+      setAnswer({ error: problem instanceof Error ? problem.message : words.uploadFailed });
+    } finally {
+      setProgress(null);
+      setStage("");
+    }
+  }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -80,27 +142,16 @@ export function ReleaseForm({ nextVersionCode }: { nextVersionCode: number }) {
     const data = new FormData(event.currentTarget);
     setAnswer({});
 
-    if (!file) {
+    if (!uploaded) {
       setAnswer({ error: words.pickApkFile });
       return;
     }
 
-    setProgress(0);
-    setStage(words.sendingFileStage);
-
-    let upload: string;
-    try {
-      upload = await sendFile(file, setProgress);
-    } catch (problem) {
-      setProgress(null);
-      setStage("");
-      setAnswer({ error: problem instanceof Error ? problem.message : words.uploadFailed });
-      return;
-    }
-
+    setProgress(1);
     setStage(words.savingReleaseStage);
-    data.set("upload", upload);
-    data.set("fileName", file.name);
+
+    data.set("upload", uploaded.hash);
+    data.set("fileName", fileName);
 
     const outcome = await publishRelease({}, data);
 
@@ -110,33 +161,15 @@ export function ReleaseForm({ nextVersionCode }: { nextVersionCode: number }) {
 
     if (outcome.success) {
       form.current?.reset();
-      setFile(null);
+      setUploaded(null);
+      setFileName("");
+      setVersion("");
+      setVersionCode(String(nextVersionCode + 1));
     }
   }
 
   return (
     <form ref={form} onSubmit={submit}>
-      {answer.error ? <p className="error">{answer.error}</p> : null}
-      {answer.success ? (
-        <div className="success" style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-          {answer.success}
-          {answer.copyable ? (
-            <span
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                flexWrap: "wrap",
-                marginTop: 8,
-              }}
-            >
-              <span className="mono">{answer.copyable.value}</span>
-              <CopyButton value={answer.copyable.value} label={answer.copyable.label ?? words.copyWord} />
-            </span>
-          ) : null}
-        </div>
-      ) : null}
-
       <div className="field">
         <label htmlFor="apk">{words.apkFileLabel}</label>
         <input
@@ -144,9 +177,11 @@ export function ReleaseForm({ nextVersionCode }: { nextVersionCode: number }) {
           type="file"
           accept=".apk,application/vnd.android.package-archive"
           disabled={busy}
-          onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+          onChange={(event) => pick(event.target.files?.[0] ?? null)}
         />
       </div>
+
+      {unreadable ? <p className="error">{words.couldNotReadRelease}</p> : null}
 
       <div
         style={{
@@ -166,6 +201,8 @@ export function ReleaseForm({ nextVersionCode }: { nextVersionCode: number }) {
             required
             maxLength={40}
             disabled={busy}
+            value={version}
+            onChange={(event) => setVersion(event.target.value)}
           />
           <p className="small" style={{ marginTop: 4 }}>
             {words.versionHint}
@@ -179,11 +216,17 @@ export function ReleaseForm({ nextVersionCode }: { nextVersionCode: number }) {
             type="number"
             min={1}
             required
-            defaultValue={nextVersionCode}
             disabled={busy}
+            // Odczytanego numeru nie da się poprawić - i tak wygrałby plik,
+            // a pole do wpisywania obiecywałoby coś, czego serwer nie zrobi.
+            readOnly={uploaded !== null && !unreadable}
+            value={versionCode}
+            onChange={(event) => setVersionCode(event.target.value)}
           />
           <p className="small" style={{ marginTop: 4 }}>
-            versionCode z aplikacji. Po nim telefon poznaje, że ma starszą.
+            {uploaded !== null && !unreadable
+              ? `${words.releaseNumberHint} (${words.readFromFile})`
+              : words.releaseNumberHint}
           </p>
         </div>
       </div>
@@ -231,10 +274,43 @@ export function ReleaseForm({ nextVersionCode }: { nextVersionCode: number }) {
         </div>
       ) : null}
 
-      <button type="submit" className="primary" disabled={busy}>
+      <button type="submit" className="primary" disabled={busy || !uploaded}>
         <Icon name={busy ? "hourglass_top" : "publish"} />
         {busy ? words.justAMoment : words.publishRelease}
       </button>
+
+      {/* Odpowiedź pod przyciskiem - nad polami spychała cały formularz w dół
+          w chwili wysłania. */}
+      {answer.error ? (
+        <p className="error" style={{ margin: "12px 0 0 0" }}>
+          {answer.error}
+        </p>
+      ) : null}
+      {answer.success ? (
+        <div
+          className="success"
+          style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", margin: "12px 0 0 0" }}
+        >
+          {answer.success}
+          {answer.copyable ? (
+            <span
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                flexWrap: "wrap",
+                marginTop: 8,
+              }}
+            >
+              <span className="mono">{answer.copyable.value}</span>
+              <CopyButton
+                value={answer.copyable.value}
+                label={answer.copyable.label ?? words.copyWord}
+              />
+            </span>
+          ) : null}
+        </div>
+      ) : null}
     </form>
   );
 }

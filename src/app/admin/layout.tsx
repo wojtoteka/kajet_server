@@ -18,7 +18,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <main className="page wide">
       <KajetMark caption={words.adminCaption} />
 
-      <nav className="row" style={{ marginBottom: 20, flexWrap: "wrap" }}>
+      <nav className="row admin-nav">
         <Link className="button compact" href="/admin">
           {words.adminOverview}
         </Link>
@@ -34,8 +34,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <Link className="button compact" href="/admin/log">
           {words.adminLog}
         </Link>
-        <span style={{ flex: 1 }} />
-        <Link className="button compact" href="/library">
+        <Link className="button compact" href="/admin/crashes">
+          {words.adminCrashes}
+        </Link>
+        {/* Odsunięcie w prawo (i pełny wiersz na telefonie) daje klasa
+            admin-nav-out - patrz .admin-nav w globals.css. */}
+        <Link className="button compact admin-nav-out" href="/library">
           {words.myNotes}
         </Link>
       </nav>

@@ -5,6 +5,7 @@ import { prisma } from "./prisma";
 import { quotaState } from "./quota";
 import { settings } from "./settings";
 import { apiWords } from "./language";
+import { accountBlockedWith } from "./i18n";
 
 export const CHALLENGE_TTL_SECONDS = 10 * 60;
 export const POLL_INTERVAL_SECONDS = 2;
@@ -86,7 +87,7 @@ export async function approveLoginChallenge(
     return {
       ok: false,
       reason: user.blockReason
-        ? `To konto zostało zablokowane: ${user.blockReason}`
+        ? accountBlockedWith(await apiWords(), user.blockReason)
         : (await apiWords()).apiAccountBlocked,
     };
   }

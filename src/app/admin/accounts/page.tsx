@@ -3,10 +3,12 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { humanSize } from "@/lib/quota";
 import { ActionForm } from "@/components/ActionForm";
+import { aiWorks } from "@/lib/settings";
 import {
   toggleAdmin,
   toggleBlock,
   toggleCodeRunning,
+  toggleAi,
   recomputeStorage,
   setQuota,
   changeLogin,
@@ -26,6 +28,10 @@ export default async function AccountsPage({
   const params = await searchParams;
   const words = await currentWords();
   const query = (params.q ?? "").trim();
+
+  // Bez klucza do modelu asystenta nie ma na tym serwerze wcale, więc nie ma
+  // też czego nadawać ani odbierać - przełącznik się wtedy nie pokazuje.
+  const assistantHere = aiWorks();
 
   const where: Prisma.UserWhereInput = {};
   if (query) {
@@ -104,6 +110,9 @@ export default async function AccountsPage({
                     {user.blocked ? <span className="tag danger">{words.tagBlocked}</span> : null}{" "}
                     {!user.canRunCode ? (
                       <span className="tag">{words.tagNoCodeRunning}</span>
+                    ) : null}{" "}
+                    {assistantHere && user.canUseAi ? (
+                      <span className="tag accent">{words.tagAiAllowed}</span>
                     ) : null}
                   </h3>
                   <p className="small" style={{ margin: 0 }}>
@@ -166,7 +175,7 @@ export default async function AccountsPage({
                 </div>
 
                 <div>
-                  <p className="eyebrow">Login</p>
+                  <p className="eyebrow">{words.loginEyebrow}</p>
                   <ActionForm action={changeLogin} label={words.changeLogin} compact toast>
                     <input type="hidden" name="userId" value={user.id} />
                     <input
@@ -198,7 +207,7 @@ export default async function AccountsPage({
                 </div>
 
                 <div>
-                  <p className="eyebrow">Hasło</p>
+                  <p className="eyebrow">{words.passwordEyebrow}</p>
                   <div className="account-actions">
                     <ActionForm
                       action={sendPasswordReset}
@@ -229,7 +238,7 @@ export default async function AccountsPage({
                 </div>
 
                 <div>
-                  <p className="eyebrow">Dostęp</p>
+                  <p className="eyebrow">{words.accessEyebrow}</p>
                   <div className="account-actions">
                     <ActionForm
                       action={toggleBlock}
@@ -278,6 +287,23 @@ export default async function AccountsPage({
                     >
                       <input type="hidden" name="userId" value={user.id} />
                     </ActionForm>
+
+                    {assistantHere ? (
+                      <ActionForm
+                        action={toggleAi}
+                        label={user.canUseAi ? words.takeAiAccess : words.allowAiAccess}
+                        compact
+                        toast
+                        confirmation={
+                          user.canUseAi
+                            ? undefined
+                            : `Pozwolić ${user.login} korzystać z asystenta AI? Treść notatek, ` +
+                              `przy których go użyje, będzie wysyłana do Google.`
+                        }
+                      >
+                        <input type="hidden" name="userId" value={user.id} />
+                      </ActionForm>
+                    ) : null}
 
                     <ActionForm action={recomputeStorage} label={words.recomputeStorage} compact toast>
                       <input type="hidden" name="userId" value={user.id} />
