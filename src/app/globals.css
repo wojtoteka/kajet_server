@@ -901,6 +901,69 @@ textarea.mono-field {
   line-height: 1.45;
 }
 
+/*
+  Edytor kodu: kolumna z numerami wierszy i pole na kod obok siebie.
+
+  Miary pisma siedzą w zmiennych ustawionych na WSPÓLNYM rodzicu. Numer i kod
+  muszą stać w tych samych wierszach co do piksela, a na telefonie pole rośnie
+  do 16 px (niżej w tym pliku) - gdyby każda strona miała własny rozmiar,
+  numeracja rozjechałaby się przy pierwszym przewinięciu.
+*/
+.code-editor {
+  --code-size: 13px;
+  --code-line: 1.45;
+  --code-pad: 11px;
+
+  display: flex;
+  align-items: stretch;
+  background: var(--desk);
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.code-editor:focus-within {
+  border-color: var(--accent);
+}
+
+.code-gutter {
+  flex: 0 0 auto;
+  min-width: 44px;
+  padding: var(--code-pad) 8px var(--code-pad) 10px;
+  background: var(--sheet);
+  border-right: var(--hairline) solid var(--rule);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--code-size);
+  line-height: var(--code-line);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: pre;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* Pole na kod nie ma już własnej ramki ani zaokrąglenia - dostała je cała
+   kolumna z numerami razem z nim. */
+.code-editor textarea.code-source {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 280px;
+  margin: 0;
+  padding: var(--code-pad) 12px;
+  background: var(--desk);
+  border: 0;
+  border-radius: 0;
+  font-size: var(--code-size);
+  line-height: var(--code-line);
+  resize: vertical;
+}
+
+.code-editor textarea.code-source:focus {
+  border: 0;
+  outline: none;
+}
+
 /* Tytuł i język notatki CODE: obok siebie, na telefonie jedno pod drugim. */
 .code-note-head {
   display: grid;
@@ -2454,6 +2517,13 @@ code,
   .folder-look select,
   .folder-pick select {
     font-size: 16px;
+  }
+
+  /* Kod rośnie razem z resztą pól (16 px, żeby telefon nie przybliżał strony
+     przy dotknięciu), a numery wierszy razem z kodem - jedna zmienna na
+     rodzicu pilnuje, żeby nie dało się ich rozjechać. */
+  .code-editor {
+    --code-size: 16px;
   }
 
   /* Długi tytuł notatki - albo jedno długie słowo bez spacji - łamie się,

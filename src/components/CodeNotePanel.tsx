@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useActionState, useRef, useState } from "react";
+import { startTransition, useActionState, useMemo, useRef, useState } from "react";
 import { assistKey, type CodeAssistEdit } from "@/lib/code-assist";
 import { useWords } from "@/components/LanguageProvider";
 import { SaveStatus } from "@/components/SaveStatus";
@@ -55,6 +55,16 @@ export function CodeNotePanel({
   const [currentLanguage, setCurrentLanguage] = useState(language);
   const [currentSource, setCurrentSource] = useState(source);
   const [noteTitle, setNoteTitle] = useState(title);
+
+  // Numery wierszy obok kodu. Liczymy je z treści, a nie z wysokości pola:
+  // przy wyłączonym zawijaniu jeden wiersz kodu to zawsze jeden wiersz na
+  // ekranie, więc wystarczy policzyć znaki końca wiersza.
+  const sourceRef = useRef<HTMLTextAreaElement | null>(null);
+  const gutterRef = useRef<HTMLDivElement | null>(null);
+  const lineNumbers = useMemo(() => {
+    const count = currentSource.split("\n").length;
+    return Array.from({ length: count }, (_, at) => at + 1).join("\n");
+  }, [currentSource]);
 
   /*
     Spis do wyboru. Plik przyniesiony z tabletu może mieć język, którego ten
@@ -169,21 +179,41 @@ export function CodeNotePanel({
 
         <div className="field">
           <label htmlFor="code-source">{words.codeWord}</label>
-          <textarea
-            id="code-source"
-            name="source"
-            className="mono-field"
-            value={currentSource}
-            onChange={(event) => setCurrentSource(event.target.value)}
-            onKeyDown={assist}
-            rows={18}
-            spellCheck={false}
-            style={{
-              width: "100%",
-              resize: "vertical",
-              minHeight: 280,
-            }}
-          />
+          {/*
+            Numery wierszy w osobnej kolumnie po lewej, tak jak w aplikacji
+            (LineNumberGutter) i jak w każdym edytorze kodu.
+
+            Kolumna nie jest polem do pisania - to zwykły napis, ukryty przed
+            czytnikiem ekranu, bo dyktowanie „jeden dwa trzy" przed każdym
+            wierszem kodu tylko przeszkadza.
+
+            Zawijanie wierszy jest WYŁĄCZONE (wrap="off"). Inaczej jeden długi
+            wiersz zająłby na ekranie dwa i numeracja rozjechałaby się z kodem
+            od tego miejsca w dół. Zamiast tego kod przewija się w bok - tak
+            samo jak w aplikacji przy wyłączonym zawijaniu.
+          */}
+          <div className="code-editor">
+            <div className="code-gutter" ref={gutterRef} aria-hidden="true">
+              {lineNumbers}
+            </div>
+            <textarea
+              id="code-source"
+              name="source"
+              ref={sourceRef}
+              className="mono-field code-source"
+              value={currentSource}
+              onChange={(event) => setCurrentSource(event.target.value)}
+              onKeyDown={assist}
+              onScroll={(event) => {
+                // Kolumna z numerami jedzie razem z kodem. Bez tego przy
+                // przewijaniu numery zostawały na miejscu.
+                if (gutterRef.current) gutterRef.current.scrollTop = event.currentTarget.scrollTop;
+              }}
+              rows={18}
+              spellCheck={false}
+              wrap="off"
+            />
+          </div>
         </div>
 
         {/* Powodzenie zapisu pokazuje napis przy przycisku - zielona ramka nad
