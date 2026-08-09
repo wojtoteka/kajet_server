@@ -2007,12 +2007,72 @@ tbody tr:last-child td {
   rozciągnięte na całą szerokość kolumny stoją w równych pionach - bez tego
   każdy miał inną szerokość i całość wyglądała krzywo.
 */
+.account-card {
+  padding: 20px 22px;
+}
+
+/*
+  Trzy kolumny na stałe, nie auto-fit.
+
+  Przy auto-fit liczba torów zależała od szerokości okna, a liczba sekcji - od
+  uprawnień konta. Przy 1104 px mieściły się DOKŁADNIE cztery tory, więc piąta
+  sekcja (asystent) spychała „Dostęp" do drugiego rzędu, gdzie stawał sam,
+  z pustką na trzy tory obok. Teraz sekcji w siatce są zawsze trzy, a „Dostęp"
+  ma własny pas pod spodem.
+
+  align-items: start zamiast domyślnego stretch - bez tego wszystkie kolumny
+  rosły do wysokości najwyższej i pod krótszymi robiła się dziura.
+*/
 .account-columns {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
   gap: 22px 28px;
   border-top: var(--hairline) solid var(--rule);
   padding-top: 18px;
+}
+
+/* Blok doklejony w środku kolumny - asystent pod limitem miejsca. */
+.account-sub {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: var(--hairline) solid var(--rule);
+}
+
+/* Pas na całą szerokość karty, pod kolumnami. */
+.account-strip {
+  grid-column: 1 / -1;
+  border-top: var(--hairline) solid var(--rule);
+  padding-top: 16px;
+}
+
+/* align-items: flex-end, bo jeden z formularzy ma nad przyciskiem pole na
+   powód blokady. Przy wyrównaniu do góry jego przycisk zjeżdżał o wysokość
+   tego pola niżej i wypadał z rzędu. */
+.account-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 12px;
+}
+
+/* Przyciski pasa mają szerokość swojego podpisu. Selektor jest celowo dłuższy
+   niż `.account-columns button` niżej - ta reguła rozciąga przyciski na całą
+   szerokość i w kolumnach jest właściwa, ale w pasie rozwaliłaby układ. */
+.account-columns .account-buttons button {
+  width: auto;
+}
+
+.account-columns .account-buttons input:not([type="checkbox"]) {
+  width: 200px;
+  max-width: 100%;
+  margin-bottom: 6px;
+}
+
+/* Skasowanie konta odsunięte na koniec pasa - to jedyna nieodwracalna rzecz
+   na tej karcie i nie ma stać między przełącznikami. */
+.account-last {
+  margin-left: auto;
 }
 
 .account-columns > div {
@@ -2050,6 +2110,46 @@ tbody tr:last-child td {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+/*
+  Wąskie okno. Trzy kolumny po 349 px potrzebują około tysiąca pikseli; niżej
+  schodzimy na dwie, a na telefonie na jedną, razem z przyciskami pasa
+  rozciągniętymi na całą szerokość - w rzędzie po dwa wyglądały jak zlepek.
+*/
+@media (max-width: 1000px) {
+  .account-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .account-card {
+    padding: 16px 14px;
+  }
+
+  .account-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .account-buttons {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .account-columns .account-buttons button {
+    width: 100%;
+  }
+
+  .account-columns .account-buttons input:not([type="checkbox"]) {
+    width: 100%;
+  }
+
+  /* W jednej kolumnie nie ma czego odsuwać w bok - odsunięcie zostawiłoby
+     „Skasuj konto" wąskim guzikiem przyklejonym do prawej krawędzi. */
+  .account-last {
+    margin-left: 0;
+  }
 }
 
 /* --- State tags --- */

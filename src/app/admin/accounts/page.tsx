@@ -106,7 +106,7 @@ export default async function AccountsPage({
           const percent = quota > 0 ? Math.min(100, Math.round((used / quota) * 100)) : 0;
 
           return (
-            <div key={user.id} className="sheet" style={{ padding: "20px 22px" }}>
+            <div key={user.id} className="sheet account-card">
               <div className="row-spread" style={{ alignItems: "flex-start", marginBottom: 14 }}>
                 <div>
                   <h3 style={{ marginBottom: 2 }}>
@@ -179,6 +179,40 @@ export default async function AccountsPage({
                       {words.quotaHint}
                     </p>
                   </ActionForm>
+
+                  {/*
+                    Asystent siedzi W ŚRODKU kolumny limitów, za cienką kreską,
+                    a nie jako osobna kolumna siatki. Jako osobna robił piątą
+                    kolumnę tam, gdzie mieszczą się cztery - i „Dostęp" spadał
+                    sam do drugiego rzędu, zostawiając pół karty pustki. Teraz
+                    liczba kolumn jest stała, więc karta wygląda tak samo
+                    z uprawnieniem do asystenta i bez niego.
+                  */}
+                  {assistantHere && user.canUseAi ? (
+                    <div className="account-sub">
+                      <p className="eyebrow">{words.aiSection}</p>
+                      <p className="small" style={{ margin: "0 0 8px 0" }}>
+                        {(usage.get(user.id) ?? NO_AI_USAGE).week === 0
+                          ? words.aiNoUsageYet
+                          : `Doba: ${(usage.get(user.id) ?? NO_AI_USAGE).today} z ${dailyLimitFor(user)}. ` +
+                            `Tydzień: ${(usage.get(user.id) ?? NO_AI_USAGE).week} wywołań, ` +
+                            `${(usage.get(user.id) ?? NO_AI_USAGE).tokens.toLocaleString(words.locale)} tokenów.`}
+                      </p>
+                      <ActionForm action={setAiLimit} label={words.setAiLimit} compact toast>
+                        <input type="hidden" name="userId" value={user.id} />
+                        <input
+                          name="perDay"
+                          type="number"
+                          min={0}
+                          defaultValue={user.aiDailyLimit}
+                          aria-label={words.aiDailyLimitLabel}
+                        />
+                        <p className="small" style={{ margin: "4px 0 8px 0" }}>
+                          {words.aiLimitHint}
+                        </p>
+                      </ActionForm>
+                    </div>
+                  ) : null}
                 </div>
 
                 <div>
@@ -244,35 +278,14 @@ export default async function AccountsPage({
                   </div>
                 </div>
 
-                {assistantHere && user.canUseAi ? (
-                  <div>
-                    <p className="eyebrow">{words.aiSection}</p>
-                    <p className="small" style={{ margin: "0 0 8px 0" }}>
-                      {(usage.get(user.id) ?? NO_AI_USAGE).week === 0
-                        ? words.aiNoUsageYet
-                        : `Doba: ${(usage.get(user.id) ?? NO_AI_USAGE).today} z ${dailyLimitFor(user)}. ` +
-                          `Tydzień: ${(usage.get(user.id) ?? NO_AI_USAGE).week} wywołań, ` +
-                          `${(usage.get(user.id) ?? NO_AI_USAGE).tokens.toLocaleString(words.locale)} tokenów.`}
-                    </p>
-                    <ActionForm action={setAiLimit} label={words.setAiLimit} compact toast>
-                      <input type="hidden" name="userId" value={user.id} />
-                      <input
-                        name="perDay"
-                        type="number"
-                        min={0}
-                        defaultValue={user.aiDailyLimit}
-                        aria-label={words.aiDailyLimitLabel}
-                      />
-                      <p className="small" style={{ margin: "4px 0 8px 0" }}>
-                        {words.aiLimitHint}
-                      </p>
-                    </ActionForm>
-                  </div>
-                ) : null}
-
-                <div>
+                {/*
+                  Przełączniki i akcje konta idą pasem na całą szerokość karty,
+                  poziomo. W pionowej kolumnie sześć przycisków dawało rząd
+                  wysoki na 340 px, a obok niego pustkę na trzy kolumny.
+                */}
+                <div className="account-strip">
                   <p className="eyebrow">{words.accessEyebrow}</p>
-                  <div className="account-actions">
+                  <div className="account-buttons">
                     <ActionForm
                       action={toggleBlock}
                       label={user.blocked ? words.unblockAccount : words.blockAccount}
@@ -342,16 +355,18 @@ export default async function AccountsPage({
                       <input type="hidden" name="userId" value={user.id} />
                     </ActionForm>
 
-                    <ActionForm
-                      action={deleteUser}
-                      label={words.deleteAccount}
-                      compact
-                      danger
-                      toast
-                      confirmation={`Skasować konto ${user.login} razem ze wszystkimi notatkami (${user._count.notes})? Tego nie da się cofnąć.`}
-                    >
-                      <input type="hidden" name="userId" value={user.id} />
-                    </ActionForm>
+                    <div className="account-last">
+                      <ActionForm
+                        action={deleteUser}
+                        label={words.deleteAccount}
+                        compact
+                        danger
+                        toast
+                        confirmation={`Skasować konto ${user.login} razem ze wszystkimi notatkami (${user._count.notes})? Tego nie da się cofnąć.`}
+                      >
+                        <input type="hidden" name="userId" value={user.id} />
+                      </ActionForm>
+                    </div>
                   </div>
                 </div>
               </div>
