@@ -18,7 +18,8 @@ import { aiHandles } from "./tools";
 import { viewForModel } from "./note-view";
 import { recentTurns, rememberTurn, sweepOldTurns } from "./history";
 import { askGemini, type AiFailure } from "./gemini";
-import { applyAiCall } from "./apply";
+import { applyAiCall, derivedTitleFor } from "./apply";
+import { titleIsOwn } from "@/lib/note-title";
 import { checkAiLimit } from "./limits";
 import { recordAiCall } from "./usage";
 
@@ -30,7 +31,15 @@ export type AiRunner = {
 };
 
 export type AiRunResult =
-  | { status: "zmieniono"; opis: string; version: number; updatedAt: number; content: string }
+  | {
+      status: "zmieniono";
+      opis: string;
+      /** Tytuł po zmianie - asystent mógł go nadać notatce bez własnego. */
+      title: string;
+      version: number;
+      updatedAt: number;
+      content: string;
+    }
   | { status: "pytanie"; pytanie: string }
   | { status: "konflikt"; version: number }
   /** Bramka zamknięta tak, że nie wolno przyznać, iż asystent istnieje. */
@@ -122,6 +131,10 @@ export async function runAiEdit(input: {
     material: view.material,
     instruction,
     history,
+    // Ten sam rachunek, który apply.ts wykona jeszcze raz przy zapisie.
+    // Tu służy do powiedzenia modelowi, czy wolno mu tytuł zaproponować;
+    // tam - do rozstrzygnięcia, czy wolno go przyjąć.
+    titleIsOwn: titleIsOwn(note.title, derivedTitleFor(note.kind, note.content)),
   });
 
   // Do rozliczeń idzie każde wywołanie, także nieudane: za tokeny wejściowe
@@ -166,11 +179,17 @@ export async function runAiEdit(input: {
   const tags = note.tags ? note.tags.split("|") : [];
   // Gwiazdka i znaczniki jadą z powrotem takie, jakie były: upsert nadpisuje
   // je tym, co dostanie, więc pominięcie ich skasowałoby jedno i drugie.
+  //
+  // Tytuł bierzemy z wyniku, nie z wiersza notatki: asystent mógł go nadać
+  // notatce, która swojego jeszcze nie miała. Musi trafić w OBA miejsca -
+  // do treści notatki (robi to apply.ts) i do kolumny w bazie (tutaj).
+  // Pominięcie któregokolwiek dałoby notatkę z innym tytułem w spisie niż
+  // w środku, a przy najbliższej synchronizacji jedno nadpisałoby drugie.
   const saved =
     note.kind === "CODE"
       ? await upsertCodeNoteForUser(user.id, {
           id: note.id,
-          title: note.title,
+          title: outcome.title,
           content: outcome.content,
           baseVersion: note.version,
           favorite: note.favorite,
@@ -178,7 +197,7 @@ export async function runAiEdit(input: {
         })
       : await upsertNoteForUser(user.id, {
           id: note.id,
-          title: note.title,
+          title: outcome.title,
           kind: note.kind,
           content: outcome.content,
           baseVersion: note.version,
@@ -208,6 +227,7 @@ export async function runAiEdit(input: {
   return {
     status: "zmieniono",
     opis: outcome.opis,
+    title: outcome.title,
     version: saved.version,
     updatedAt: saved.updatedAt,
     content: outcome.content,

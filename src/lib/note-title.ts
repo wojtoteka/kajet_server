@@ -81,6 +81,46 @@ export function fitTitle(title: string): string {
 }
 
 /**
+ * Nazwy, które tytułem są tylko z nazwy. Padają wtedy, gdy nikt tytułu nie
+ * wpisał, a coś trzeba było pokazać.
+ */
+const PLACEHOLDERS = new Set([
+  "",
+  "bez nazwy",
+  "bez tytułu",
+  "bez tytulu",
+  "untitled",
+  "unnamed",
+  "nowa notatka",
+  "new note",
+]);
+
+/** Nazwy plików, które nadaje sam program, a nie człowiek. */
+const DEFAULT_CODE_NAME = /^(program|kod|code|plik|file|main|nowy|new)\.[a-z0-9]{1,8}$/i;
+
+/**
+ * Czy ten tytuł napisał człowiek.
+ *
+ * KLUCZOWE dla asystenta: własnego tytułu nie wolno mu ruszyć, a „Bez nazwy"
+ * i tytuł podpowiedziany z treści może zastąpić. Informacji „ten tytuł wpisał
+ * człowiek" nie ma NIGDZIE — ani w bazie, ani w pliku notatki — więc trzeba
+ * ją odgadnąć.
+ *
+ * `derived` to tytuł, jaki dałaby DZISIEJSZA treść notatki. Gdy tytuł jest
+ * dokładnie nim, prawie na pewno stamtąd pochodzi.
+ *
+ * To heurystyka, nie pewnik — ale myli się w bezpieczną stronę. Gdy człowiek
+ * poprawił pierwszy wiersz po podpowiedzi, porównanie już nie zagra, tytuł
+ * uchodzi za wpisany ręcznie i asystent go NIE tknie.
+ */
+export function titleIsOwn(title: string, derived: string | null): boolean {
+  const clean = title.trim();
+  if (PLACEHOLDERS.has(clean.toLowerCase())) return false;
+  if (DEFAULT_CODE_NAME.test(clean)) return false;
+  return !(derived && clean === derived);
+}
+
+/**
  * Znaczniki na początku wiersza, które są składnią, a nie treścią:
  * `# `, `> `, `- `, `- [ ] `, `1. `.
  */

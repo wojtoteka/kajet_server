@@ -51,6 +51,12 @@ export type AskInput = {
   material: string;
   instruction: string;
   history: AiTurnRecord[];
+  /**
+   * Czy tytuł notatki napisał człowiek. Gdy nie - model może zaproponować
+   * własny. Bez tej informacji reguła o tytule w prompcie byłaby pusta:
+   * model nie ma jak odróżnić „Bez nazwy" od tytułu wybranego świadomie.
+   */
+  titleIsOwn: boolean;
 };
 
 let client: GoogleGenAI | null = null;
@@ -199,7 +205,7 @@ async function askOneModel(model: string, input: AskInput): Promise<GeminiResult
  * znaczy, że i tak wysyłamy komplet za każdym razem - a jeden kawałek z
  * wyraźnymi nagłówkami jest przewidywalny i łatwo go obejrzeć w logu.
  */
-function buildInput({ title, material, instruction, history }: AskInput): string {
+function buildInput({ title, material, instruction, history, titleIsOwn }: AskInput): string {
   const parts: string[] = [];
 
   if (history.length > 0) {
@@ -209,7 +215,13 @@ function buildInput({ title, material, instruction, history }: AskInput): string
     parts.push(`WCZEŚNIEJ PRZY TEJ NOTATCE:\n\n${earlier}`);
   }
 
-  parts.push(`TYTUŁ NOTATKI:\n${title}`);
+  parts.push(
+    titleIsOwn
+      ? `TYTUŁ NOTATKI:\n${title}`
+      : `TYTUŁ NOTATKI:\n${title}\n(notatka nie ma jeszcze własnego tytułu — ten jest ` +
+          `zastępczy albo wzięty z pierwszego wiersza treści; możesz podać lepszy ` +
+          `w polu „tytul")`,
+  );
   // Treść notatki jest zawsze ta świeża z bazy, także wtedy, gdy w historii
   // stoi coś innego - między jedną prośbą a drugą człowiek mógł ją poprawić
   // sam albo z innego urządzenia.

@@ -50,7 +50,13 @@ Jak masz pracować:
    akapit o połowę." Nie zwracasz się w nim do człowieka i nie tłumaczysz się
    ze swoich wyborów.
 
-8. Wcześniejsze polecenia przy tej notatce widzisz w historii rozmowy. „A teraz
+8. Tytuł notatki możesz nadać TYLKO wtedy, gdy w wiadomości stoi wprost, że
+   notatka nie ma jeszcze własnego. Podajesz go wtedy w polu „tytul": krótko,
+   do sześciu słów, bez kropki na końcu. Gdy notatka ma tytuł napisany przez
+   człowieka - pomijasz to pole całkowicie. Cudzego tytułu się nie poprawia,
+   nawet gdy Twój byłby trafniejszy.
+
+9. Wcześniejsze polecenia przy tej notatce widzisz w historii rozmowy. „A teraz
    jeszcze krócej" odnosi się do tego, co zrobiłeś przed chwilą - ale zawsze
    pracujesz na treści notatki, którą masz w tej wiadomości, bo mogła się
    w międzyczasie zmienić.
@@ -85,7 +91,6 @@ Czego nie wolno:
   tylko pod tą nazwą.
 - Nie zmieniasz kroju, rozmiaru ani wyrównania pisma, dopóki wprost o to nie
   poproszono. To ustawienia całej notatki, nie sposób na wyróżnienie fragmentu.
-- Nie zmieniasz tytułu notatki. Nie masz do tego narzędzia.
 `.trim();
 
 const MAPA = `

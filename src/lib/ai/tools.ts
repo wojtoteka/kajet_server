@@ -48,6 +48,21 @@ const OPIS = {
     "bez zwrotu do użytkownika, na przykład: „Skrócono drugi akapit o połowę.”",
 };
 
+/**
+ * Nowy tytuł notatki. Wspólny dla trzech narzędzi zmiany, bo model oddaje
+ * TYLKO JEDNO wywołanie na zapytanie - osobne narzędzie „nadaj tytuł"
+ * oznaczałoby wybór: albo treść, albo tytuł. A tytuł ma się nadawać właśnie
+ * wtedy, gdy asystent pisze notatkę od zera.
+ */
+const TYTUL = {
+  type: "string",
+  description:
+    "Nowy tytuł notatki. Podaj go WYŁĄCZNIE wtedy, gdy w wiadomości napisano, " +
+    "że notatka nie ma jeszcze własnego tytułu. Krótko - do sześciu słów, bez " +
+    "kropki na końcu i bez cudzysłowów. Gdy notatka ma już tytuł nadany przez " +
+    "człowieka, pomiń to pole całkowicie.",
+};
+
 const NARZEDZIE_TEKST: GeminiTool = {
   type: "function",
   name: NAZWA_TEKST,
@@ -65,6 +80,7 @@ const NARZEDZIE_TEKST: GeminiTool = {
           "szerokości - to nie jest tekst do poprawiania.",
       },
       opis: OPIS,
+      tytul: TYTUL,
       font: {
         type: "string",
         enum: TEXT_FONTS.map((font) => font.id),
@@ -102,6 +118,14 @@ const NARZEDZIE_KOD: GeminiTool = {
           "oraz sposób wcinania, jaki był w niej dotąd.",
       },
       opis: OPIS,
+      tytul: {
+        ...TYTUL,
+        description:
+          TYTUL.description +
+          " Przy notatce z kodem tytuł to nazwa pliku - samo imię, bez " +
+          "rozszerzenia; rozszerzenie dokłada serwer, zgodne z językiem, " +
+          "w którym plik jest napisany.",
+      },
     },
     required: ["source", "opis"],
   },
@@ -155,6 +179,7 @@ const NARZEDZIE_MAPA: GeminiTool = {
         },
       },
       opis: OPIS,
+      tytul: TYTUL,
     },
     required: ["operacje", "opis"],
   },

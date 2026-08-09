@@ -96,6 +96,8 @@ for (const proba of PROBY) {
   const answer = await askGemini({
     kind: proba.kind,
     title: proba.title,
+    // Próbki mają własne tytuły, więc asystent nie ma ich zmieniać.
+    titleIsOwn: true,
     material: view.material,
     instruction: proba.instruction,
     history: [],
