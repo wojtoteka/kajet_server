@@ -1,4 +1,4 @@
-/*
+﻿/*
   Kajet's look on the web.
 
   This is the same palette and the same rules as in the tablet app: a desk with
@@ -26,7 +26,7 @@
   --ink-blue: #2850a0;
 
   /* Znaczek listy rozwijanej - rysowany, nie systemowy. Barwa siedzi
-     w zmiennej, bo w ciemnym motywie musi się zmienić razem z pismem. */
+     w zmiennej, bo w ciemnym motywie musi siÄ™ zmieniÄ‡ razem z pismem. */
   --caret: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1.4 1.6 6 6.2 10.6 1.6' fill='none' stroke='%2367635a' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 
   --radius: 3px;
@@ -41,9 +41,11 @@
   --space-6: 32px;
   --space-7: 48px;
 
-  --font-heading: "Archivo", "Segoe UI", system-ui, sans-serif;
-  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", "Cascadia Mono", ui-monospace, monospace;
+  /* Pisma z next/font (layout.tsx); nazwy w cudzysĹ‚owach to zapas, gdyby
+     zmienne nie doszĹ‚y (np. strona bĹ‚Ä™du poza layoutem). */
+  --font-heading: var(--font-archivo), "Archivo", "Segoe UI", system-ui, sans-serif;
+  --font-body: var(--font-plex-sans), "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), "IBM Plex Mono", "Cascadia Mono", ui-monospace, monospace;
 }
 
 /*
@@ -115,10 +117,10 @@
   box-sizing: border-box;
 }
 
-/* Paski przewijania w barwach motywu - systemowy jasny pasek świecił
+/* Paski przewijania w barwach motywu - systemowy jasny pasek Ĺ›wieciĹ‚
    w ciemnym motywie jak neon. Firefox bierze scrollbar-color, Chromium
-   i Safari reguły ::-webkit-scrollbar (tam scrollbar-color je wyłącza,
-   więc zostaje tylko dla przeglądarek bez webkitowych pseudoelementów). */
+   i Safari reguĹ‚y ::-webkit-scrollbar (tam scrollbar-color je wyĹ‚Ä…cza,
+   wiÄ™c zostaje tylko dla przeglÄ…darek bez webkitowych pseudoelementĂłw). */
 @supports not selector(::-webkit-scrollbar) {
   * {
     scrollbar-width: thin;
@@ -138,7 +140,7 @@
 ::-webkit-scrollbar-thumb {
   background: var(--rule);
   border-radius: 999px;
-  /* Przezroczysta ramka odsuwa uchwyt od krawędzi, jakby miał własny tor. */
+  /* Przezroczysta ramka odsuwa uchwyt od krawÄ™dzi, jakby miaĹ‚ wĹ‚asny tor. */
   border: 2px solid transparent;
   background-clip: padding-box;
 }
@@ -167,10 +169,10 @@ body {
   -webkit-font-smoothing: antialiased;
   text-align: left;
 
-  /* Stopka ma stać na samym dole serwisu: na krótkiej stronie dopchnięta do
-     dołu okna, na długiej pod treścią. Stąd kolumna na wysokość okna i treść,
-     która zajmuje całą wolną resztę. dvh, bo na telefonie pasek przeglądarki
-     chowa się i wraca, a 100vh liczy się wtedy do wysokości bez paska. */
+  /* Stopka ma staÄ‡ na samym dole serwisu: na krĂłtkiej stronie dopchniÄ™ta do
+     doĹ‚u okna, na dĹ‚ugiej pod treĹ›ciÄ…. StÄ…d kolumna na wysokoĹ›Ä‡ okna i treĹ›Ä‡,
+     ktĂłra zajmuje caĹ‚Ä… wolnÄ… resztÄ™. dvh, bo na telefonie pasek przeglÄ…darki
+     chowa siÄ™ i wraca, a 100vh liczy siÄ™ wtedy do wysokoĹ›ci bez paska. */
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
@@ -180,26 +182,26 @@ body {
   flex: 1 0 auto;
 }
 
-/* Nagłówki piszą tym samym krojem co strona tytułowa. Drobne napisy
-   (nadpisy, nagłówki tabel, znaczniki) zostają w Archivo, bo Bricolage
-   w małych stopniach robi się dziwaczny. Treść notatek (.rich-text) też
-   zostaje przy swoim - to dokument człowieka, nie nasz interfejs. */
+/* NagĹ‚Ăłwki piszÄ… tym samym krojem co strona tytuĹ‚owa. Drobne napisy
+   (nadpisy, nagĹ‚Ăłwki tabel, znaczniki) zostajÄ… w Archivo, bo Bricolage
+   w maĹ‚ych stopniach robi siÄ™ dziwaczny. TreĹ›Ä‡ notatek (.rich-text) teĹĽ
+   zostaje przy swoim - to dokument czĹ‚owieka, nie nasz interfejs. */
 h1,
 h2,
 h3 {
-  font-family: "Bricolage Grotesque", var(--font-heading);
+  font-family: var(--font-bricolage), "Bricolage Grotesque", var(--font-heading);
   font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1.25;
   margin: 0;
   /*
-    Tytuł notatki bywa jednym ciągiem bez spacji - a notatka nazywa się tak,
-    jak nazwał ją człowiek. Bez łamania w dowolnym miejscu taki tytuł
-    rozpychał całą stronę w bok: kolumna zostawała szeroka na 1180 px, a
-    dokument na 2300, więc wszystko wyglądało na przesunięte.
+    TytuĹ‚ notatki bywa jednym ciÄ…giem bez spacji - a notatka nazywa siÄ™ tak,
+    jak nazwaĹ‚ jÄ… czĹ‚owiek. Bez Ĺ‚amania w dowolnym miejscu taki tytuĹ‚
+    rozpychaĹ‚ caĹ‚Ä… stronÄ™ w bok: kolumna zostawaĹ‚a szeroka na 1180 px, a
+    dokument na 2300, wiÄ™c wszystko wyglÄ…daĹ‚o na przesuniÄ™te.
 
-    Reguła stała dotąd WYŁĄCZNIE w bloku telefonowym, choć na szerokim ekranie
-    psuje tak samo - tam po prostu trzeba więcej znaków, żeby to zobaczyć.
+    ReguĹ‚a staĹ‚a dotÄ…d WYĹÄ„CZNIE w bloku telefonowym, choÄ‡ na szerokim ekranie
+    psuje tak samo - tam po prostu trzeba wiÄ™cej znakĂłw, ĹĽeby to zobaczyÄ‡.
   */
   overflow-wrap: anywhere;
 }
@@ -272,19 +274,19 @@ a:hover {
   flex-wrap: wrap;
 }
 
-/* --- Telefon: menu i nagłówek mają mieścić się na wąskim ekranie --- */
+/* --- Telefon: menu i nagĹ‚Ăłwek majÄ… mieĹ›ciÄ‡ siÄ™ na wÄ…skim ekranie --- */
 @media (max-width: 600px) {
   .page {
     padding: var(--space-4) var(--space-3);
   }
 
-  /* Rzędy przycisków zawijają się, zamiast rozpychać stronę na boki. */
+  /* RzÄ™dy przyciskĂłw zawijajÄ… siÄ™, zamiast rozpychaÄ‡ stronÄ™ na boki. */
   .row {
     flex-wrap: wrap;
     row-gap: var(--space-2);
   }
 
-  /* Ciaśniejsze przyciski menu: mniej rzędów po zawinięciu. */
+  /* CiaĹ›niejsze przyciski menu: mniej rzÄ™dĂłw po zawiniÄ™ciu. */
   button.compact,
   .button.compact {
     min-height: 34px;
@@ -336,9 +338,9 @@ a:hover {
 }
 
 /*
-  Spokojna informacja: coś jest wyłączone albo niedostępne, ale nic się nie
-  zepsuło. Osobno od `.error`, bo czerwień znaczy „awaria" i mówienie nią
-  o wyłączonej możliwości niepotrzebnie straszy.
+  Spokojna informacja: coĹ› jest wyĹ‚Ä…czone albo niedostÄ™pne, ale nic siÄ™ nie
+  zepsuĹ‚o. Osobno od `.error`, bo czerwieĹ„ znaczy â€žawaria" i mĂłwienie niÄ…
+  o wyĹ‚Ä…czonej moĹĽliwoĹ›ci niepotrzebnie straszy.
 */
 .notice {
   color: var(--text-muted);
@@ -397,10 +399,10 @@ input[type="search"] {
 }
 
 /*
-  Lista rozwijana z własnym znaczkiem. Systemowy stał wciśnięty w samą krawędź
-  pola, a w ciemnym motywie świecił obco - ten siedzi kawałek od brzegu i ma
-  barwę pisma. Pole zostaje tej samej szerokości; zmienia się tylko miejsce
-  znaczka i zapas z prawej, żeby nie wchodził na napis.
+  Lista rozwijana z wĹ‚asnym znaczkiem. Systemowy staĹ‚ wciĹ›niÄ™ty w samÄ… krawÄ™dĹş
+  pola, a w ciemnym motywie Ĺ›wieciĹ‚ obco - ten siedzi kawaĹ‚ek od brzegu i ma
+  barwÄ™ pisma. Pole zostaje tej samej szerokoĹ›ci; zmienia siÄ™ tylko miejsce
+  znaczka i zapas z prawej, ĹĽeby nie wchodziĹ‚ na napis.
 */
 select {
   appearance: none;
@@ -426,8 +428,8 @@ input[type="checkbox"] {
   margin-bottom: var(--space-4);
 }
 
-/* Pole wyboru pliku - z ramką i przyciskiem w duchu reszty formularzy,
-   zamiast surowej kontrolki przeglądarki. */
+/* Pole wyboru pliku - z ramkÄ… i przyciskiem w duchu reszty formularzy,
+   zamiast surowej kontrolki przeglÄ…darki. */
 input[type="file"] {
   width: 100%;
   padding: 8px;
@@ -526,11 +528,11 @@ input[type="file"]:disabled {
 }
 
 /*
-  Zwijane filtry na telefonie. Karta z trzema polami i przyciskiem zabierała
-  pół ekranu, zanim w ogóle było widać notatki. Bez JavaScriptu: ukryte pole
-  wyboru steruje widocznością formularza, więc nic nie mruga przy wczytaniu.
-  Na szerokim ekranie przełącznika nie widać, a formularz stoi jak dotąd -
-  co do piksela, bo znaczniki przełącznika nie zajmują tam miejsca.
+  Zwijane filtry na telefonie. Karta z trzema polami i przyciskiem zabieraĹ‚a
+  pĂłĹ‚ ekranu, zanim w ogĂłle byĹ‚o widaÄ‡ notatki. Bez JavaScriptu: ukryte pole
+  wyboru steruje widocznoĹ›ciÄ… formularza, wiÄ™c nic nie mruga przy wczytaniu.
+  Na szerokim ekranie przeĹ‚Ä…cznika nie widaÄ‡, a formularz stoi jak dotÄ…d -
+  co do piksela, bo znaczniki przeĹ‚Ä…cznika nie zajmujÄ… tam miejsca.
 */
 .filter-toggle {
   position: absolute;
@@ -556,7 +558,7 @@ input[type="file"]:disabled {
     cursor: pointer;
   }
 
-  /* Znaczek rozwinięcia rysowany, jak strzałka w listach wyboru. */
+  /* Znaczek rozwiniÄ™cia rysowany, jak strzaĹ‚ka w listach wyboru. */
   .filter-summary::after {
     content: "";
     width: 12px;
@@ -589,19 +591,19 @@ input[type="file"]:disabled {
 }
 
 /*
-  Przyciski nad biblioteką. Na telefonie rząd łamał się na cztery nierówne
-  wiersze i zabierał więcej miejsca niż spis notatek. Siatka daje równe
-  kolumny (ten sam chwyt co .admin-nav), a nowa notatka - rzecz, po którą
-  się tu przychodzi - dostaje własny, pełny wiersz.
+  Przyciski nad bibliotekÄ…. Na telefonie rzÄ…d Ĺ‚amaĹ‚ siÄ™ na cztery nierĂłwne
+  wiersze i zabieraĹ‚ wiÄ™cej miejsca niĹĽ spis notatek. Siatka daje rĂłwne
+  kolumny (ten sam chwyt co .admin-nav), a nowa notatka - rzecz, po ktĂłrÄ…
+  siÄ™ tu przychodzi - dostaje wĹ‚asny, peĹ‚ny wiersz.
 */
 @media (max-width: 600px) {
   .library-actions {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     /*
-      Wszystkie kafelki jednej wysokości. „Nowy plik z kodem" nie mieści się
-      w jednym wierszu i łamie się na dwa, przez co jego rząd był wyższy od
-      pozostałych i siatka wyglądała na przekrzywioną.
+      Wszystkie kafelki jednej wysokoĹ›ci. â€žNowy plik z kodem" nie mieĹ›ci siÄ™
+      w jednym wierszu i Ĺ‚amie siÄ™ na dwa, przez co jego rzÄ…d byĹ‚ wyĹĽszy od
+      pozostaĹ‚ych i siatka wyglÄ…daĹ‚a na przekrzywionÄ….
     */
     grid-auto-rows: 1fr;
     gap: 8px;
@@ -674,6 +676,21 @@ button.compact,
 
 /* --- Icons (Material Symbols, fonts.google.com/icons) --- */
 
+/*
+  Pismo ikon leży w repo, przycięte do spisu z lib/icon-names.ts - po zmianie
+  spisu odświeża je `npm run ikony`. Next przy buildzie nadaje plikowi hasz
+  i wieczny cache, a strona nie wysyła już żadnego zapytania do Google.
+  font-display: block, żeby zanim pismo dojedzie, nie mrugnąć nazwą ikony
+  zapisaną słowem. Zakres grubości jak osie w pliku (pobierz-ikony.mjs).
+*/
+@font-face {
+  font-family: "Material Symbols Rounded";
+  font-style: normal;
+  font-weight: 100 700;
+  font-display: block;
+  src: url("./material-symbols-rounded.woff2") format("woff2");
+}
+
 .ms {
   font-family: "Material Symbols Rounded";
   font-weight: normal;
@@ -694,7 +711,7 @@ button.compact,
   user-select: none;
 }
 
-/* Ikona jako całe działanie: kwadratowy przycisk bez podpisu. */
+/* Ikona jako caĹ‚e dziaĹ‚anie: kwadratowy przycisk bez podpisu. */
 button.icon-only,
 .button.icon-only {
   padding: 0;
@@ -710,7 +727,7 @@ button.icon-only.roomy,
   min-height: 44px;
 }
 
-/* Przycisk w stanie włączonym - na przykład gwiazdka na ulubionej notatce. */
+/* Przycisk w stanie wĹ‚Ä…czonym - na przykĹ‚ad gwiazdka na ulubionej notatce. */
 button.on,
 .button.on {
   color: var(--accent);
@@ -718,8 +735,8 @@ button.on,
   background: var(--accent-haze);
 }
 
-/* Wybór motywu w nagłówku - trzy przyciski w jednej ramce. Wybrany świeci
-   akcentem, pozostałe są przygaszone, żeby nagłówek nie robił się jarmarczny. */
+/* WybĂłr motywu w nagĹ‚Ăłwku - trzy przyciski w jednej ramce. Wybrany Ĺ›wieci
+   akcentem, pozostaĹ‚e sÄ… przygaszone, ĹĽeby nagĹ‚Ăłwek nie robiĹ‚ siÄ™ jarmarczny. */
 .theme-switch {
   display: inline-flex;
   gap: 2px;
@@ -748,13 +765,13 @@ button.on,
   background: var(--accent-haze);
 }
 
-/* --- Asystent pod notatką --- */
+/* --- Asystent pod notatkÄ… --- */
 
 /*
-  Panel stoi pod edytorem i jest zwinięty do jednej linijki, dopóki nikt go nie
-  otworzy. Klasa .sheet daje samo tło i ramkę - wypełnienie trzeba dołożyć,
-  inaczej napis dotyka kreski. Wcześniej używana klasa .ai-panel nie istniała
-  w żadnym arkuszu i właśnie dlatego panel wyglądał na wciśnięty w ramkę.
+  Panel stoi pod edytorem i jest zwiniÄ™ty do jednej linijki, dopĂłki nikt go nie
+  otworzy. Klasa .sheet daje samo tĹ‚o i ramkÄ™ - wypeĹ‚nienie trzeba doĹ‚oĹĽyÄ‡,
+  inaczej napis dotyka kreski. WczeĹ›niej uĹĽywana klasa .ai-panel nie istniaĹ‚a
+  w ĹĽadnym arkuszu i wĹ‚aĹ›nie dlatego panel wyglÄ…daĹ‚ na wciĹ›niÄ™ty w ramkÄ™.
 */
 .ai-fold > summary {
   display: flex;
@@ -766,9 +783,9 @@ button.on,
 }
 
 /*
-  Nadpis ma domyślnie odstęp pod spodem (--space-2), bo prawie wszędzie stoi
-  NAD czymś. Tutaj stoi w rzędzie, więc ten odstęp podnosił napis o cztery
-  piksele ponad środek paska i pasek wyglądał na krzywy.
+  Nadpis ma domyĹ›lnie odstÄ™p pod spodem (--space-2), bo prawie wszÄ™dzie stoi
+  NAD czymĹ›. Tutaj stoi w rzÄ™dzie, wiÄ™c ten odstÄ™p podnosiĹ‚ napis o cztery
+  piksele ponad Ĺ›rodek paska i pasek wyglÄ…daĹ‚ na krzywy.
 */
 .ai-fold > summary .eyebrow {
   margin: 0;
@@ -778,8 +795,8 @@ button.on,
   display: none;
 }
 
-/* Znaczek rozwinięcia rysujemy sami - systemowy trójkąt siedzi za daleko od
-   napisu i w ciemnym motywie świeci. */
+/* Znaczek rozwiniÄ™cia rysujemy sami - systemowy trĂłjkÄ…t siedzi za daleko od
+   napisu i w ciemnym motywie Ĺ›wieci. */
 .ai-fold > summary::before {
   content: "";
   width: 7px;
@@ -822,8 +839,8 @@ button.on,
   border-radius: var(--radius);
 }
 
-/* Pole w pasku narzędzi (krój, rozmiar) - zamiast podpisu ma ikonę, więc
-   przygasza się sama ikona, a nie wpisana wartość. */
+/* Pole w pasku narzÄ™dzi (krĂłj, rozmiar) - zamiast podpisu ma ikonÄ™, wiÄ™c
+   przygasza siÄ™ sama ikona, a nie wpisana wartoĹ›Ä‡. */
 .toolbar-field {
   color: var(--text-muted);
   margin: 0;
@@ -834,8 +851,8 @@ button.on,
   color: var(--text);
 }
 
-/* Lista rozwijana w pasku narzędzi - węższa i drobniejsza niż pola
-   formularzy, żeby pasek nie rósł od jednej kontrolki. */
+/* Lista rozwijana w pasku narzÄ™dzi - wÄ™ĹĽsza i drobniejsza niĹĽ pola
+   formularzy, ĹĽeby pasek nie rĂłsĹ‚ od jednej kontrolki. */
 select.toolbar-select {
   width: auto;
   min-width: 140px;
@@ -868,7 +885,7 @@ select.toolbar-select {
   border-color: var(--text-muted);
 }
 
-/* Kółko z plusem - dokłada slot na własny kolor. Puste, więc bez wypełnienia. */
+/* KĂłĹ‚ko z plusem - dokĹ‚ada slot na wĹ‚asny kolor. Puste, wiÄ™c bez wypeĹ‚nienia. */
 .ink-swatch.blank {
   display: inline-flex;
   align-items: center;
@@ -889,9 +906,9 @@ select.toolbar-select {
 }
 
 /*
-  Zaznaczona barwa dostaje obrączkę, ale NIE rośnie. Powiększanie kółka
-  rozpychało wiersz palety: sąsiedzi zjeżdżali w dół i cała siatka wyglądała
-  na przekrzywioną, zależnie od tego, którą barwę się właśnie wybrało.
+  Zaznaczona barwa dostaje obrÄ…czkÄ™, ale NIE roĹ›nie. PowiÄ™kszanie kĂłĹ‚ka
+  rozpychaĹ‚o wiersz palety: sÄ…siedzi zjeĹĽdĹĽali w dĂłĹ‚ i caĹ‚a siatka wyglÄ…daĹ‚a
+  na przekrzywionÄ…, zaleĹĽnie od tego, ktĂłrÄ… barwÄ™ siÄ™ wĹ‚aĹ›nie wybraĹ‚o.
 */
 .ink-swatch.active {
   border-color: var(--accent);
@@ -913,7 +930,7 @@ select.toolbar-select {
   }
 }
 
-/* Pole pisane pismem maszynowym - kod i jego standardowe wejście. */
+/* Pole pisane pismem maszynowym - kod i jego standardowe wejĹ›cie. */
 textarea.mono-field {
   font-family: var(--font-mono);
   font-size: 13px;
@@ -923,10 +940,10 @@ textarea.mono-field {
 /*
   Edytor kodu: kolumna z numerami wierszy i pole na kod obok siebie.
 
-  Miary pisma siedzą w zmiennych ustawionych na WSPÓLNYM rodzicu. Numer i kod
-  muszą stać w tych samych wierszach co do piksela, a na telefonie pole rośnie
-  do 16 px (niżej w tym pliku) - gdyby każda strona miała własny rozmiar,
-  numeracja rozjechałaby się przy pierwszym przewinięciu.
+  Miary pisma siedzÄ… w zmiennych ustawionych na WSPĂ“LNYM rodzicu. Numer i kod
+  muszÄ… staÄ‡ w tych samych wierszach co do piksela, a na telefonie pole roĹ›nie
+  do 16 px (niĹĽej w tym pliku) - gdyby kaĹĽda strona miaĹ‚a wĹ‚asny rozmiar,
+  numeracja rozjechaĹ‚aby siÄ™ przy pierwszym przewiniÄ™ciu.
 */
 .code-editor {
   --code-size: 13px;
@@ -962,7 +979,7 @@ textarea.mono-field {
   user-select: none;
 }
 
-/* Pole na kod nie ma już własnej ramki ani zaokrąglenia - dostała je cała
+/* Pole na kod nie ma juĹĽ wĹ‚asnej ramki ani zaokrÄ…glenia - dostaĹ‚a je caĹ‚a
    kolumna z numerami razem z nim. */
 .code-editor textarea.code-source {
   flex: 1 1 auto;
@@ -983,7 +1000,7 @@ textarea.mono-field {
   outline: none;
 }
 
-/* Tytuł i język notatki CODE: obok siebie, na telefonie jedno pod drugim. */
+/* TytuĹ‚ i jÄ™zyk notatki CODE: obok siebie, na telefonie jedno pod drugim. */
 .code-note-head {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 180px;
@@ -996,9 +1013,9 @@ textarea.mono-field {
   }
 }
 
-/* Notatka tekstowa w kawałkach - jak w aplikacji. Zdjęcie stoi w treści jako
-   zdjęcie, a kawałki do pisania mają wyglądać na dalszy ciąg tej samej
-   kartki, więc same w sobie są niewidoczne: ramkę ma tylko całość. */
+/* Notatka tekstowa w kawaĹ‚kach - jak w aplikacji. ZdjÄ™cie stoi w treĹ›ci jako
+   zdjÄ™cie, a kawaĹ‚ki do pisania majÄ… wyglÄ…daÄ‡ na dalszy ciÄ…g tej samej
+   kartki, wiÄ™c same w sobie sÄ… niewidoczne: ramkÄ™ ma tylko caĹ‚oĹ›Ä‡. */
 .note-blocks {
   padding: 10px 12px;
   background: var(--desk);
@@ -1010,8 +1027,8 @@ textarea.mono-field {
   border-color: var(--accent);
 }
 
-/* Pole do pisania z gotowym wyglądem (RichText.tsx). Wygląd znaczników jest
-   ten sam co w podglądzie notatki - to, co widać w trakcie pisania, ma być
+/* Pole do pisania z gotowym wyglÄ…dem (RichText.tsx). WyglÄ…d znacznikĂłw jest
+   ten sam co w podglÄ…dzie notatki - to, co widaÄ‡ w trakcie pisania, ma byÄ‡
    tym, co zobaczy druga osoba. */
 .rich-text {
   display: block;
@@ -1068,7 +1085,7 @@ textarea.mono-field {
   margin: 0.15em 0;
 }
 
-/* Lista zadań: kwadracik rysuje arkusz, więc treść pozycji zostaje zwykłym
+/* Lista zadaĹ„: kwadracik rysuje arkusz, wiÄ™c treĹ›Ä‡ pozycji zostaje zwykĹ‚ym
    tekstem do pisania. Klik w kwadracik odhacza (patrz toggleTaskAt). */
 .rich-text ul[data-kind="task"] {
   list-style: none;
@@ -1076,7 +1093,7 @@ textarea.mono-field {
 }
 
 .rich-text ul[data-kind="task"] > li::before {
-  content: "☐";
+  content: "â";
   display: inline-block;
   width: 22px;
   cursor: pointer;
@@ -1084,7 +1101,7 @@ textarea.mono-field {
 }
 
 .rich-text ul[data-kind="task"] > li[data-done="true"]::before {
-  content: "☑";
+  content: "â‘";
   color: var(--accent);
 }
 
@@ -1227,14 +1244,14 @@ th {
 
 /* A wide table scrolls inside its own box, not the whole page. */
 /*
-  Tabela biblioteki ma pięć kolumn i na telefonie nie ma prawa się w nich
-  zmieścić. Bez dolnej granicy szerokości przeglądarka ściskała je do kilku
-  liter na kolumnę i tytuł notatki stawał się nieczytelnym słupkiem. Lepiej
-  przewinąć tabelę w bok - i to przewinąć TĘ TABELĘ, a nie całą stronę.
+  Tabela biblioteki ma piÄ™Ä‡ kolumn i na telefonie nie ma prawa siÄ™ w nich
+  zmieĹ›ciÄ‡. Bez dolnej granicy szerokoĹ›ci przeglÄ…darka Ĺ›ciskaĹ‚a je do kilku
+  liter na kolumnÄ™ i tytuĹ‚ notatki stawaĹ‚ siÄ™ nieczytelnym sĹ‚upkiem. Lepiej
+  przewinÄ…Ä‡ tabelÄ™ w bok - i to przewinÄ…Ä‡ TÄ TABELÄ, a nie caĹ‚Ä… stronÄ™.
 */
 .table-scroll {
   overflow-x: auto;
-  /* Bez tego pasek przewijania kradłby ostatni wiersz spod palca. */
+  /* Bez tego pasek przewijania kradĹ‚by ostatni wiersz spod palca. */
   overscroll-behavior-x: contain;
 }
 
@@ -1250,33 +1267,45 @@ tbody tr:last-child td {
   border-bottom: 0;
 }
 
-/* Działania trzymają się prawej krawędzi, żeby stały w równej kolumnie. */
+/*
+  Spis wydanych kodĂłw: komĂłrki od GĂ“RY, nie od Ĺ›rodka.
+
+  Pierwsza komĂłrka ma trzy wiersze (kod, przycisk â€žkopiuj odnoĹ›nik" i sam
+  odnoĹ›nik), reszta po jednym. Przy wyrĂłwnaniu do Ĺ›rodka - domyĹ›lnym w caĹ‚ym
+  panelu - data waĹĽnoĹ›ci i opis zawisaĹ‚y w poĹ‚owie wysokoĹ›ci wiersza, jakby
+  nie miaĹ‚y nic wspĂłlnego z kodem obok.
+*/
+.codes-table td {
+  vertical-align: top;
+}
+
+/* DziaĹ‚ania trzymajÄ… siÄ™ prawej krawÄ™dzi, ĹĽeby staĹ‚y w rĂłwnej kolumnie. */
 .cell-actions {
   text-align: right;
   white-space: nowrap;
 }
 
-/* Numer wersji stoi pod datą - własny wiersz w kolumnie „Zmieniona". */
+/* Numer wersji stoi pod datÄ… - wĹ‚asny wiersz w kolumnie â€žZmieniona". */
 .note-version {
   display: block;
 }
 
 /*
-  Spis notatek na telefonie: te same wiersze tabeli ułożone w karty.
+  Spis notatek na telefonie: te same wiersze tabeli uĹ‚oĹĽone w karty.
 
-  Pięć kolumn nie mieści się na wąskim ekranie. Tabela przewijała się w bok
-  w swojej ramce: tytuł notatki - jedyne, po czym się ją poznaje - ściskał
-  się do dwóch słów na wiersz, a rozmiar, data i działania stały poza
-  ekranem. Karta układa to jedno pod drugim: tytuł, drobna linia z rodzajem,
-  rozmiarem i datą, wybór folderu, działania. Znaczniki zostają te same -
-  to wciąż tabela, tylko inaczej ułożona - więc widok szeroki nie zmienia
-  się wcale, a czytnik ekranu dalej dostaje nagłówki kolumn.
+  PiÄ™Ä‡ kolumn nie mieĹ›ci siÄ™ na wÄ…skim ekranie. Tabela przewijaĹ‚a siÄ™ w bok
+  w swojej ramce: tytuĹ‚ notatki - jedyne, po czym siÄ™ jÄ… poznaje - Ĺ›ciskaĹ‚
+  siÄ™ do dwĂłch sĹ‚Ăłw na wiersz, a rozmiar, data i dziaĹ‚ania staĹ‚y poza
+  ekranem. Karta ukĹ‚ada to jedno pod drugim: tytuĹ‚, drobna linia z rodzajem,
+  rozmiarem i datÄ…, wybĂłr folderu, dziaĹ‚ania. Znaczniki zostajÄ… te same -
+  to wciÄ…ĹĽ tabela, tylko inaczej uĹ‚oĹĽona - wiÄ™c widok szeroki nie zmienia
+  siÄ™ wcale, a czytnik ekranu dalej dostaje nagĹ‚Ăłwki kolumn.
 
-  Kosz (.trash-table) dostaje ten sam układ, ale własną kolejność kolumn:
-  ma ich pięć i znaczą co innego niż w spisie, a reguły kolejności idą po
-  numerze kolumny. Sama klasa .notes-table nie wystarczyłaby - kosz łapał
-  wtedy dolną granicę 640 px bez układu kartowego i tytuł ściskał się do
-  jednego słowa w linii.
+  Kosz (.trash-table) dostaje ten sam ukĹ‚ad, ale wĹ‚asnÄ… kolejnoĹ›Ä‡ kolumn:
+  ma ich piÄ™Ä‡ i znaczÄ… co innego niĹĽ w spisie, a reguĹ‚y kolejnoĹ›ci idÄ… po
+  numerze kolumny. Sama klasa .notes-table nie wystarczyĹ‚aby - kosz Ĺ‚apaĹ‚
+  wtedy dolnÄ… granicÄ™ 640 px bez ukĹ‚adu kartowego i tytuĹ‚ Ĺ›ciskaĹ‚ siÄ™ do
+  jednego sĹ‚owa w linii.
 */
 @media (max-width: 700px) {
   .table-scroll .notes-table,
@@ -1284,7 +1313,7 @@ tbody tr:last-child td {
     min-width: 0;
   }
 
-  /* Nie display:none - czytnik ekranu ma dalej wiedzieć, co jest czym. */
+  /* Nie display:none - czytnik ekranu ma dalej wiedzieÄ‡, co jest czym. */
   .notes-table thead,
   .trash-table thead {
     position: absolute;
@@ -1308,13 +1337,13 @@ tbody tr:last-child td {
     flex-wrap: wrap;
     align-items: center;
     /*
-      Odstępu W POZIOMIE nie ma tu wcale, bo w drobnej linii rozdzielają
-      kropki - a odstęp dokładany do ich marginesu dawał 20 px z jednej strony
-      kropki i 10 z drugiej, przez co siedziała krzywo między słowami.
+      OdstÄ™pu W POZIOMIE nie ma tu wcale, bo w drobnej linii rozdzielajÄ…
+      kropki - a odstÄ™p dokĹ‚adany do ich marginesu dawaĹ‚ 20 px z jednej strony
+      kropki i 10 z drugiej, przez co siedziaĹ‚a krzywo miÄ™dzy sĹ‚owami.
     */
     gap: 4px 0;
-    /* Wcięcie takie samo jak w każdej innej karcie, żeby tytuł notatki nie
-       zaczynał się na samej krawędzi arkusza. */
+    /* WciÄ™cie takie samo jak w kaĹĽdej innej karcie, ĹĽeby tytuĹ‚ notatki nie
+       zaczynaĹ‚ siÄ™ na samej krawÄ™dzi arkusza. */
     padding: 14px 18px;
     border-bottom: var(--hairline) solid var(--rule);
   }
@@ -1331,7 +1360,7 @@ tbody tr:last-child td {
     border: 0;
   }
 
-  /* Tytuł na całą szerokość, pod nim jedna drobna linia z resztą. */
+  /* TytuĹ‚ na caĹ‚Ä… szerokoĹ›Ä‡, pod nim jedna drobna linia z resztÄ…. */
   .notes-table td:nth-child(1),
   .trash-table td:nth-child(1) {
     flex: 1 0 100%;
@@ -1348,33 +1377,33 @@ tbody tr:last-child td {
   }
 
   /*
-    Data z numerem wersji dostaje własny wiersz karty.
+    Data z numerem wersji dostaje wĹ‚asny wiersz karty.
 
-    Wcześniej cała czwórka - rodzaj, rozmiar, data, wersja - jechała jedną
-    linią, która przy 360 px i tak się łamała, tyle że w przypadkowym miejscu:
-    na końcu pierwszego wiersza zostawała wisząca kropka rozdzielająca. Dwa
-    wiersze z góry wiadomo gdzie są lepsze od jednego, który czasem się łamie.
+    WczeĹ›niej caĹ‚a czwĂłrka - rodzaj, rozmiar, data, wersja - jechaĹ‚a jednÄ…
+    liniÄ…, ktĂłra przy 360 px i tak siÄ™ Ĺ‚amaĹ‚a, tyle ĹĽe w przypadkowym miejscu:
+    na koĹ„cu pierwszego wiersza zostawaĹ‚a wiszÄ…ca kropka rozdzielajÄ…ca. Dwa
+    wiersze z gĂłry wiadomo gdzie sÄ… lepsze od jednego, ktĂłry czasem siÄ™ Ĺ‚amie.
   */
   .notes-table td:nth-child(5) {
     flex: 1 0 100%;
     order: 4;
   }
 
-  /* Kropka rozdziela to, co w tabeli rozdzielały kolumny. Odstęp z obu stron
-     jest jej własny, bo wiersz nie ma już odstępu w poziomie. */
+  /* Kropka rozdziela to, co w tabeli rozdzielaĹ‚y kolumny. OdstÄ™p z obu stron
+     jest jej wĹ‚asny, bo wiersz nie ma juĹĽ odstÄ™pu w poziomie. */
   .notes-table td:nth-child(2)::after {
-    content: "·";
+    content: "Â·";
     margin: 0 10px;
     color: var(--text-muted);
   }
 
-  /* Numer wersji dołącza do daty zamiast stawać w swoim wierszu. */
+  /* Numer wersji doĹ‚Ä…cza do daty zamiast stawaÄ‡ w swoim wierszu. */
   .notes-table .note-version {
     display: inline;
   }
 
   .notes-table .note-version::before {
-    content: "·";
+    content: "Â·";
     margin: 0 10px;
     color: var(--text-muted);
   }
@@ -1385,14 +1414,14 @@ tbody tr:last-child td {
     margin-top: 4px;
   }
 
-  /* Konto bez ani jednego folderu nie ma czego wybierać, a sama kreska
-     zajmowała w karcie osobny wiersz i wyglądała na zgubioną. */
+  /* Konto bez ani jednego folderu nie ma czego wybieraÄ‡, a sama kreska
+     zajmowaĹ‚a w karcie osobny wiersz i wyglÄ…daĹ‚a na zgubionÄ…. */
   .notes-table td:nth-child(3):has(.folder-none) {
     display: none;
   }
 
-  /* Wybór folderu na całą szerokość karty - w kolumnie tabeli musiał być
-     wąski, tu nie ma powodu urywać nazwy w połowie. */
+  /* WybĂłr folderu na caĹ‚Ä… szerokoĹ›Ä‡ karty - w kolumnie tabeli musiaĹ‚ byÄ‡
+     wÄ…ski, tu nie ma powodu urywaÄ‡ nazwy w poĹ‚owie. */
   .notes-table .folder-pick,
   .notes-table .folder-pick-shell {
     display: flex;
@@ -1410,9 +1439,9 @@ tbody tr:last-child td {
     margin-top: 10px;
   }
 
-  /* W tabeli przyciski stały przy prawej krawędzi, żeby tworzyły równą
-     kolumnę. W karcie nie ma kolumny, do której miałyby się równać - za to
-     zostawiały pół szerokości pustki i uciekały pod krawędź ekranu. */
+  /* W tabeli przyciski staĹ‚y przy prawej krawÄ™dzi, ĹĽeby tworzyĹ‚y rĂłwnÄ…
+     kolumnÄ™. W karcie nie ma kolumny, do ktĂłrej miaĹ‚yby siÄ™ rĂłwnaÄ‡ - za to
+     zostawiaĹ‚y pĂłĹ‚ szerokoĹ›ci pustki i uciekaĹ‚y pod krawÄ™dĹş ekranu. */
   .notes-table .row-actions,
   .trash-table .row-actions {
     justify-content: flex-start;
@@ -1421,9 +1450,9 @@ tbody tr:last-child td {
   }
 
   /*
-    Kosz: tytuł, drobna linia „rodzaj · rozmiar · wyrzucona · zniknie za",
-    a pod nią przyciski. Odliczanie do samoczynnego opróżnienia dołącza do
-    daty zamiast stawać w swoim wierszu - jak numer wersji w spisie.
+    Kosz: tytuĹ‚, drobna linia â€žrodzaj Â· rozmiar Â· wyrzucona Â· zniknie za",
+    a pod niÄ… przyciski. Odliczanie do samoczynnego oprĂłĹĽnienia doĹ‚Ä…cza do
+    daty zamiast stawaÄ‡ w swoim wierszu - jak numer wersji w spisie.
   */
   .trash-table td:nth-child(2) {
     order: 2;
@@ -1439,7 +1468,7 @@ tbody tr:last-child td {
 
   .trash-table td:nth-child(2)::after,
   .trash-table td:nth-child(3)::after {
-    content: "·";
+    content: "Â·";
     margin: 0 10px;
     color: var(--text-muted);
   }
@@ -1449,13 +1478,13 @@ tbody tr:last-child td {
   }
 
   .trash-table td:nth-child(4) > div::before {
-    content: "·";
+    content: "Â·";
     margin: 0 10px;
     color: var(--text-muted);
   }
 
-  /* Przywróć i Na stałe na całą szerokość karty - w kolumnie tabeli musiały
-     stać ciasno obok siebie, tu nie ma po co ich zwężać. */
+  /* PrzywrĂłÄ‡ i Na staĹ‚e na caĹ‚Ä… szerokoĹ›Ä‡ karty - w kolumnie tabeli musiaĹ‚y
+     staÄ‡ ciasno obok siebie, tu nie ma po co ich zwÄ™ĹĽaÄ‡. */
   .trash-table td:nth-child(5) {
     flex: 1 0 100%;
     order: 5;
@@ -1464,10 +1493,10 @@ tbody tr:last-child td {
 }
 
 /*
-  Kolumna z działaniami przy notatce. Przyciski stoją w jednym rzędzie i nie
-  zawijają się pod siebie, a odpowiedź serwera („Do kosza.") pokazuje się pod
-  nimi drobnym pismem, zamiast rozpychać cały wiersz ramką na pół tabeli.
-  Gwiazdka nie odpowiada nic - widać po niej samej, czy jest włączona.
+  Kolumna z dziaĹ‚aniami przy notatce. Przyciski stojÄ… w jednym rzÄ™dzie i nie
+  zawijajÄ… siÄ™ pod siebie, a odpowiedĹş serwera (â€žDo kosza.") pokazuje siÄ™ pod
+  nimi drobnym pismem, zamiast rozpychaÄ‡ caĹ‚y wiersz ramkÄ… na pĂłĹ‚ tabeli.
+  Gwiazdka nie odpowiada nic - widaÄ‡ po niej samej, czy jest wĹ‚Ä…czona.
 */
 .row-actions {
   display: flex;
@@ -1478,8 +1507,8 @@ tbody tr:last-child td {
 }
 
 /*
-  Kosz w spisie stoi obok ołówka i gwiazdki, więc na spokojnie wygląda jak one -
-  czerwienieje dopiero pod kursorem. Czerwona ramka przy każdym wierszu robiła
+  Kosz w spisie stoi obok oĹ‚Ăłwka i gwiazdki, wiÄ™c na spokojnie wyglÄ…da jak one -
+  czerwienieje dopiero pod kursorem. Czerwona ramka przy kaĹĽdym wierszu robiĹ‚a
   z tabeli pas ostrzegawczy.
 */
 .row-actions button.danger {
@@ -1493,8 +1522,8 @@ tbody tr:last-child td {
 }
 
 /*
-  Formularz w cichym trybie: przycisk zachowuje się jak zwykły element w rzędzie,
-  a odpowiedź serwera wisi pod nim i nie bierze udziału w układzie.
+  Formularz w cichym trybie: przycisk zachowuje siÄ™ jak zwykĹ‚y element w rzÄ™dzie,
+  a odpowiedĹş serwera wisi pod nim i nie bierze udziaĹ‚u w ukĹ‚adzie.
 */
 .quiet-action {
   position: relative;
@@ -1507,9 +1536,9 @@ tbody tr:last-child td {
 }
 
 /*
-  Odpowiedź serwera wisi pod przyciskiem zamiast stać w układzie. Dzięki temu
-  kliknięcie gwiazdki nie rozpycha wiersza tabeli ani nie przesuwa sąsiednich
-  przycisków spod kursora.
+  OdpowiedĹş serwera wisi pod przyciskiem zamiast staÄ‡ w ukĹ‚adzie. DziÄ™ki temu
+  klikniÄ™cie gwiazdki nie rozpycha wiersza tabeli ani nie przesuwa sÄ…siednich
+  przyciskĂłw spod kursora.
 */
 .action-note {
   position: absolute;
@@ -1534,8 +1563,73 @@ tbody tr:last-child td {
   border-color: var(--warning);
 }
 
-/* Przy prawej krawędzi tabeli odpowiedź wiesza się od prawej, żeby nie uciekła
-   poza kartkę. */
+/*
+  Zaznaczanie wielu notatek naraz.
+
+  Pasek stoi nad spisem, a same zaznaczenia siedzÄ… przy tytuĹ‚ach w wierszach -
+  formularza nie da siÄ™ zagnieĹşdziÄ‡ w formularzu, a kaĹĽdy wiersz swĂłj juĹĽ ma
+  (gwiazdka, kosz, wybĂłr folderu). Pola wskazujÄ… ten formularz atrybutem
+  â€žform" i naleĹĽÄ… do niego mimo odlegĹ‚oĹ›ci w drzewie strony.
+
+  Zawijanie nie jest ozdobÄ…: przy 360 px licznik, dwa przyciski, lista
+  folderĂłw i kosz nie majÄ… jak stanÄ…Ä‡ w jednym rzÄ™dzie.
+*/
+.bulk-bar {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 10px 14px;
+  background: var(--accent-haze);
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+}
+
+/* Licznik odpycha resztÄ™ do prawej krawÄ™dzi paska. */
+.bulk-count {
+  margin-right: auto;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.bulk-move {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bulk-move select {
+  max-width: 180px;
+}
+
+/* OdpowiedĹş serwera pod paskiem, a nie w jego Ĺ›rodku - inaczej rozpychaĹ‚aby
+   przyciski w chwili, w ktĂłrej siÄ™ pojawia. */
+.bulk-bar .action-note {
+  top: calc(100% + 2px);
+  max-width: none;
+}
+
+/*
+  Zaznaczenie przy tytule notatki.
+
+  ZwykĹ‚y ciÄ…g tekstu, bez wĹ‚asnego ukĹ‚adu: tytuĹ‚ ma siÄ™ dalej zawijaÄ‡ jak
+  zawijaĹ‚, a znaczniki â€žulubiona" i â€žudostÄ™pniona" staÄ‡ w tej samej linii co
+  on. Kwadracik jest wiÄ™kszy niĹĽ domyĹ›lny, bo na tablecie trafia siÄ™ w niego
+  palcem, a nie kursorem.
+*/
+.note-pick input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  margin-right: 10px;
+  vertical-align: -2px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* Przy prawej krawÄ™dzi tabeli odpowiedĹş wiesza siÄ™ od prawej, ĹĽeby nie uciekĹ‚a
+   poza kartkÄ™. */
 .cell-actions .action-note,
 .device-row .row-actions .action-note {
   left: auto;
@@ -1546,11 +1640,11 @@ tbody tr:last-child td {
 /* --- Device tokens --- */
 
 /*
-  Spis tokenów nie jest tabelą. Kolumny są trzy, a jedna z nich to pole do
-  wpisania nazwy - tabela z wymuszoną szerokością 640px ledwo mieściła się na
-  kartce konta i pod spisem wisiał pasek przewijania, który nie przewijał
-  niczego sensownego. Wiersz listy zawija się sam, a na telefonie nazwa,
-  data i przycisk stają jedno pod drugim.
+  Spis tokenĂłw nie jest tabelÄ…. Kolumny sÄ… trzy, a jedna z nich to pole do
+  wpisania nazwy - tabela z wymuszonÄ… szerokoĹ›ciÄ… 640px ledwo mieĹ›ciĹ‚a siÄ™ na
+  kartce konta i pod spisem wisiaĹ‚ pasek przewijania, ktĂłry nie przewijaĹ‚
+  niczego sensownego. Wiersz listy zawija siÄ™ sam, a na telefonie nazwa,
+  data i przycisk stajÄ… jedno pod drugim.
 */
 .device-list {
   list-style: none;
@@ -1559,10 +1653,10 @@ tbody tr:last-child td {
 }
 
 /*
-  Wiersz równa się do GÓRY, nie do środka. Do środka „Unieważnij" ustawiał się
-  względem całej kolumny - a ta jest wyższa o linijkę z datą - i przez to
-  wisiał kilka pikseli niżej niż pole z nazwą obok. Przy równaniu do góry
-  przycisk i pole (oba 36 px) stoją w jednej linii.
+  Wiersz rĂłwna siÄ™ do GĂ“RY, nie do Ĺ›rodka. Do Ĺ›rodka â€žUniewaĹĽnij" ustawiaĹ‚ siÄ™
+  wzglÄ™dem caĹ‚ej kolumny - a ta jest wyĹĽsza o linijkÄ™ z datÄ… - i przez to
+  wisiaĹ‚ kilka pikseli niĹĽej niĹĽ pole z nazwÄ… obok. Przy rĂłwnaniu do gĂłry
+  przycisk i pole (oba 36 px) stojÄ… w jednej linii.
 */
 .device-row {
   display: flex;
@@ -1587,7 +1681,7 @@ tbody tr:last-child td {
   min-width: 0;
 }
 
-/* Pole z nazwą i znaczek zapisu stoją w jednym rzędzie: pole rośnie do końca
+/* Pole z nazwÄ… i znaczek zapisu stojÄ… w jednym rzÄ™dzie: pole roĹ›nie do koĹ„ca
    wiersza, przycisk zostaje przy nim. */
 .device-main .quiet-action {
   align-items: center;
@@ -1595,15 +1689,15 @@ tbody tr:last-child td {
 }
 
 /*
-  Nazwa jest polem, ale w spisie ma czytać się jak nagłówek wiersza, a nie jak
-  formularz. Ramka zostaje (bez niej nikt by nie zgadł, że nazwę można poprawić),
-  ale tło jest kartkowe - ciemna wanna na całą szerokość przy każdym wierszu
-  robiła ze spisu cztery formularze jeden pod drugim. Tło wraca przy pisaniu.
+  Nazwa jest polem, ale w spisie ma czytaÄ‡ siÄ™ jak nagĹ‚Ăłwek wiersza, a nie jak
+  formularz. Ramka zostaje (bez niej nikt by nie zgadĹ‚, ĹĽe nazwÄ™ moĹĽna poprawiÄ‡),
+  ale tĹ‚o jest kartkowe - ciemna wanna na caĹ‚Ä… szerokoĹ›Ä‡ przy kaĹĽdym wierszu
+  robiĹ‚a ze spisu cztery formularze jeden pod drugim. TĹ‚o wraca przy pisaniu.
 */
 .device-main input[type="text"] {
   flex: 1 1 auto;
   min-width: 0;
-  /* Równo z kwadratowym przyciskiem zapisu obok. */
+  /* RĂłwno z kwadratowym przyciskiem zapisu obok. */
   min-height: 36px;
   padding: 5px 10px;
   font-size: 14px;
@@ -1651,7 +1745,7 @@ tbody tr:last-child td {
   text-decoration: none;
 }
 
-/* Folder, po którym właśnie filtrujemy. */
+/* Folder, po ktĂłrym wĹ‚aĹ›nie filtrujemy. */
 .folder-row.here {
   border-color: var(--rule);
   background: var(--desk);
@@ -1674,8 +1768,8 @@ tbody tr:last-child td {
 }
 
 /*
-  Znaczek folderu. Barwa idzie z bazy (colorId) i jest ta sama, którą pokazuje
-  aplikacja - dlatego ma osobną wartość na ciemną kartkę.
+  Znaczek folderu. Barwa idzie z bazy (colorId) i jest ta sama, ktĂłrÄ… pokazuje
+  aplikacja - dlatego ma osobnÄ… wartoĹ›Ä‡ na ciemnÄ… kartkÄ™.
 */
 .folder-mark {
   flex: 0 0 auto;
@@ -1705,21 +1799,21 @@ tbody tr:last-child td {
   color: var(--tint);
 }
 
-/* Gwiazdka Ulubionych - jedyny znaczek w spisie, który nie ma barwy z bazy. */
+/* Gwiazdka Ulubionych - jedyny znaczek w spisie, ktĂłry nie ma barwy z bazy. */
 .folder-mark.star {
   color: var(--accent);
 }
 
-/* Mniejszy znaczek - do wiersza tabeli, gdzie 26 px byłoby za dużo. */
+/* Mniejszy znaczek - do wiersza tabeli, gdzie 26 px byĹ‚oby za duĹĽo. */
 .folder-mark.small {
   width: 18px;
   height: 18px;
 }
 
 /*
-  Folder notatki w spisie. Na oko to zwykły napis z barwnym znaczkiem; ramka
-  i strzałka pokazują się dopiero pod kursorem, żeby tabela nie wyglądała jak
-  formularz w kratkę.
+  Folder notatki w spisie. Na oko to zwykĹ‚y napis z barwnym znaczkiem; ramka
+  i strzaĹ‚ka pokazujÄ… siÄ™ dopiero pod kursorem, ĹĽeby tabela nie wyglÄ…daĹ‚a jak
+  formularz w kratkÄ™.
 */
 .folder-pick {
   position: relative;
@@ -1765,7 +1859,7 @@ tbody tr:last-child td {
   cursor: default;
 }
 
-/* Strzałka jest tylko ozdobą - kliknięcie ma trafić w listę pod spodem. */
+/* StrzaĹ‚ka jest tylko ozdobÄ… - klikniÄ™cie ma trafiÄ‡ w listÄ™ pod spodem. */
 .folder-pick-caret {
   position: absolute;
   right: 4px;
@@ -1780,12 +1874,12 @@ tbody tr:last-child td {
 }
 
 /*
-  Panel nowego folderu i ustawień folderu. Wszystko w środku trzyma jedną
-  szerokość i jedną wysokość: pole nazwy, paleta, wybór znaczka i przyciski
-  kończą się na tej samej pionowej linii. Wcześniej pole nazwy było o dziesięć
-  pikseli wyższe od reszty, paleta urywała się kawałek przed krawędzią, a
-  „Utwórz folder" miał szerokość swojego napisu - trzy różne prawe krawędzie
-  jedna pod drugą i cały panel wyglądał krzywo.
+  Panel nowego folderu i ustawieĹ„ folderu. Wszystko w Ĺ›rodku trzyma jednÄ…
+  szerokoĹ›Ä‡ i jednÄ… wysokoĹ›Ä‡: pole nazwy, paleta, wybĂłr znaczka i przyciski
+  koĹ„czÄ… siÄ™ na tej samej pionowej linii. WczeĹ›niej pole nazwy byĹ‚o o dziesiÄ™Ä‡
+  pikseli wyĹĽsze od reszty, paleta urywaĹ‚a siÄ™ kawaĹ‚ek przed krawÄ™dziÄ…, a
+  â€žUtwĂłrz folder" miaĹ‚ szerokoĹ›Ä‡ swojego napisu - trzy rĂłĹĽne prawe krawÄ™dzie
+  jedna pod drugÄ… i caĹ‚y panel wyglÄ…daĹ‚ krzywo.
 */
 .folder-editor {
   margin: 6px 0 10px 0;
@@ -1804,7 +1898,7 @@ tbody tr:last-child td {
   gap: 8px;
 }
 
-/* Odstępy daje odstęp kolumny, więc pola nie dokładają własnych. */
+/* OdstÄ™py daje odstÄ™p kolumny, wiÄ™c pola nie dokĹ‚adajÄ… wĹ‚asnych. */
 .folder-editor .field {
   margin-bottom: 0;
 }
@@ -1815,18 +1909,18 @@ tbody tr:last-child td {
   font-size: 14px;
 }
 
-/* Przyciski panelu stoją w jednej kolumnie, równo z polem nazwy nad nimi. */
+/* Przyciski panelu stojÄ… w jednej kolumnie, rĂłwno z polem nazwy nad nimi. */
 .folder-editor form > button[type="submit"],
 .folder-add {
   width: 100%;
 }
 
 /*
-  Barwy folderu w równej siatce, a nie w zawijanym rzędzie. Kółka mają stały
-  rozmiar, więc każdy wiersz stoi w tym samym miejscu i przy dwunastu barwach
-  paleta wygląda tak samo jak w aplikacji. Odstęp rozkłada się tak, żeby
-  pierwsze kółko stało przy lewej krawędzi panelu, a ostatnie przy prawej -
-  inaczej paleta wisiała w powietrzu obok pola nazwy. Odstęp mieści obrączkę
+  Barwy folderu w rĂłwnej siatce, a nie w zawijanym rzÄ™dzie. KĂłĹ‚ka majÄ… staĹ‚y
+  rozmiar, wiÄ™c kaĹĽdy wiersz stoi w tym samym miejscu i przy dwunastu barwach
+  paleta wyglÄ…da tak samo jak w aplikacji. OdstÄ™p rozkĹ‚ada siÄ™ tak, ĹĽeby
+  pierwsze kĂłĹ‚ko staĹ‚o przy lewej krawÄ™dzi panelu, a ostatnie przy prawej -
+  inaczej paleta wisiaĹ‚a w powietrzu obok pola nazwy. OdstÄ™p mieĹ›ci obrÄ…czkÄ™
   zaznaczenia.
 */
 .folder-swatches {
@@ -1836,7 +1930,7 @@ tbody tr:last-child td {
   gap: 10px;
 }
 
-/* Wybór znaczka: podgląd w ramce równej wysokości co lista obok niego. */
+/* WybĂłr znaczka: podglÄ…d w ramce rĂłwnej wysokoĹ›ci co lista obok niego. */
 .folder-look {
   display: flex;
   align-items: center;
@@ -1858,7 +1952,7 @@ tbody tr:last-child td {
   font-size: 13px;
 }
 
-/* Na ciemnej kartce barwa folderu jest jaśniejsza - tak samo jak w aplikacji. */
+/* Na ciemnej kartce barwa folderu jest jaĹ›niejsza - tak samo jak w aplikacji. */
 .folder-swatches .ink-swatch {
   background: var(--tint);
 }
@@ -1907,7 +2001,7 @@ tbody tr:last-child td {
   cursor: default;
 }
 
-/* Nazwa pliku wygląda jak odnośnik, ale otwiera podgląd zamiast wychodzić. */
+/* Nazwa pliku wyglÄ…da jak odnoĹ›nik, ale otwiera podglÄ…d zamiast wychodziÄ‡. */
 .link-button {
   min-height: 0;
   padding: 0;
@@ -1958,9 +2052,9 @@ tbody tr:last-child td {
 }
 
 /*
-  Odpowiedź serwera jako dymek przy dolnej krawędzi ekranu. Leży poza układem
-  strony, więc nie rozpycha formularzy - kolumny ustawień w panelu
-  administratora stoją w miejscu niezależnie od tego, co odpowie serwer.
+  OdpowiedĹş serwera jako dymek przy dolnej krawÄ™dzi ekranu. LeĹĽy poza ukĹ‚adem
+  strony, wiÄ™c nie rozpycha formularzy - kolumny ustawieĹ„ w panelu
+  administratora stojÄ… w miejscu niezaleĹĽnie od tego, co odpowie serwer.
 */
 .action-toast {
   position: fixed;
@@ -2038,8 +2132,8 @@ tbody tr:last-child td {
   gap: 10px;
 }
 
-/* Przyciski okna nie dziedziczą pełnej szerokości z kolumn, w których stoi
-   formularz - mają być zwykłej, swojej wielkości. */
+/* Przyciski okna nie dziedziczÄ… peĹ‚nej szerokoĹ›ci z kolumn, w ktĂłrych stoi
+   formularz - majÄ… byÄ‡ zwykĹ‚ej, swojej wielkoĹ›ci. */
 .confirm-box .confirm-actions button {
   width: auto;
   min-height: 40px;
@@ -2050,8 +2144,8 @@ tbody tr:last-child td {
 /* --- Admin: nawigacja panelu --- */
 
 /*
-  Rząd przycisków do podstron panelu. Na szerokim ekranie zwykły rząd,
-  a „Moje notatki" trzyma się prawej krawędzi jako wyjście z panelu.
+  RzÄ…d przyciskĂłw do podstron panelu. Na szerokim ekranie zwykĹ‚y rzÄ…d,
+  a â€žMoje notatki" trzyma siÄ™ prawej krawÄ™dzi jako wyjĹ›cie z panelu.
 */
 .admin-nav {
   margin-bottom: 20px;
@@ -2064,11 +2158,11 @@ tbody tr:last-child td {
 
 @media (max-width: 600px) {
   /*
-    Na telefonie rząd zawijał się krzywo: każdy przycisk miał szerokość
-    swojego napisu, a odsunięte „Moje notatki" lądowało samotnie przy prawej
-    krawędzi w środku układanki. Siatka daje trzy równe kolumny, więc
-    przyciski stoją w równych rzędach, a wyjście do notatek dostaje własny,
-    pełny wiersz na dole.
+    Na telefonie rzÄ…d zawijaĹ‚ siÄ™ krzywo: kaĹĽdy przycisk miaĹ‚ szerokoĹ›Ä‡
+    swojego napisu, a odsuniÄ™te â€žMoje notatki" lÄ…dowaĹ‚o samotnie przy prawej
+    krawÄ™dzi w Ĺ›rodku ukĹ‚adanki. Siatka daje trzy rĂłwne kolumny, wiÄ™c
+    przyciski stojÄ… w rĂłwnych rzÄ™dach, a wyjĹ›cie do notatek dostaje wĹ‚asny,
+    peĹ‚ny wiersz na dole.
   */
   .admin-nav {
     display: grid;
@@ -2085,25 +2179,25 @@ tbody tr:last-child td {
 /* --- Admin: karta konta --- */
 
 /*
-  Kolumny działań przy koncie. Wspólna siatka trzyma równe odstępy, a przyciski
-  rozciągnięte na całą szerokość kolumny stoją w równych pionach - bez tego
-  każdy miał inną szerokość i całość wyglądała krzywo.
+  Kolumny dziaĹ‚aĹ„ przy koncie. WspĂłlna siatka trzyma rĂłwne odstÄ™py, a przyciski
+  rozciÄ…gniÄ™te na caĹ‚Ä… szerokoĹ›Ä‡ kolumny stojÄ… w rĂłwnych pionach - bez tego
+  kaĹĽdy miaĹ‚ innÄ… szerokoĹ›Ä‡ i caĹ‚oĹ›Ä‡ wyglÄ…daĹ‚a krzywo.
 */
 .account-card {
   padding: 20px 22px;
 }
 
 /*
-  Trzy kolumny na stałe, nie auto-fit.
+  Trzy kolumny na staĹ‚e, nie auto-fit.
 
-  Przy auto-fit liczba torów zależała od szerokości okna, a liczba sekcji - od
-  uprawnień konta. Przy 1104 px mieściły się DOKŁADNIE cztery tory, więc piąta
-  sekcja (asystent) spychała „Dostęp" do drugiego rzędu, gdzie stawał sam,
-  z pustką na trzy tory obok. Teraz sekcji w siatce są zawsze trzy, a „Dostęp"
-  ma własny pas pod spodem.
+  Przy auto-fit liczba torĂłw zaleĹĽaĹ‚a od szerokoĹ›ci okna, a liczba sekcji - od
+  uprawnieĹ„ konta. Przy 1104 px mieĹ›ciĹ‚y siÄ™ DOKĹADNIE cztery tory, wiÄ™c piÄ…ta
+  sekcja (asystent) spychaĹ‚a â€žDostÄ™p" do drugiego rzÄ™du, gdzie stawaĹ‚ sam,
+  z pustkÄ… na trzy tory obok. Teraz sekcji w siatce sÄ… zawsze trzy, a â€žDostÄ™p"
+  ma wĹ‚asny pas pod spodem.
 
-  align-items: start zamiast domyślnego stretch - bez tego wszystkie kolumny
-  rosły do wysokości najwyższej i pod krótszymi robiła się dziura.
+  align-items: start zamiast domyĹ›lnego stretch - bez tego wszystkie kolumny
+  rosĹ‚y do wysokoĹ›ci najwyĹĽszej i pod krĂłtszymi robiĹ‚a siÄ™ dziura.
 */
 .account-columns {
   display: grid;
@@ -2114,14 +2208,14 @@ tbody tr:last-child td {
   padding-top: 18px;
 }
 
-/* Blok doklejony w środku kolumny - asystent pod limitem miejsca. */
+/* Blok doklejony w Ĺ›rodku kolumny - asystent pod limitem miejsca. */
 .account-sub {
   margin-top: 18px;
   padding-top: 14px;
   border-top: var(--hairline) solid var(--rule);
 }
 
-/* Pas na całą szerokość karty, pod kolumnami. */
+/* Pas na caĹ‚Ä… szerokoĹ›Ä‡ karty, pod kolumnami. */
 .account-strip {
   grid-column: 1 / -1;
   border-top: var(--hairline) solid var(--rule);
@@ -2129,8 +2223,8 @@ tbody tr:last-child td {
 }
 
 /* align-items: flex-end, bo jeden z formularzy ma nad przyciskiem pole na
-   powód blokady. Przy wyrównaniu do góry jego przycisk zjeżdżał o wysokość
-   tego pola niżej i wypadał z rzędu. */
+   powĂłd blokady. Przy wyrĂłwnaniu do gĂłry jego przycisk zjeĹĽdĹĽaĹ‚ o wysokoĹ›Ä‡
+   tego pola niĹĽej i wypadaĹ‚ z rzÄ™du. */
 .account-buttons {
   display: flex;
   flex-wrap: wrap;
@@ -2138,23 +2232,23 @@ tbody tr:last-child td {
   gap: 10px 12px;
 }
 
-/* Przyciski pasa mają szerokość swojego podpisu. Selektor jest celowo dłuższy
-   niż `.account-columns button` niżej - ta reguła rozciąga przyciski na całą
-   szerokość i w kolumnach jest właściwa, ale w pasie rozwaliłaby układ. */
+/* Przyciski pasa majÄ… szerokoĹ›Ä‡ swojego podpisu. Selektor jest celowo dĹ‚uĹĽszy
+   niĹĽ `.account-columns button` niĹĽej - ta reguĹ‚a rozciÄ…ga przyciski na caĹ‚Ä…
+   szerokoĹ›Ä‡ i w kolumnach jest wĹ‚aĹ›ciwa, ale w pasie rozwaliĹ‚aby ukĹ‚ad. */
 .account-columns .account-buttons button {
   width: auto;
 }
 
 /*
   Formularz z polem obok przycisku - to ten od powodu blokady. Pole i przycisk
-  jako elementy liniowe wyrównywały się do linii pisma, a dolny odstęp pola
-  podnosił przycisk o dziewięć pikseli ponad dolną krawędź formularza; w rzędzie
-  wyglądał przez to na przesunięty w górę wobec sąsiadów.
+  jako elementy liniowe wyrĂłwnywaĹ‚y siÄ™ do linii pisma, a dolny odstÄ™p pola
+  podnosiĹ‚ przycisk o dziewiÄ™Ä‡ pikseli ponad dolnÄ… krawÄ™dĹş formularza; w rzÄ™dzie
+  wyglÄ…daĹ‚ przez to na przesuniÄ™ty w gĂłrÄ™ wobec sÄ…siadĂłw.
 */
 .account-columns .account-buttons form {
   display: flex;
-  /* Do DOLNEJ krawędzi, nie do środka: pole jest o cztery piksele wyższe od
-     przycisku, więc wyśrodkowanie podnosiło przycisk ponad linię sąsiadów. */
+  /* Do DOLNEJ krawÄ™dzi, nie do Ĺ›rodka: pole jest o cztery piksele wyĹĽsze od
+     przycisku, wiÄ™c wyĹ›rodkowanie podnosiĹ‚o przycisk ponad liniÄ™ sÄ…siadĂłw. */
   align-items: flex-end;
   gap: var(--space-2);
 }
@@ -2165,8 +2259,8 @@ tbody tr:last-child td {
   margin-bottom: 0;
 }
 
-/* Skasowanie konta odsunięte na koniec pasa - to jedyna nieodwracalna rzecz
-   na tej karcie i nie ma stać między przełącznikami. */
+/* Skasowanie konta odsuniÄ™te na koniec pasa - to jedyna nieodwracalna rzecz
+   na tej karcie i nie ma staÄ‡ miÄ™dzy przeĹ‚Ä…cznikami. */
 .account-last {
   margin-left: auto;
 }
@@ -2188,7 +2282,7 @@ tbody tr:last-child td {
   margin-bottom: 8px;
 }
 
-/* Rząd „limit MB na tyle dni": pola dzielą szerokość, podpisy siedzą przy nich. */
+/* RzÄ…d â€žlimit MB na tyle dni": pola dzielÄ… szerokoĹ›Ä‡, podpisy siedzÄ… przy nich. */
 .quota-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto;
@@ -2201,7 +2295,7 @@ tbody tr:last-child td {
   margin-bottom: 0;
 }
 
-/* Przyciski jednej kolumny stoją w pionie z równym odstępem. */
+/* Przyciski jednej kolumny stojÄ… w pionie z rĂłwnym odstÄ™pem. */
 .account-actions {
   display: flex;
   flex-direction: column;
@@ -2209,9 +2303,9 @@ tbody tr:last-child td {
 }
 
 /*
-  Wąskie okno. Trzy kolumny po 349 px potrzebują około tysiąca pikseli; niżej
-  schodzimy na dwie, a na telefonie na jedną, razem z przyciskami pasa
-  rozciągniętymi na całą szerokość - w rzędzie po dwa wyglądały jak zlepek.
+  WÄ…skie okno. Trzy kolumny po 349 px potrzebujÄ… okoĹ‚o tysiÄ…ca pikseli; niĹĽej
+  schodzimy na dwie, a na telefonie na jednÄ…, razem z przyciskami pasa
+  rozciÄ…gniÄ™tymi na caĹ‚Ä… szerokoĹ›Ä‡ - w rzÄ™dzie po dwa wyglÄ…daĹ‚y jak zlepek.
 */
 @media (max-width: 1000px) {
   .account-columns {
@@ -2237,8 +2331,8 @@ tbody tr:last-child td {
     width: 100%;
   }
 
-  /* Na jednej kolumnie pole i przycisk schodzą pod siebie, każde na pełną
-     szerokość - obok siebie zostałyby po połowie i nie zmieściłyby podpisu. */
+  /* Na jednej kolumnie pole i przycisk schodzÄ… pod siebie, kaĹĽde na peĹ‚nÄ…
+     szerokoĹ›Ä‡ - obok siebie zostaĹ‚yby po poĹ‚owie i nie zmieĹ›ciĹ‚yby podpisu. */
   .account-columns .account-buttons form {
     flex-wrap: wrap;
   }
@@ -2247,8 +2341,8 @@ tbody tr:last-child td {
     width: 100%;
   }
 
-  /* W jednej kolumnie nie ma czego odsuwać w bok - odsunięcie zostawiłoby
-     „Skasuj konto" wąskim guzikiem przyklejonym do prawej krawędzi. */
+  /* W jednej kolumnie nie ma czego odsuwaÄ‡ w bok - odsuniÄ™cie zostawiĹ‚oby
+     â€žSkasuj konto" wÄ…skim guzikiem przyklejonym do prawej krawÄ™dzi. */
   .account-last {
     margin-left: 0;
   }
@@ -2319,11 +2413,11 @@ code,
 }
 
 /*
-  Na telefonie foldery i spis stają jedno pod drugim. minmax(0, 1fr), nie samo
-  1fr: goła 1fr nie schodzi poniżej szerokości treści, a w kolumnie stoi tabela
-  z wymuszonymi 640 px - kolumna rosła do 640 px, rozciągała też kartkę
-  folderów i cała strona przewijała się w bok. Z zerem w minmax tabela
-  przewija się w swojej ramce (.table-scroll), tak jak w koszu.
+  Na telefonie foldery i spis stajÄ… jedno pod drugim. minmax(0, 1fr), nie samo
+  1fr: goĹ‚a 1fr nie schodzi poniĹĽej szerokoĹ›ci treĹ›ci, a w kolumnie stoi tabela
+  z wymuszonymi 640 px - kolumna rosĹ‚a do 640 px, rozciÄ…gaĹ‚a teĹĽ kartkÄ™
+  folderĂłw i caĹ‚a strona przewijaĹ‚a siÄ™ w bok. Z zerem w minmax tabela
+  przewija siÄ™ w swojej ramce (.table-scroll), tak jak w koszu.
 */
 @media (max-width: 800px) {
   .library-layout {
@@ -2331,7 +2425,7 @@ code,
   }
 }
 
-/* Przechodzenie między stronami spisu: strzałki po bokach, numer w środku. */
+/* Przechodzenie miÄ™dzy stronami spisu: strzaĹ‚ki po bokach, numer w Ĺ›rodku. */
 .pager {
   display: flex;
   align-items: center;
@@ -2340,8 +2434,8 @@ code,
   margin-top: 14px;
 }
 
-/* Stan autozapisu obok przycisku „Zapisz". Drobny napis, bez ramki - ma
-   informować kątem oka, a nie przykuwać wzrok jak błąd. */
+/* Stan autozapisu obok przycisku â€žZapisz". Drobny napis, bez ramki - ma
+   informowaÄ‡ kÄ…tem oka, a nie przykuwaÄ‡ wzrok jak bĹ‚Ä…d. */
 .save-state {
   display: inline-flex;
   align-items: center;
@@ -2388,7 +2482,7 @@ code,
 }
 
 /* Wiersz z przyciskiem zapisu i stanem - stan schodzi pod przycisk dopiero
-   wtedy, gdy naprawdę nie ma miejsca. */
+   wtedy, gdy naprawdÄ™ nie ma miejsca. */
 .save-row {
   display: flex;
   align-items: center;
@@ -2399,11 +2493,11 @@ code,
 /*
   Stopka.
 
-  Trzy rzeczy w rzędzie: znak, dokumenty, rok. Bez kreski nad sobą - od
-  treści oddziela ją sam odstęp, tak jak sekcje na stronie tytułowej.
-  Oś ta sama co na stronie tytułowej (1120 px), więc na niej stopka trafia
-  w lewą krawędź treści; na szerokich stronach panelu stoi odrobinę węziej
-  i to jest w porządku. Na wąskim ekranie rząd łamie się sam.
+  Trzy rzeczy w rzÄ™dzie: znak, dokumenty, rok. Bez kreski nad sobÄ… - od
+  treĹ›ci oddziela jÄ… sam odstÄ™p, tak jak sekcje na stronie tytuĹ‚owej.
+  OĹ› ta sama co na stronie tytuĹ‚owej (1120 px), wiÄ™c na niej stopka trafia
+  w lewÄ… krawÄ™dĹş treĹ›ci; na szerokich stronach panelu stoi odrobinÄ™ wÄ™ziej
+  i to jest w porzÄ…dku. Na wÄ…skim ekranie rzÄ…d Ĺ‚amie siÄ™ sam.
 */
 .site-footer {
   margin-top: var(--space-7);
@@ -2424,7 +2518,7 @@ code,
 }
 
 .site-footer-mark {
-  font-family: "Bricolage Grotesque", var(--font-heading);
+  font-family: var(--font-bricolage), "Bricolage Grotesque", var(--font-heading);
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.12em;
@@ -2439,17 +2533,17 @@ code,
 }
 
 /*
-  Regulamin i polityka prywatności.
+  Regulamin i polityka prywatnoĹ›ci.
 
-  Dokument prawny to kilkadziesiąt ekranów paragrafów, ustępów i tabel - rzeczy,
-  których w reszcie serwisu nigdzie nie ma, więc trzymają swoje reguły tutaj,
-  pod jedną klasą `legal`. Wszystko poza nimi - arkusze, tabele, wielkości pisma
-  - jest wspólne z resztą stron.
+  Dokument prawny to kilkadziesiÄ…t ekranĂłw paragrafĂłw, ustÄ™pĂłw i tabel - rzeczy,
+  ktĂłrych w reszcie serwisu nigdzie nie ma, wiÄ™c trzymajÄ… swoje reguĹ‚y tutaj,
+  pod jednÄ… klasÄ… `legal`. Wszystko poza nimi - arkusze, tabele, wielkoĹ›ci pisma
+  - jest wspĂłlne z resztÄ… stron.
 */
 
 .legal h2 {
   margin: var(--space-6) 0 var(--space-3) 0;
-  /* Żeby po skoku ze spisu treści nagłówek nie kleił się do krawędzi okna. */
+  /* Ĺ»eby po skoku ze spisu treĹ›ci nagĹ‚Ăłwek nie kleiĹ‚ siÄ™ do krawÄ™dzi okna. */
   scroll-margin-top: var(--space-3);
 }
 
@@ -2487,7 +2581,7 @@ code,
   margin-bottom: 6px;
 }
 
-/* Numeracja ustępów: 1., 2., 3. w obrębie paragrafu. */
+/* Numeracja ustÄ™pĂłw: 1., 2., 3. w obrÄ™bie paragrafu. */
 .legal-items {
   margin: 0 0 var(--space-3) 0;
   padding-left: 26px;
@@ -2503,7 +2597,7 @@ code,
   margin-bottom: 0;
 }
 
-/* Wtrącenie na boku głównego wywodu: wyjaśnienie albo ostrzeżenie. */
+/* WtrÄ…cenie na boku gĹ‚Ăłwnego wywodu: wyjaĹ›nienie albo ostrzeĹĽenie. */
 .legal-note {
   border-left: 2px solid var(--accent);
   background: var(--sheet);
@@ -2529,16 +2623,16 @@ code,
 /*
   --- Telefon ---
 
-  Reguły dla wąskiego ekranu zebrane na końcu arkusza: przy tej samej
-  specyficzności wygrywa reguła późniejsza, więc stąd przebijają też
-  ciasne pola z tabel i paska narzędzi.
+  ReguĹ‚y dla wÄ…skiego ekranu zebrane na koĹ„cu arkusza: przy tej samej
+  specyficznoĹ›ci wygrywa reguĹ‚a pĂłĹşniejsza, wiÄ™c stÄ…d przebijajÄ… teĹĽ
+  ciasne pola z tabel i paska narzÄ™dzi.
 */
 @media (max-width: 600px) {
   /*
-    iOS przybliża całą stronę po wejściu w pole, które pisze drobniej niż
-    16 px - i po wyjściu z pola strona zostaje przybliżona. Na telefonie
-    wszystkie pola piszą więc 16 px, także te ciasne w spisach; miejsca
-    jest dość, bo napisy i tak kończą się wielokropkiem.
+    iOS przybliĹĽa caĹ‚Ä… stronÄ™ po wejĹ›ciu w pole, ktĂłre pisze drobniej niĹĽ
+    16 px - i po wyjĹ›ciu z pola strona zostaje przybliĹĽona. Na telefonie
+    wszystkie pola piszÄ… wiÄ™c 16 px, takĹĽe te ciasne w spisach; miejsca
+    jest doĹ›Ä‡, bo napisy i tak koĹ„czÄ… siÄ™ wielokropkiem.
   */
   input[type="text"],
   input[type="email"],
@@ -2558,15 +2652,15 @@ code,
     font-size: 16px;
   }
 
-  /* Kod rośnie razem z resztą pól (16 px, żeby telefon nie przybliżał strony
-     przy dotknięciu), a numery wierszy razem z kodem - jedna zmienna na
-     rodzicu pilnuje, żeby nie dało się ich rozjechać. */
+  /* Kod roĹ›nie razem z resztÄ… pĂłl (16 px, ĹĽeby telefon nie przybliĹĽaĹ‚ strony
+     przy dotkniÄ™ciu), a numery wierszy razem z kodem - jedna zmienna na
+     rodzicu pilnuje, ĹĽeby nie daĹ‚o siÄ™ ich rozjechaÄ‡. */
   .code-editor {
     --code-size: 16px;
   }
 
-  /* Długi tytuł notatki - albo jedno długie słowo bez spacji - łamie się,
-     zamiast wypychać stronę w bok. */
+  /* DĹ‚ugi tytuĹ‚ notatki - albo jedno dĹ‚ugie sĹ‚owo bez spacji - Ĺ‚amie siÄ™,
+     zamiast wypychaÄ‡ stronÄ™ w bok. */
   h1,
   h2 {
     overflow-wrap: anywhere;
@@ -2576,13 +2670,13 @@ code,
     font-size: 26px;
   }
 
-  /* Kartki odrobinę ciaśniej: 24 px marginesu z każdej strony to na
-     ekranie 360 px jedna ósma szerokości w samych odstępach. */
+  /* Kartki odrobinÄ™ ciaĹ›niej: 24 px marginesu z kaĹĽdej strony to na
+     ekranie 360 px jedna Ăłsma szerokoĹ›ci w samych odstÄ™pach. */
   .sheet-ruled {
     padding: var(--space-4);
   }
 
-  /* Podgląd załącznika na prawie cały ekran, nie w ramce z szerokim tłem. */
+  /* PodglÄ…d zaĹ‚Ä…cznika na prawie caĹ‚y ekran, nie w ramce z szerokim tĹ‚em. */
   .preview-veil {
     padding: 10px;
   }
@@ -2591,8 +2685,8 @@ code,
     padding: 12px;
   }
 
-  /* Tabela wpisana w treść notatki przewija się w bok sama, zamiast
-     poszerzać całą stronę - jak .table-scroll przy spisach. */
+  /* Tabela wpisana w treĹ›Ä‡ notatki przewija siÄ™ w bok sama, zamiast
+     poszerzaÄ‡ caĹ‚Ä… stronÄ™ - jak .table-scroll przy spisach. */
   .rich-text table {
     display: block;
     max-width: 100%;

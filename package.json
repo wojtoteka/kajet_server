@@ -14,8 +14,10 @@
     "db:push": "node scripts/prisma.mjs db push",
     "db:diff": "node scripts/prisma.mjs migrate diff --from-schema-datasource prisma/schema.prisma --to-schema-datamodel prisma/schema.prisma --script",
     "db:apply": "bash scripts/zastosuj-schemat.sh",
+    "db:limity": "node scripts/limity-zero-znaczy-zero.mjs",
     "db:migrate": "node scripts/prisma.mjs migrate deploy",
     "db:studio": "node scripts/prisma.mjs studio",
+    "ikony": "node scripts/pobierz-ikony.mjs",
     "sprawdz": "node scripts/sprawdz-serwer.mjs",
     "sprawdz:pliki": "node scripts/sprawdz-pliki.mjs",
     "sprawdz:ai": "tsx scripts/sprawdz-asystenta.ts",
@@ -43,5 +45,8 @@
     "tsx": "^4.19.2",
     "typescript": "^5.7.3",
     "vitest": "^3.2.7"
-  }
+  },
+  "browserslist": [
+    "defaults and fully supports es6-module"
+  ]
 }

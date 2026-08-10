@@ -156,6 +156,15 @@ export type Words = {
   unstarIt: string;
   moveToTrash: string;
   confirmTrash: string;
+  /* Zaznaczanie wielu notatek naraz w spisie. */
+  bulkBarLabel: string;
+  bulkRowLabel: string;
+  bulkSelectAll: string;
+  bulkClear: string;
+  bulkMove: string;
+  bulkPickTarget: string;
+  bulkNothingPicked: string;
+  bulkConfirmTrash: string;
   pagerLabel: string;
   earlier: string;
   next: string;
@@ -472,6 +481,11 @@ export type Words = {
   homeNoAccountBody: string;
   homeWithAccountTitle: string;
   homeWithAccountBody: string;
+  homeAiTitle: string;
+  homeAiBody: string;
+  homeAiConsent: string;
+  homeAiPrivacy: string;
+  homeAiPicture: string;
   homeShareTitle: string;
   homeShareBody: string;
   homeDownloadTitle: string;
@@ -731,9 +745,15 @@ export type Words = {
   issueCode: string;
   issuingCode: string;
   howManyAccounts: string;
+  codeNumbersRule: string;
+  seatsHint: string;
   quotaMbLabel: string;
-  codeGrantsAi: string;
-  codeGrantsAiHint: string;
+  codeQuotaHint: string;
+  validDaysHint: string;
+  codeAiPerDayLabel: string;
+  codeAiPerDayHint: string;
+  columnCodeGrants: string;
+  noSpaceAtAll: string;
   validForDaysLabel: string;
   mailNotSetCodes: string;
   descriptionForYou: string;
@@ -1011,6 +1031,7 @@ export type Words = {
   actCheckNumbers: string;
   actCopyRegistrationLink: string;
   actUnlimitedGiven: string;
+  actNoSpaceGiven: string;
   actCannotBlockSelf: string;
   actLoginRulesAdmin: string;
   actBadLogin: string;
@@ -1253,6 +1274,14 @@ const pl: Words = {
   unstarIt: "Zdejmij gwiazdkę",
   moveToTrash: "Wyrzuć do kosza",
   confirmTrash: "Wyrzucić do kosza?",
+  bulkBarLabel: "Działania na zaznaczonych notatkach",
+  bulkRowLabel: "Zaznacz notatkę",
+  bulkSelectAll: "Zaznacz wszystkie",
+  bulkClear: "Odznacz",
+  bulkMove: "Przenieś",
+  bulkPickTarget: "Do folderu",
+  bulkNothingPicked: "Nie zaznaczono żadnej notatki.",
+  bulkConfirmTrash: "Wyrzucić zaznaczone notatki do kosza?",
   pagerLabel: "Strony spisu notatek",
   earlier: "Wcześniejsze",
   next: "Następne",
@@ -1579,7 +1608,7 @@ const pl: Words = {
     "Plik z kodem trzymasz w notatce i uruchamiasz go na serwerze. Dziewięć języków, " +
     "od Pythona po SQL.",
   homeCodePicture:
-    "Ciemna kartka położona krzywo, a na niej konsola Pythona: polecenie print z napisem " +
+    "Kartka położona krzywo, a na niej konsola Pythona: polecenie print z napisem " +
     "Hello World i to samo Hello World wypisane pod spodem",
   homeWhereTitle: "Gdzie mają leżeć Twoje notatki?",
   homeNoAccountTitle: "Bez konta",
@@ -1590,6 +1619,20 @@ const pl: Words = {
   homeWithAccountBody:
     "Notatki trafiają na serwer. Otwierasz je na stronie i w aplikacji, a po zmianie " +
     "telefonu czy tabletu wracają same. Kosz, foldery i ulubione też są wspólne.",
+  homeAiTitle: "Asystent KajetAI",
+  homeAiBody:
+    "Napisz zwykłym zdaniem, co ma się w notatce zmienić. KajetAI skróci wykład, " +
+    "uporządkuje listę, dopisze brakujący akapit, poprawi błąd w kodzie albo doda gałąź " +
+    "do mapy myśli. Jeśli czegoś nie zrozumie, dopyta zamiast zgadywać. Wynik cofasz " +
+    "jednym przyciskiem.",
+  homeAiConsent:
+    "Asystent nie jest jeszcze dla wszystkich — konto musi mieć do niego dostęp. Trzeba " +
+    "się też zgodzić na to, że treść notatki przeczyta model językowy Google. Bez zgody " +
+    "KajetAI nie zrobi nic, a do notatek odręcznych nie zagląda w ogóle.",
+  homeAiPrivacy: "Zobacz, co dokładnie wysyłamy",
+  homeAiPicture:
+    "Rysunek: kartka z trzema linijkami pisma, w której jedna linijka jest skreślona, " +
+    "a nad nią dopisana nowa; obok trzy iskry",
   homeShareTitle: "Udostępnianie",
   homeShareBody:
     "Notatkę udostępniasz odnośnikiem albo wysyłasz na adres e-mail. Otwarty odnośnik " +
@@ -1870,7 +1913,10 @@ const pl: Words = {
   setQuota: "Ustaw limit",
   quotaInMb: "Limit w MB",
   forHowManyDays: "Na ile dni",
-  quotaHint: "Zero megabajtów oznacza miejsce bez ograniczeń, zero dni – limit na stałe.",
+  quotaHint:
+    "Tak samo jak przy kodzie zaproszenia: 0 to „nic”, −1 to „bez ograniczeń”. " +
+    "Czyli 0 MB to konto bez miejsca, −1 MB to miejsce bez limitu, a −1 dni to limit " +
+    "na stałe.",
   changeLogin: "Zmień login",
   newLogin: "Nowy login",
   changeEmail: "Zmień e-mail",
@@ -1904,11 +1950,19 @@ const pl: Words = {
   issueCode: "Wydaj kod",
   issuingCode: "Wydaję…",
   howManyAccounts: "Na ile kont",
+  codeNumbersRule:
+    "W każdym polu niżej te dwie liczby znaczą to samo: 0 to „nic”, a −1 to „bez " +
+    "ograniczeń”. Wszystko inne to zwykła liczba.",
+  seatsHint: "−1: dowolnie wiele razy",
   quotaMbLabel: "Limit miejsca w MB",
-  codeGrantsAi: "Z KajetAI",
-  codeGrantsAiHint:
-    "Konto założone tym kodem od razu będzie mogło prosić KajetAI o zmiany w notatkach. " +
-    "Model jest darmowy, więc Google może wykorzystać wysłaną treść do uczenia swoich modeli.",
+  codeQuotaHint: "0: bez miejsca · −1: bez limitu",
+  validDaysHint: "−1: bez terminu",
+  codeAiPerDayLabel: "KajetAI: zapytań na dobę",
+  codeAiPerDayHint: "0: bez asystenta. Liczbę zmienisz potem w spisie kont.",
+  columnCodeGrants: "Co nadaje",
+  noSpaceAtAll:
+    "To konto nie ma jeszcze nadanego miejsca, więc nic się na serwerze nie zapisze. " +
+    "Poproś o nie osobę prowadzącą serwer.",
   validForDaysLabel: "Ważny przez (dni)",
   mailNotSetCodes:
     "Poczta nie jest ustawiona, więc wiadomość nie wyjdzie. Odnośnik skopiujesz ze spisu " +
@@ -2257,6 +2311,7 @@ const pl: Words = {
   actCheckNumbers: "Sprawdź wpisane liczby.",
   actCopyRegistrationLink: "Kopiuj odnośnik do rejestracji",
   actUnlimitedGiven: "Konto dostało miejsce bez limitu.",
+  actNoSpaceGiven: "Konto zostało bez miejsca – nic się na serwerze nie zapisze.",
   actCannotBlockSelf: "Nie da się zablokować własnego konta.",
   actLoginRulesAdmin:
     "Login może mieć od 3 do 24 znaków: małe litery, cyfry, kropka, kreska i podkreślenie.",
@@ -2515,6 +2570,14 @@ const en: Words = {
   unstarIt: "Remove the star",
   moveToTrash: "Move to the bin",
   confirmTrash: "Move it to the bin?",
+  bulkBarLabel: "Actions on the selected notes",
+  bulkRowLabel: "Select the note",
+  bulkSelectAll: "Select all",
+  bulkClear: "Clear",
+  bulkMove: "Move",
+  bulkPickTarget: "To folder",
+  bulkNothingPicked: "No note is selected.",
+  bulkConfirmTrash: "Move the selected notes to the bin?",
   pagerLabel: "Pages of the note list",
   earlier: "Earlier",
   next: "Next",
@@ -2838,7 +2901,7 @@ const en: Words = {
     "A code file lives in a note and you run it on the server. Nine languages, from " +
     "Python to SQL.",
   homeCodePicture:
-    "A dark sheet lying askew with a Python console on it: a print command with the words " +
+    "A sheet lying askew with a Python console on it: a print command with the words " +
     "Hello World, and the same Hello World printed below",
   homeWhereTitle: "Where should your notes live?",
   homeNoAccountTitle: "Without an account",
@@ -2850,6 +2913,20 @@ const en: Words = {
     "Notes go to the server. You open them on the website and in the app, and after " +
     "a change of phone or tablet they come back on their own. The bin, folders and " +
     "favourites are shared too.",
+  homeAiTitle: "The KajetAI assistant",
+  homeAiBody:
+    "Write in a plain sentence what should change in the note. KajetAI shortens a " +
+    "lecture, tidies up a list, writes the missing paragraph, fixes a bug in the code or " +
+    "adds a branch to a mind map. If it does not understand something, it asks instead " +
+    "of guessing. You undo the result with one button.",
+  homeAiConsent:
+    "The assistant is not for everyone yet — an account has to be given access to it. " +
+    "You also have to agree that the note will be read by a Google language model. " +
+    "Without that agreement KajetAI does nothing, and it never looks at handwritten notes.",
+  homeAiPrivacy: "See what exactly gets sent",
+  homeAiPicture:
+    "A drawing: a page with three lines of writing, one of them crossed out with a new " +
+    "one written above it; three sparks beside the page",
   homeShareTitle: "Sharing",
   homeShareBody:
     "You share a note with a link or send it to an e-mail address. Anyone can read an " +
@@ -3129,7 +3206,10 @@ const en: Words = {
   setQuota: "Set the quota",
   quotaInMb: "Quota in MB",
   forHowManyDays: "For how many days",
-  quotaHint: "Zero megabytes means unlimited space; zero days means the limit stays for good.",
+  quotaHint:
+    "The same rule as on an invite code: 0 is “nothing”, −1 is “no limit”. So 0 MB is an " +
+    "account with no space, −1 MB is space without a limit, and −1 days is a limit that " +
+    "stays for good.",
   changeLogin: "Change the login",
   newLogin: "New login",
   changeEmail: "Change the e-mail",
@@ -3163,11 +3243,19 @@ const en: Words = {
   issueCode: "Issue the code",
   issuingCode: "Issuing…",
   howManyAccounts: "How many accounts",
+  codeNumbersRule:
+    "In every field below these two numbers mean the same thing: 0 is “nothing”, −1 is " +
+    "“no limit”. Anything else is an ordinary number.",
+  seatsHint: "−1: any number of times",
   quotaMbLabel: "Space quota in MB",
-  codeGrantsAi: "With KajetAI",
-  codeGrantsAiHint:
-    "An account created with this code will be able to ask KajetAI for changes right away. " +
-    "The model is free, so Google may use what is sent to train its models.",
+  codeQuotaHint: "0: no space · −1: no limit",
+  validDaysHint: "−1: no deadline",
+  codeAiPerDayLabel: "KajetAI: requests a day",
+  codeAiPerDayHint: "0: no assistant. You can change the number later in the list of accounts.",
+  columnCodeGrants: "Grants",
+  noSpaceAtAll:
+    "This account has no space granted yet, so nothing will be saved on the server. " +
+    "Ask whoever runs the server for some.",
   validForDaysLabel: "Valid for (days)",
   mailNotSetCodes:
     "E-mail is not set up, so no message will go out. You can copy the link from the list below.",
@@ -3503,6 +3591,7 @@ const en: Words = {
   actCheckNumbers: "Check the numbers you typed.",
   actCopyRegistrationLink: "Copy the registration link",
   actUnlimitedGiven: "The account was given unlimited space.",
+  actNoSpaceGiven: "The account was left with no space – nothing will be saved on the server.",
   actCannotBlockSelf: "You cannot block your own account.",
   actLoginRulesAdmin:
     "A login can be 3 to 24 characters: lowercase letters, digits, dot, dash and underscore.",
@@ -3695,11 +3784,72 @@ export function noteTally(words: Words, wordCount: number, chars: number): strin
   );
 }
 
+/* Zdania paska zaznaczania w spisie notatek. */
+
+export function selectedNotes(words: Words, count: number): string {
+  if (words.locale === "en-GB") {
+    if (count === 0) return "Nothing selected";
+    return `${count} ${count === 1 ? "note" : "notes"} selected`;
+  }
+  // „Zaznaczono: 0 notatek" brzmi jak usterka licznika, a nie jak stan.
+  if (count === 0) return "Nic nie zaznaczono";
+  const noun = polishPlural(count, "notatka", "notatki", "notatek");
+  return `Zaznaczono: ${count} ${noun}`;
+}
+
+export function bulkTrashedMsg(words: Words, count: number): string {
+  if (words.locale === "en-GB") {
+    return `${notesCount(words, count)} moved to the bin. You can take them out of there.`;
+  }
+  const went = polishPlural(count, "trafiła", "trafiły", "trafiło");
+  return `${notesCount(words, count)} ${went} do kosza. Da się je stamtąd wyjąć.`;
+}
+
+export function bulkMovedMsg(words: Words, count: number, folder: string | null): string {
+  if (words.locale === "en-GB") {
+    return folder
+      ? `${notesCount(words, count)} moved to “${folder}”.`
+      : `${notesCount(words, count)} taken out of their folders.`;
+  }
+  const went = polishPlural(count, "trafiła", "trafiły", "trafiło");
+  return folder
+    ? `${notesCount(words, count)} ${went} do folderu „${folder}”.`
+    : `${notesCount(words, count)} ${went} poza foldery.`;
+}
+
+/** Ile z zaznaczonych nie dało się ruszyć. Reszta poszła. */
+export function bulkPartlyFailedMsg(words: Words, failed: number, total: number): string {
+  if (words.locale === "en-GB") {
+    return `${total - failed} of ${total} done, ${failed} did not work.`;
+  }
+  return `Zrobiono ${total - failed} z ${total}, ${failed} się nie udało.`;
+}
+
 export function attachmentsCount(words: Words, count: number): string {
   if (words.locale === "en-GB") {
     return `${count} ${count === 1 ? "attachment" : "attachments"}`;
   }
   return `${count} ${polishPlural(count, "załącznik", "załączniki", "załączników")}`;
+}
+
+/**
+ * Ile razy użyto kodu zaproszenia. Kod bez ograniczeń nie ma „z ilu", więc
+ * mówi tylko o użyciach — „0 z bez limitu" nie jest zdaniem.
+ */
+export function seatsUsed(words: Words, used: number, seats: number): string {
+  if (seats < 0) {
+    return words.locale === "en-GB"
+      ? `used ${used} times, no limit`
+      : `użyto ${used} razy, bez ograniczeń`;
+  }
+  return `${used} ${words.ofWord} ${seats}`;
+}
+
+/** Znacznik przy kodzie zaproszenia: „KajetAI, 20 dziennie". */
+export function aiPerDayTag(words: Words, perDay: number): string {
+  return words.locale === "en-GB"
+    ? `KajetAI, ${perDay} a day`
+    : `KajetAI, ${perDay} dziennie`;
 }
 
 export function foldersCount(words: Words, count: number): string {
@@ -3813,18 +3963,33 @@ export function tooManyRuns(words: Words, limit: number, retryInSeconds: number)
 }
 
 /** Wyczerpany limit wywołań KajetAI - dobowy albo godzinowy. */
+/**
+ * Limit asystenta wyczerpany.
+ *
+ * Zdanie mówi trzy rzeczy w tej kolejności: że na teraz koniec, ile wynosi
+ * miara i KIEDY wróci. To ostatnie ma sens dopiero od chwili, gdy doba liczy
+ * się od północy (patrz ai/limits.ts) - przy przesuwanym oknie jedyną
+ * uczciwą odpowiedzią było „później", co nikomu nic nie mówiło.
+ *
+ * Poprzednie brzmienie, „KajetAI był już proszony o zmianę raz w ciągu doby",
+ * czytało się jak zapis w regulaminie: strona bierna, a miara („raz w ciągu
+ * doby") wyglądała na opis tego, co się właśnie stało, a nie na granicę.
+ */
 export function aiLimitReached(
   words: Words,
   limit: number,
   window: "doba" | "godzina",
 ): string {
   if (words.locale === "en-GB") {
-    const period = window === "doba" ? "the past 24 hours" : "the past hour";
-    return `KajetAI has already been asked ${limit} times in ${period}. Try later.`;
+    const times = limit === 1 ? "once" : `${limit} times`;
+    return window === "doba"
+      ? `That is all for today – KajetAI answers ${times} a day here. The count starts again at midnight.`
+      : `Too many questions in a row – KajetAI answers ${times} an hour here. Try again in a while.`;
   }
   const razy = limit === 1 ? "raz" : `${limit} razy`;
-  const okres = window === "doba" ? "w ciągu doby" : "w ciągu godziny";
-  return `KajetAI był już proszony o zmianę ${razy} ${okres}. Spróbuj później.`;
+  return window === "doba"
+    ? `Na dziś koniec – KajetAI odpowiada tu ${razy} dziennie. Licznik rusza od nowa o północy.`
+    : `Za dużo pytań pod rząd – KajetAI odpowiada tu ${razy} na godzinę. Spróbuj za jakiś czas.`;
 }
 
 /**
@@ -3979,15 +4144,23 @@ export function notesThisWeek(words: Words, count: number): string {
 
 
 
+/**
+ * Wiersz pod nazwą konta w panelu.
+ *
+ * Zajęte miejsce idzie tu gotowym napisem, a nie liczbą bajtów: `humanSize`
+ * siedzi w quota.ts, a ten plik importuje quota.ts do własnych komunikatów
+ * o braku miejsca - sięgnięcie w drugą stronę zamknęłoby koło.
+ */
 export function accountSummary(
   words: Words,
   email: string,
   notes: number,
   devices: number,
+  used: string,
   since: string,
 ): string {
-  return `${email} · ${notesCount(words, notes)} · ${devicesCount(words, devices)} · ` +
-    `${words.accountSinceShort} ${since}`;
+  return `${email} · ${notesCount(words, notes)} · ${used} · ` +
+    `${devicesCount(words, devices)} · ${words.accountSinceShort} ${since}`;
 }
 
 export function tooManySignInsIn(words: Words, minutes: number): string {
@@ -4100,7 +4273,9 @@ export function aiUsageLine(
     return `Today: ${today} of ${limit}. This week: ${week} ${week === 1 ? "call" : "calls"}, ${counted} tokens.`;
   }
   const calls = polishPlural(week, "wywołanie", "wywołania", "wywołań");
-  return `Doba: ${today} z ${limit}. Tydzień: ${week} ${calls}, ${counted} tokenów.`;
+  // „Dziś", nie „Doba": ta liczba idzie od północy, a nie z ostatnich
+  // dwudziestu czterech godzin - patrz ai/limits.ts.
+  return `Dziś: ${today} z ${limit}. Tydzień: ${week} ${calls}, ${counted} tokenów.`;
 }
 
 /* --- Panel administratora: spis kont --- */
@@ -4327,7 +4502,7 @@ export function releaseNowCurrentMsg(words: Words, version: string): string {
 export function releaseDeletedMsg(words: Words, version: string): string {
   return words.locale === "en-GB"
     ? `Release ${version} is gone from the database and from the disk.`
-    : `Wydanie ${version} skasowane z bazy i z dysku.`;
+    : `Wydanie ${version} poszło z bazy i z dysku.`;
 }
 
 /* --- Notatka --- */

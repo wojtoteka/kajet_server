@@ -1,16 +1,19 @@
 /*
   Ikony z fonts.google.com/icons (Material Symbols Rounded).
 
-  Pismo ikonowe wczytuje layout.tsx. Nazwa ikony jest jej treścią - przeglądarka
-  zamienia słowo na znak przez ligaturę, więc `<Icon name="delete" />` rysuje
-  kosz. Nazwy bierzemy prosto ze strony Google, bez żadnego pośredniego spisu.
+  Pismo ikonowe wczytuje globals.css (@font-face przy klasie .ms). Nazwa ikony
+  jest jej treścią - przeglądarka zamienia słowo na znak przez ligaturę, więc
+  `<Icon name="delete" />` rysuje kosz. Pismo jest przycięte do spisu w
+  lib/icon-names.ts, więc nową ikonę trzeba tam dopisać i puścić `npm run
+  ikony` - o spis dba typ IconName, o resztę komentarz w icon-names.ts.
 
   Ikona sama w sobie nic nie mówi czytnikowi ekranu, dlatego domyślnie jest
   ukryta przed nim (aria-hidden). Kiedy stoi sama, bez podpisu obok, trzeba jej
   dać `label` - wtedy dostaje rolę obrazka i nazwę po polsku.
 */
 
-export type IconName = string;
+export type { IconName } from "@/lib/icon-names";
+import type { IconName } from "@/lib/icon-names";
 
 export function Icon({
   name,

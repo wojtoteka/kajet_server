@@ -47,7 +47,7 @@ fi
 # Bierz nazwy, a nie napisy z ekranu: napis z przycisku znika, gdy przycisk
 # zniknie, i skrypt zaczyna krzyczeć na poprawnie wgrany kod. Tak padło
 # „Wygląd obok" - przycisk skasowany razem z trybem podglądu obok.
-for znacznik in "admin-nav" "admin-nav-out" "forgetTombstone" "sweepInactiveAccounts"; do
+for znacznik in "bulkNotesFromLibrary" "hasFreeSeat" "readQuota" "homeAiTitle"; do
   if ! grep -rq "$znacznik" src/ 2>/dev/null; then
     echo "ŹLE: w $KATALOG/src nie ma nowego kodu (brak: $znacznik)." >&2
     echo "Nowe pliki nie dojechały - wgraj je jeszcze raz i powtórz." >&2
@@ -86,7 +86,7 @@ done
 
 # Schemat bazy musi znać to, czego kod od niego chce. Stary schema.prisma przy
 # nowym kodzie to błąd typów w środku builda, a nie od razu widać dlaczego.
-for kolumna in "inactiveWarnedAt" "DeletedNote"; do
+for kolumna in "inactiveWarnedAt" "DeletedNote" "aiDailyLimit"; do
   if ! grep -q "$kolumna" prisma/schema.prisma; then
     echo "ŹLE: prisma/schema.prisma jest starszy niż kod (brak: $kolumna)." >&2
     echo "Wgraj nowy schemat i powtórz." >&2
@@ -145,8 +145,14 @@ else
   echo "a zmiany schematu nie wykonam przy okazji buildu." >&2
   echo >&2
   echo "Zrób to tak:" >&2
-  echo "  1. npm run db:apply     <- pokaże różnice, zrobi kopię, zmieni schemat" >&2
-  echo "  2. powtórz ten skrypt   <- zbuduje i przeładuje usługę" >&2
+  # Krok pierwszy jest jednorazowy i dotyczy TEGO wydania: zmienia się
+  # znaczenie zera w limicie miejsca. Zero znaczyło „bez ograniczeń", a od
+  # tej wersji znaczy zero - konta zapisane ze starym zerem trzeba przepisać
+  # PRZED zmianą schematu, bo potem nie da się ich odróżnić od świeżych.
+  echo "  1. npm run db:limity    <- JEDNORAZOWO: przepisuje stare „bez ograniczeń\"" >&2
+  echo "                             (zero) na -1. Sam mówi, gdy nie ma czego robić." >&2
+  echo "  2. npm run db:apply     <- pokaże różnice, zrobi kopię, zmieni schemat" >&2
+  echo "  3. powtórz ten skrypt   <- zbuduje i przeładuje usługę" >&2
   echo >&2
   echo "Stara wersja chodzi dalej, nic się nie zepsuło." >&2
   exit 1
@@ -166,6 +172,13 @@ else
   echo "UWAGA: nie znalazłem ani pm2, ani systemd - przeładuj serwer ręcznie." >&2
 fi
 
+# Zegar maszyny kontra strefa, którą wymusza aplikacja. Nie musi się zgadzać -
+# instrumentation.ts i tak przestawia proces na Europe/Warsaw - ale gdy się
+# rozjeżdża, wiadomo, czemu w logu pm2 godziny są inne niż na stronie.
+echo
+echo "Zegar maszyny:   $(date '+%Y-%m-%d %H:%M:%S %Z')"
+echo "Strefa aplikacji: ${KAJET_TZ:-Europe/Warsaw} (o tej północy zeruje się limit KajetAI)"
+
 nowy_build="$(ls .next/static/chunks/webpack-*.js 2>/dev/null | head -1 || true)"
 echo
 echo "Plik builda przed: ${stary_build:-brak}"
@@ -177,22 +190,26 @@ fi
 echo
 echo "Sprawdzenie w przeglądarce:"
 echo
-echo "1. NAJWAŻNIEJSZE, na telefonie (albo w wąskim oknie): /library nie"
-echo "   przewija się w bok - foldery i spis stoją jedno pod drugim, a tabela"
-echo "   notatek przewija się w swojej ramce, tak jak w koszu."
+echo "1. NAJWAŻNIEJSZE, bo tu można stracić dostęp do zapisu: konto z limitem"
+echo "   0 MB nie zapisze ani jednego znaku (komunikat o braku miejsca), ale"
+echo "   notatki DALEJ się otwierają i da się z nich usuwać treść. Konto"
+echo "   z limitem -1 MB zapisuje bez przeszkód. Sprawdź OBA - do niedawna"
+echo "   działało to dokładnie na odwrót."
 echo
-echo "2. Na telefonie /admin: przyciski podstron stoją w równych rzędach po"
-echo "   trzy, a „Moje notatki\" ma własny wiersz na całą szerokość."
+echo "2. /admin z konta BEZ uprawnień: zwykła strona „nie ma takiego adresu\","
+echo "   bez pętli przekierowań."
 echo
-echo "3. Złe hasło na /signin: „Zły adres albo złe hasło.\" staje POD"
-echo "   przyciskiem „Zaloguj się\", a pola zostają na swoim miejscu. Tak samo"
-echo "   /password - odpowiedź o wysłanym odnośniku staje pod „Wyślij"
-echo "   odnośnik\", nie nad polami."
+echo "3. /admin/codes: nad polami stoi zasada „0 to nic, -1 to bez ograniczeń\","
+echo "   a w spisie wydanych kodów data i opis stoją równo z kodem, nie w pół"
+echo "   wysokości wiersza."
 echo
-echo "4. /contact wygląda jak strona tytułowa: nagłówek ze znakiem, podkreślone"
-echo "   słowo w tytule, samolocik i formularz na jasnej kartce. Pokazuje"
-echo "   formularz, a nie napis „Formularz nie jest tu jeszcze podłączony\""
-echo "   (jeśli napis stoi, patrz UWAGA o CONTACT_API_KEY na początku)."
-echo "   Odpowiedź po wysłaniu staje pod przyciskiem."
+echo "4. /library: zaznaczenia przy tytułach notatek i pasek nad tabelą -"
+echo "   przenoszenie do folderu i kosz działają na kilku naraz. Na telefonie"
+echo "   karta notatki wygląda jak wcześniej, tylko z kwadracikiem przy tytule."
+echo
+echo "5. Strona tytułowa: na telefonie kartka z kodem Pythona nie ma pustego"
+echo "   pasa pod spodem (trójkąt stoi obok kodu, nie pod nim), a niżej stoi"
+echo "   nowa sekcja o asystencie KajetAI. Przełącz motyw - kartka z kodem"
+echo "   jest jasna na jasnym."
 echo
 echo "Z komputera: node scripts/sprawdz-serwer.mjs - sprawdzi też kontakt."

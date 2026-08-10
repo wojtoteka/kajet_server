@@ -101,10 +101,17 @@ export async function register(
         passwordHash: await bcrypt.hash(password, 12),
         quotaBytes: quota,
         permanentQuotaBytes: quota,
-        // Kod może nieść ze sobą dostęp do asystenta. Samą zgodę na wysyłanie
-        // treści do Google trzeba i tak potwierdzić przy pierwszym użyciu -
-        // uprawnienie i zgoda to dwie różne rzeczy.
-        canUseAi: invite.grantsAi,
+        /*
+          Kod niesie dostęp do asystenta razem z jego dzienną miarą. Zero
+          zapytań na dobę znaczy „bez asystenta", więc to liczba rozstrzyga -
+          tak samo jak dawny znacznik, który zostaje wyłącznie dla kodów
+          wystawionych, zanim ta liczba w ogóle istniała.
+
+          Samą zgodę na wysyłanie treści do Google i tak trzeba potwierdzić
+          przy pierwszym użyciu: uprawnienie i zgoda to dwie różne rzeczy.
+        */
+        canUseAi: invite.aiDailyLimit > 0 || invite.grantsAi,
+        aiDailyLimit: invite.aiDailyLimit,
       },
       select: { id: true, email: true },
     });

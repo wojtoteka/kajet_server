@@ -102,7 +102,7 @@ export function RegulaminPl() {
 
       <h2 id="par6">§ 6. Miejsce na dane</h2>
       <ol className="legal-items">
-        <li>Każde Konto ma limit miejsca na serwerze. Domyślnie wynosi on <strong>500 MB</strong>. Administrator może przyznać Kontu limit większy, mniejszy albo nieograniczony, także czasowo.</li>
+        <li>Każde Konto ma limit miejsca na serwerze. Miejsce przyznaje Administrator – przy kodzie zaproszenia albo później – i może przyznać limit dowolnej wielkości, nieograniczony albo czasowy. Konto, któremu miejsca nie przyznano, ma <strong>0 MB</strong> i nie zapisze na serwerze żadnej Notatki; na samym urządzeniu Kajet działa wtedy bez zmian.</li>
         <li>Pojedynczy załącznik może ważyć najwyżej <strong>25 MB</strong>. Przyjmowane są obrazy (PNG, JPEG, WebP, GIF, SVG) oraz pliki JSON.</li>
         <li>Po wyczerpaniu limitu Kajet odmawia zapisania nowych danych na serwerze. Notatki już zapisane pozostają dostępne, a pisanie na samym urządzeniu działa dalej. Miejsce zwalnia się, kasując notatki i opróżniając kosz.</li>
         <li>Aktualny stan zajętości Użytkownik widzi w ustawieniach Konta na stronie oraz w aplikacji.</li>
@@ -360,7 +360,7 @@ export function RegulaminEn() {
 
       <h2 id="par6">§ 6. Storage space</h2>
       <ol className="legal-items">
-        <li>Every Account has a storage limit on the server, <strong>500 MB</strong> by default. The Administrator may grant a larger, smaller or unlimited allowance, including temporarily.</li>
+        <li>Every Account has a storage limit on the server. The Administrator grants the space – with the invite code or later – and may grant an allowance of any size, unlimited or temporary. An Account that has been granted none has <strong>0 MB</strong> and will save no Note on the server; on the device itself Kajet keeps working as before.</li>
         <li>A single attachment may weigh at most <strong>25 MB</strong>. Images (PNG, JPEG, WebP, GIF, SVG) and JSON files are accepted.</li>
         <li>Once the limit is used up, Kajet refuses to save new data on the server. Notes already saved stay available, and writing on the device itself keeps working. Space is freed by deleting notes and emptying the bin.</li>
         <li>The User can see how much space is used in the Account settings on the website and in the application.</li>

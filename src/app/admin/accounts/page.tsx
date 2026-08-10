@@ -113,7 +113,10 @@ export default async function AccountsPage({
         {users.map((user) => {
           const quota = Number(user.quotaBytes);
           const used = Number(user.usedBytes);
-          const percent = quota > 0 ? Math.min(100, Math.round((used / quota) * 100)) : 0;
+          // Ujemny limit to „bez ograniczeń", zerowy to zero miejsca — a przy
+          // zerze pasek ma być pełny, nie pusty.
+          const unlimited = quota < 0;
+          const percent = unlimited ? 0 : quota > 0 ? Math.min(100, Math.round((used / quota) * 100)) : 100;
 
           return (
             <div key={user.id} className="sheet account-card">
@@ -138,6 +141,7 @@ export default async function AccountsPage({
                       user.email,
                       user._count.notes,
                       user._count.tokens,
+                      humanSize(user.usedBytes),
                       user.createdAt.toLocaleDateString(words.locale),
                     )}
                   </p>
@@ -151,13 +155,13 @@ export default async function AccountsPage({
                 <div style={{ minWidth: 200 }}>
                   <p className="small" style={{ margin: "0 0 4px 0" }}>
                     {humanSize(user.usedBytes)} {words.ofWord}{" "}
-                    {quota === 0 ? words.noLimit : humanSize(user.quotaBytes)}
+                    {unlimited ? words.noLimit : humanSize(user.quotaBytes)}
                     {user.quotaUntil
                       ? ` (${words.until} ${user.quotaUntil.toLocaleDateString(words.locale)})`
                       : ""}
                   </p>
                   <div className={`storage-bar${percent >= 90 ? " full" : ""}`}>
-                    <span style={{ width: `${quota === 0 ? 4 : percent}%` }} />
+                    <span style={{ width: `${unlimited ? 4 : percent}%` }} />
                   </div>
                 </div>
               </div>
@@ -171,16 +175,20 @@ export default async function AccountsPage({
                       <input
                         name="quotaMb"
                         type="number"
-                        min={0}
-                        defaultValue={Math.round(quota / 1024 / 1024)}
+                        // Minus jeden przechodzi, bo tak zapisuje się „bez
+                        // ograniczeń"; zero znaczy zero megabajtów.
+                        min={-1}
+                        defaultValue={unlimited ? -1 : Math.round(quota / 1024 / 1024)}
                         aria-label={words.quotaInMb}
                       />
                       <span className="small">MB</span>
                       <input
                         name="forDays"
                         type="number"
-                        min={0}
-                        defaultValue={0}
+                        // -1 znaczy „na stałe", tak samo jak przy kodzie
+                        // zaproszenia znaczy „bez terminu".
+                        min={-1}
+                        defaultValue={-1}
                         aria-label={words.forHowManyDays}
                       />
                       <span className="small">{words.daysWord}</span>

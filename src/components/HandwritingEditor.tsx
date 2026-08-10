@@ -50,7 +50,7 @@ import {
 } from "@/lib/shapes";
 import { MAX_CUSTOM_COLORS, readPalette, savePalette } from "@/lib/palette";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { Icon } from "@/components/Icon";
+import { Icon, type IconName } from "@/components/Icon";
 import { useWords } from "@/components/LanguageProvider";
 import {
   changeOwnColour,
@@ -78,7 +78,7 @@ type Action = (previous: ActionResult, data: FormData) => Promise<ActionResult>;
 type Tool = "pen" | "highlighter" | "fineliner" | "eraser" | "select" | "shapes";
 
 /** Rodzaje kształtów w kolejności paska, razem z nazwą i ikoną. */
-function shapeKinds(words: Words): { id: ShapeKind; label: string; icon: string }[] {
+function shapeKinds(words: Words): { id: ShapeKind; label: string; icon: IconName }[] {
   return [
     { id: "line", label: words.shapeLine, icon: "horizontal_rule" },
     { id: "arrow", label: words.shapeArrow, icon: "arrow_outward" },

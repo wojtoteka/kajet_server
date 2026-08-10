@@ -14,10 +14,12 @@ import {
   renameFolder,
   setFolderLook,
   moveNoteToFolder,
+  bulkNotesFromLibrary,
 } from "./actions";
+import { BulkNotesForm, BULK_FORM_ID } from "@/components/BulkNotesForm";
 import { FolderMoveForm } from "@/components/FolderMoveForm";
 import { FolderList } from "@/components/FolderList";
-import { Icon } from "@/components/Icon";
+import { Icon, type IconName } from "@/components/Icon";
 import { currentWords } from "@/lib/language";
 import { attachmentsCount, notesCount, type Words } from "@/lib/i18n";
 
@@ -56,7 +58,7 @@ function kindName(words: Words, kind: string): string {
 }
 
 /** Ikony rodzajów notatek - nazwy prosto z fonts.google.com/icons. */
-const KIND_ICONS: Record<string, string> = {
+const KIND_ICONS: Record<string, IconName> = {
   HANDWRITTEN: "draw",
   TEXT: "article",
   MINDMAP: "account_tree",
@@ -154,9 +156,11 @@ export default async function LibraryPage({
       prisma.appRelease.count({ where: { current: true } }),
     ]);
 
-  const percent =
-    storage.unlimited || storage.quota === 0n
-      ? 0
+  // Jak na ekranie konta: bez ograniczeń - pusty pasek, zero miejsca - pełny.
+  const percent = storage.unlimited
+    ? 0
+    : storage.quota <= 0n
+      ? 100
       : Math.min(100, Math.round((Number(storage.used) / Number(storage.quota)) * 100));
 
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -399,6 +403,13 @@ export default async function LibraryPage({
               </div>
             </div>
           ) : (
+            <>
+            {/*
+              Pasek zaznaczonych stoi NAD tabelą, a zaznaczenia siedzą w jej
+              wierszach - patrz BulkNotesForm - bo formularza nie da się
+              zagnieździć w formularzu, a każdy wiersz swój już ma.
+            */}
+            <BulkNotesForm folders={folderChoices} action={bulkNotesFromLibrary} />
             <div className="sheet table-scroll">
               <table className="notes-table">
                 <thead>
@@ -417,9 +428,24 @@ export default async function LibraryPage({
                   {notes.map((note) => (
                     <tr key={note.id}>
                       <td>
-                        <Link href={`/note/${note.id}`}>
-                          <strong>{note.title || words.untitled}</strong>
-                        </Link>
+                        {/*
+                          Zaznaczenie stoi PRZY tytule, a nie we własnej
+                          kolumnie: układ kartowy na telefonie rozstawia
+                          komórki po numerze kolumny, więc szósta kolumna
+                          przestawiłaby całą kartę.
+                        */}
+                        <span className="note-pick">
+                          <input
+                            type="checkbox"
+                            name="noteIds"
+                            value={note.id}
+                            form={BULK_FORM_ID}
+                            aria-label={`${words.bulkRowLabel}: ${note.title || words.untitled}`}
+                          />
+                          <Link href={`/note/${note.id}`}>
+                            <strong>{note.title || words.untitled}</strong>
+                          </Link>
+                        </span>
                         {note.favorite ? (
                           <span className="tag accent" style={{ marginLeft: 8 }}>
                             {words.tagFavorite}
@@ -504,6 +530,7 @@ export default async function LibraryPage({
                 </tbody>
               </table>
             </div>
+            </>
           )}
 
           {pages > 1 ? (

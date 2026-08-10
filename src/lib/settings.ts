@@ -21,6 +21,25 @@ export const settings = {
   baseUrl: process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:9081",
   port: number("PORT", 9081),
 
+  /**
+   * Strefa czasowa serwera. Ustawia ją instrumentation.ts przy podnoszeniu
+   * procesu — patrz tam po powód.
+   *
+   * W skrócie: „północ" musi znaczyć północ u nas, a nie na maszynie. Limit
+   * asystenta zeruje się o północy i tak jest napisane w komunikacie; na
+   * serwerze chodzącym na UTC zerowałby się latem o drugiej w nocy. Po tej
+   * samej strefie idą też wszystkie daty na stronie (data założenia konta,
+   * termin kodu zaproszenia, godziny w dzienniku).
+   *
+   * Do zmiany służy KAJET_TZ, a NIE zwykłe TZ. Rozróżnienie jest tu po coś:
+   * TZ bywa ustawione na maszynie przypadkiem — pm2, systemd czy obraz
+   * kontenera wpisują tam UTC, nikogo nie pytając. Gdyby wygrywało, ta cała
+   * nastawa cicho nic by nie robiła dokładnie na tych serwerach, dla których
+   * powstała. KAJET_TZ nie weźmie się znikąd: wpisuje je ten, kto naprawdę
+   * chce innej strefy.
+   */
+  timeZone: process.env.KAJET_TZ || "Europe/Warsaw",
+
   database: {
     host: process.env.DB_HOST || "127.0.0.1",
     port: number("DB_PORT", 3306),
@@ -53,7 +72,16 @@ export const settings = {
   },
 
   quotas: {
-    default: number("DEFAULT_QUOTA_BYTES", 524_288_000),
+    /**
+     * Ile miejsca dostaje konto, o którym nikt nic nie powiedział - czyli
+     * założone kodem bez wpisanego limitu. Takie kody są już tylko stare,
+     * bo nowy formularz wymaga liczby.
+     *
+     * Zero, i to jest cała rzecz: konto bez nadanego miejsca ma zero, a nie
+     * pół giga. Miejsce nadaje się świadomie - przy kodzie zaproszenia albo
+     * z panelu. „Bez ograniczeń" zapisuje się jako -1, nigdy jako zero.
+     */
+    default: number("DEFAULT_QUOTA_BYTES", 0),
 
     /**
      * Górna granica dla całego serwera: tyle łącznie mogą zająć notatki

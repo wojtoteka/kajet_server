@@ -124,8 +124,11 @@ function kajetAdapter(): Adapter {
             quotaBytes: code.quotaBytes ?? undefined,
             permanentQuotaBytes: code.quotaBytes ?? undefined,
             // To samo co przy zakładaniu konta na hasło: kod niesie samo
-            // uprawnienie, zgodę na wysyłanie treści potwierdza się osobno.
-            canUseAi: code.grantsAi,
+            // uprawnienie razem z dzienną miarą, a zero zapytań na dobę
+            // znaczy „bez asystenta". Zgodę na wysyłanie treści potwierdza
+            // się osobno.
+            canUseAi: code.aiDailyLimit > 0 || code.grantsAi,
+            aiDailyLimit: code.aiDailyLimit,
           },
         });
 

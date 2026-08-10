@@ -1,10 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { humanSize } from "@/lib/quota";
+import { hasFreeSeat } from "@/lib/invite";
 import { aiWorks, mailWorks, settings } from "@/lib/settings";
 import { ActionForm } from "@/components/ActionForm";
 import { CopyableLink, CopyButton } from "@/components/CopyableLink";
 import { deleteCode, createCode } from "../actions";
 import { currentWords } from "@/lib/language";
+import { aiPerDayTag, seatsUsed } from "@/lib/i18n";
 
 export default async function CodesPage() {
   const words = await currentWords();
@@ -31,6 +33,16 @@ export default async function CodesPage() {
           {words.codesLead}
         </p>
 
+        {/*
+          Jedna zasada nad wszystkimi polami, zamiast zgadywania przy każdym
+          z osobna. Wcześniej to samo zero znaczyło tu trzy różne rzeczy: przy
+          miejscu „tyle, ile domyślnie", przy dniach „bez terminu", a przy
+          asystencie „bez asystenta".
+        */}
+        <p className="small" style={{ marginBottom: 16 }}>
+          {words.codeNumbersRule}
+        </p>
+
         <ActionForm action={createCode} label={words.issueCode} busyLabel={words.issuingCode} primary>
           <div
             style={{
@@ -42,19 +54,18 @@ export default async function CodesPage() {
           >
             <div>
               <label htmlFor="seats">{words.howManyAccounts}</label>
-              <input id="seats" name="seats" type="number" min={1} max={500} defaultValue={1} />
+              <input id="seats" name="seats" type="number" min={-1} max={500} defaultValue={1} />
+              <p className="small" style={{ marginTop: 4 }}>{words.seatsHint}</p>
             </div>
             <div>
               <label htmlFor="quotaMb">{words.quotaMbLabel}</label>
-              <input id="quotaMb" name="quotaMb" type="number" min={0} defaultValue={0} />
-              <p className="small" style={{ marginTop: 4 }}>
-                Zero oznacza limit domyślny, czyli {humanSize(settings.quotas.default)}.
-              </p>
+              <input id="quotaMb" name="quotaMb" type="number" min={-1} defaultValue={0} />
+              <p className="small" style={{ marginTop: 4 }}>{words.codeQuotaHint}</p>
             </div>
             <div>
               <label htmlFor="validDays">{words.validForDaysLabel}</label>
-              <input id="validDays" name="validDays" type="number" min={0} defaultValue={30} />
-              <p className="small" style={{ marginTop: 4 }}>Zero oznacza bez terminu.</p>
+              <input id="validDays" name="validDays" type="number" min={-1} defaultValue={30} />
+              <p className="small" style={{ marginTop: 4 }}>{words.validDaysHint}</p>
             </div>
             <div>
               <label htmlFor="email">{words.sendStraightTo}</label>
@@ -77,22 +88,24 @@ export default async function CodesPage() {
             />
           </div>
 
+          {/*
+            Jedna liczba zamiast znacznika „daj asystenta" obok pola „ile
+            razy dziennie". Dostęp bez limitu i limit bez dostępu to były dwa
+            stany, których nikt nie potrzebował, a dało się je nastawić.
+          */}
           {assistantHere ? (
-            <div className="field">
-              <label
-                htmlFor="grantsAi"
-                style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}
-              >
-                <input
-                  id="grantsAi"
-                  name="grantsAi"
-                  type="checkbox"
-                  style={{ width: "auto", margin: 0 }}
-                />
-                <span>{words.codeGrantsAi}</span>
-              </label>
+            <div className="field" style={{ maxWidth: 260 }}>
+              <label htmlFor="aiPerDay">{words.codeAiPerDayLabel}</label>
+              <input
+                id="aiPerDay"
+                name="aiPerDay"
+                type="number"
+                min={0}
+                max={10_000}
+                defaultValue={0}
+              />
               <p className="small" style={{ marginTop: 4 }}>
-                {words.codeGrantsAiHint}
+                {words.codeAiPerDayHint}
               </p>
             </div>
           ) : null}
@@ -109,12 +122,18 @@ export default async function CodesPage() {
         </div>
       ) : (
         <div className="sheet table-scroll">
-          <table>
+          {/*
+            Własna klasa, bo ten spis ma w pierwszej komórce trzy wiersze
+            (kod, przycisk, odnośnik), a reszta po jednym. Przy wyrównaniu do
+            środka - takim jak w każdej innej tabeli panelu - data i opis
+            zawisały w połowie wysokości wiersza, jakby ktoś je upuścił.
+          */}
+          <table className="codes-table">
             <thead>
               <tr>
                 <th>{words.columnCode}</th>
                 <th>{words.columnUse}</th>
-                <th>{words.columnAccountQuota}</th>
+                <th>{words.columnCodeGrants}</th>
                 <th>{words.columnValidTo}</th>
                 <th>{words.columnDescription}</th>
                 <th />
@@ -122,7 +141,7 @@ export default async function CodesPage() {
             </thead>
             <tbody>
               {codes.map((code) => {
-                const spent = code.usedSeats >= code.seats;
+                const spent = !hasFreeSeat(code);
                 const expired = Boolean(code.expiresAt && code.expiresAt < new Date());
                 return (
                   <tr key={code.id}>
@@ -146,15 +165,28 @@ export default async function CodesPage() {
                         <span className="tag accent">{words.tagFree}</span>
                       )}
                       <p className="small" style={{ margin: "4px 0 0 0" }}>
-                        {code.usedSeats} {words.ofWord} {code.seats}
+                        {/* „0 z bez limitu" nie jest zdaniem — kod bez
+                            ograniczeń mówi tylko, ile razy go użyto. */}
+                        {seatsUsed(words, code.usedSeats, code.seats)}
                         {code.usedBy ? `, ${words.usedByWord} ${code.usedBy.login}` : ""}
                       </p>
                     </td>
                     <td>
-                      {code.quotaBytes ? humanSize(code.quotaBytes) : words.defaultWord}
-                      {assistantHere && code.grantsAi ? (
+                      {/* Zero jest teraz zwykłą liczbą, a nie brakiem wpisu,
+                          więc porównujemy z null wprost - `code.quotaBytes ?`
+                          uznawało zero za „nie podano". */}
+                      {code.quotaBytes === null
+                        ? words.defaultWord
+                        : code.quotaBytes < 0n
+                          ? words.noLimit
+                          : humanSize(code.quotaBytes)}
+                      {assistantHere && (code.grantsAi || code.aiDailyLimit > 0) ? (
                         <p className="small" style={{ margin: "4px 0 0 0" }}>
-                          <span className="tag accent">{words.tagAiAllowed}</span>
+                          <span className="tag accent">
+                            {code.aiDailyLimit > 0
+                              ? aiPerDayTag(words, code.aiDailyLimit)
+                              : words.tagAiAllowed}
+                          </span>
                         </p>
                       ) : null}
                     </td>

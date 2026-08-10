@@ -8,6 +8,8 @@
   stronach.
 */
 
+import type { IconName } from "@/lib/icon-names";
+
 export type FolderColour = {
   id: string;
   label: string;
@@ -46,7 +48,7 @@ export function lookLabel(entry: { label: string; labelEn: string }, english: bo
   return english ? entry.labelEn : entry.label;
 }
 
-export const FOLDER_ICONS: { id: string; label: string; labelEn: string; icon: string }[] = [
+export const FOLDER_ICONS: { id: string; label: string; labelEn: string; icon: IconName }[] = [
   { id: "folder", label: "Folder", labelEn: "Folder", icon: "folder" },
   { id: "ksiazki", label: "Książki", labelEn: "Books", icon: "local_library" },
   { id: "litery", label: "Litery", labelEn: "Letters", icon: "abc" },
@@ -87,7 +89,7 @@ export const FOLDER_ICONS: { id: string; label: string; labelEn: string; icon: s
   { id: "tag", label: "Etykieta", labelEn: "Tag", icon: "label" },
 ];
 
-export function folderIcon(id: string | null | undefined): string {
+export function folderIcon(id: string | null | undefined): IconName {
   return FOLDER_ICONS.find((entry) => entry.id === id)?.icon ?? "folder";
 }
 

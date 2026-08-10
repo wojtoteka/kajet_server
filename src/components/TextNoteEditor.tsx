@@ -9,7 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { Icon } from "@/components/Icon";
+import { Icon, type IconName } from "@/components/Icon";
 import { RichText } from "@/components/RichText";
 import { useWords } from "@/components/LanguageProvider";
 import { noteTally, type Words } from "@/lib/i18n";
@@ -438,7 +438,7 @@ export function TextNoteEditor({
   */
   const keepCaret = (event: React.MouseEvent) => event.preventDefault();
 
-  function markButton(mark: MarkName, label: string, icon: string) {
+  function markButton(mark: MarkName, label: string, icon: IconName) {
     const on = formats.marks.has(mark);
     return (
       <button
@@ -456,7 +456,7 @@ export function TextNoteEditor({
     );
   }
 
-  function blockButton(block: BlockName, label: string, icon: string) {
+  function blockButton(block: BlockName, label: string, icon: IconName) {
     const on = formats.blocks.has(block);
     return (
       <button

@@ -53,12 +53,19 @@ model User {
   /// domyślną z ustawień serwera - tak samo jak zero w limicie miejsca.
   aiDailyLimit  Int       @default(0)
 
-  /// Storage quota in bytes. Zero means no quota.
-  quotaBytes    BigInt    @default(524288000)
+  /// Miejsce na notatki w bajtach. ZERO ZNACZY ZERO: konto nie zapisze ani
+  /// jednej notatki, dopóki miejsca mu się nie nada. Bez ograniczeń to -1.
+  ///
+  /// Zero było kiedyś „bez ograniczeń", a nowe konto dostawało 500 MB samo
+  /// z siebie. Wychodziło z tego, że pomyłka w jedną stronę (wpisane zero)
+  /// oddawała cały serwer, a w drugą - rozdawała pół giga bez pytania.
+  /// Teraz miejsce nadaje się świadomie: przy kodzie zaproszenia albo
+  /// z panelu.
+  quotaBytes    BigInt    @default(0)
   /// How long the quota above applies. Empty means permanently.
   quotaUntil    DateTime?
   /// The quota we fall back to once a temporary quota expires.
-  permanentQuotaBytes BigInt @default(524288000)
+  permanentQuotaBytes BigInt @default(0)
   /// Space used, recalculated on every save. We keep it so we do not have to
   /// sum up every note each time a quota is checked.
   usedBytes     BigInt    @default(0)
@@ -209,12 +216,22 @@ model InviteCode {
   /// How many accounts may be created with this code. One is a plain invite.
   seats        Int       @default(1)
   usedSeats    Int       @default(0)
-  /// Storage quota an account created with this code will get.
+  /// Miejsce, jakie dostanie konto założone tym kodem. Zero znaczy zero,
+  /// -1 znaczy bez ograniczeń, a puste pole (stare kody) - tyle, ile mówią
+  /// ustawienia serwera.
   quotaBytes   BigInt?
   /// Czy konto założone tym kodem od razu może prosić asystenta o zmianę
   /// notatki. Samą zgodę na wysyłanie treści do Google i tak trzeba potem
   /// potwierdzić - kod nadaje uprawnienie, nie zgodę za człowieka.
+  ///
+  /// Pole zostaje dla kodów wystawionych, zanim pojawił się dzienny limit
+  /// niżej. Nowe kody zapisują je razem z nim, żeby jedno nie mówiło czegoś
+  /// innego niż drugie.
   grantsAi     Boolean   @default(false)
+  /// Ile razy dziennie konto założone tym kodem może poprosić asystenta.
+  /// ZERO ZNACZY „BEZ ASYSTENTA" - tak samo, jakby uprawnienia w ogóle nie
+  /// nadano. Dostęp i jego wielkość to przy kodzie jedna decyzja, nie dwie.
+  aiDailyLimit Int       @default(0)
   description  String?   @db.Text
   expiresAt    DateTime?
   createdAt    DateTime  @default(now())

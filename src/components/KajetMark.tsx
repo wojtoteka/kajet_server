@@ -50,7 +50,7 @@ export async function KajetMark({ caption }: { caption?: string }) {
       <span
         style={{
           // Ten sam krój co nagłówki i znak na stronie tytułowej.
-          fontFamily: '"Bricolage Grotesque", var(--font-heading)',
+          fontFamily: 'var(--font-bricolage), "Bricolage Grotesque", var(--font-heading)',
           fontSize: 26,
           fontWeight: 600,
           letterSpacing: "-0.01em",

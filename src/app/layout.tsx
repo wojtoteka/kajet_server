@@ -1,9 +1,42 @@
 import type { Metadata, Viewport } from "next";
+import { Archivo, Bricolage_Grotesque, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 import { DESK_DARK, DESK_LIGHT, THEME_BOOT_SCRIPT } from "@/lib/theme";
 import { currentLanguage, currentWords } from "@/lib/language";
 import { LanguageProvider } from "@/components/LanguageProvider";
 import { SiteFooter } from "@/components/SiteFooter";
+
+/*
+  Pisma tekstowe strony. next/font ściąga je raz, przy budowaniu, i serwuje
+  z naszego serwera - przeglądarka nie czeka już na arkusz z serwera Google,
+  zanim cokolwiek narysuje. Każde pismo trafia do zmiennej CSS, po którą
+  sięga globals.css (--font-heading, --font-body, --font-mono).
+
+  latin-ext to polskie znaki. Archivo i Bricolage są pismami zmiennymi,
+  więc nie wymieniamy grubości; Plex istnieje tylko w stałych odmianach.
+*/
+const archivo = Archivo({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-archivo",
+  display: "swap",
+});
+const bricolage = Bricolage_Grotesque({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-bricolage",
+  display: "swap",
+});
+const plexSans = IBM_Plex_Sans({
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "500", "600"],
+  variable: "--font-plex-sans",
+  display: "swap",
+});
+const plexMono = IBM_Plex_Mono({
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "500"],
+  variable: "--font-plex-mono",
+  display: "swap",
+});
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -32,7 +65,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const language = await currentLanguage();
 
   return (
-    <html lang={language}>
+    <html
+      lang={language}
+      className={`${archivo.variable} ${bricolage.variable} ${plexSans.variable} ${plexMono.variable}`}
+    >
       <head>
         {/*
           Zapisany wybór motywu stawiamy przed pierwszym rysowaniem strony -
@@ -47,35 +83,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           kilkadziesiąt ekranów tekstu i przez ten czas świeci motyw systemu.
         */}
         <script data-cfasync="false" dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         {/*
-          Pismo strony. Do tej pory arkusz prosił o Archivo i IBM Plex, ale nikt
-          ich nie wczytywał, więc wszystko lądowało na zapasowym Segoe UI.
-          Bricolage Grotesque nosi nagłówki strony tytułowej (home.module.css).
+          Żadnych zapytań do Google: pisma tekstowe niesie next/font (wyżej),
+          a pismo ikon leży w repo i wczytuje je globals.css (@font-face przy
+          klasie .ms). Oba są przycięte do tego, czego strona używa.
         */}
-        <link
-          rel="stylesheet"
-          href={
-            "https://fonts.googleapis.com/css2" +
-            "?family=Archivo:wght@400;500;600;700" +
-            "&family=Bricolage+Grotesque:wght@600;700" +
-            "&family=IBM+Plex+Sans:wght@400;500;600" +
-            "&family=IBM+Plex+Mono:wght@400;500" +
-            "&display=swap"
-          }
-        />
-        {/*
-          Ikony: Material Symbols z fonts.google.com/icons. display=block, żeby
-          zanim pismo dojedzie, nie mrugnąć nazwą ikony zapisaną słowem.
-        */}
-        <link
-          rel="stylesheet"
-          href={
-            "https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:" +
-            "opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block"
-          }
-        />
       </head>
       {/* Edytory są klienckie i nie dosięgną ciasteczek serwera - język,
           który serwer już zna, podajemy im tędy. */}

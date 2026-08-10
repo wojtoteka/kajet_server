@@ -11,8 +11,22 @@
   się w kółko, mógłby kosztować bez końca - a za tokeny wejściowe płaci się
   także wtedy, gdy odpowiedź do niczego się nie nadała.
 
-  Okna są przesuwane: „ostatnie 24 godziny", nie „od północy". Limit dobowy
-  odblokowywany o północy zachęca do czekania do północy.
+  Doba liczy się OD PÓŁNOCY, godzina jest przesuwana.
+
+  Wcześniej obie były przesuwane („ostatnie 24 godziny"), bo limit zerowany
+  o północy zachęca do czekania do północy. Ważniejsze okazało się to, że
+  przesuwanego okna nie da się nikomu wytłumaczyć: na pytanie „to kiedy
+  znowu będę mógł" jedyna uczciwa odpowiedź brzmi „dobę od zapytania, którego
+  już nie pamiętasz". Północ da się podać w komunikacie i da się jej doczekać.
+
+  Godzinna zapora zostaje przesuwana, bo nie jest miarą do wykorzystania,
+  tylko hamulcem na serię zapytań pod rząd - a taki hamulec zerowany o pełnej
+  godzinie przesuwa serię o kilka minut i tyle z niego pożytku.
+
+  Północ jest ta nasza, nie ta z zegara maszyny: strefę procesu ustawia
+  instrumentation.ts przy podnoszeniu serwera (settings.timeZone, domyślnie
+  Europe/Warsaw). Bez tego serwer stojący na UTC zerowałby limit latem
+  o drugiej w nocy, a komunikat obiecywałby północ.
 */
 
 import { prisma } from "@/lib/prisma";
@@ -23,6 +37,19 @@ import { aiLimitReached } from "@/lib/i18n";
 export type AiLimitCheck =
   | { allowed: true; leftToday: number }
   | { allowed: false; message: string };
+
+/**
+ * Ostatnia północ, czyli początek dzisiejszej doby.
+ *
+ * Osobno i z jawnym czasem na wejściu, żeby dało się to sprawdzić testem bez
+ * czekania do północy. `setHours` liczy w strefie procesu, a tę ustawia
+ * instrumentation.ts na settings.timeZone - patrz uwaga na górze pliku.
+ */
+export function startOfToday(now: number = Date.now()): Date {
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+  return start;
+}
 
 /** Limit dobowy tego konta: własny, gdy ustawiony, inaczej domyślny z ustawień. */
 export function dailyLimitFor(account: { aiDailyLimit: number }): number {
@@ -39,7 +66,7 @@ export async function checkAiLimit(
 
   const [today, thisHour] = await Promise.all([
     prisma.aiCall.count({
-      where: { userId: account.id, createdAt: { gte: new Date(now - 86_400_000) } },
+      where: { userId: account.id, createdAt: { gte: startOfToday(now) } },
     }),
     prisma.aiCall.count({
       where: { userId: account.id, createdAt: { gte: new Date(now - 3_600_000) } },
@@ -76,7 +103,10 @@ export async function aiUsageForMany(
   const [today, week] = await Promise.all([
     prisma.aiCall.groupBy({
       by: ["userId"],
-      where: { userId: { in: userIds }, createdAt: { gte: new Date(now - 86_400_000) } },
+      // Ta sama doba co w [checkAiLimit] - od północy. Inaczej panel pokazywał
+      // „dziś 3 z 5" komuś, komu asystent właśnie odmówił, bo liczyły dwa
+      // różne okna.
+      where: { userId: { in: userIds }, createdAt: { gte: startOfToday(now) } },
       _count: { _all: true },
     }),
     prisma.aiCall.groupBy({

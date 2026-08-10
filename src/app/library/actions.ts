@@ -10,7 +10,12 @@ import {
 } from "@/lib/note-write";
 import { FOLDER_COLOURS, FOLDER_ICONS } from "@/lib/folder-look";
 import { currentWords } from "@/lib/language";
-import { folderDeletedMsg } from "@/lib/i18n";
+import {
+  bulkMovedMsg,
+  bulkPartlyFailedMsg,
+  bulkTrashedMsg,
+  folderDeletedMsg,
+} from "@/lib/i18n";
 
 export type Result = { error?: string; success?: string };
 
@@ -137,6 +142,78 @@ export async function moveNoteToFolder(_previous: Result, data: FormData): Promi
   revalidatePath("/library");
   revalidatePath(`/note/${noteId}`);
   return { success: folderId ? (await currentWords()).actMovedToFolder : (await currentWords()).actTakenOutOfFolder };
+}
+
+/**
+ * Działanie na wielu zaznaczonych notatkach naraz.
+ *
+ * Jedno działanie, a nie dwa osobne, bo formularz nad spisem jest jeden: dwa
+ * znaczyłyby dwa komplety tych samych zaznaczeń i pytanie, do którego z nich
+ * należy właśnie kliknięty przycisk. Co zrobić, mówi przycisk (`what`).
+ *
+ * Notatka, której nie da się ruszyć (cudza, skasowana w międzyczasie), nie
+ * zatrzymuje reszty — zdanie na końcu mówi, ile takich było.
+ */
+export async function bulkNotesFromLibrary(_previous: Result, data: FormData): Promise<Result> {
+  const user = await currentUser();
+  const words = await currentWords();
+  if (!user) return { error: words.apiMustSignIn };
+
+  const noteIds = data
+    .getAll("noteIds")
+    .map((value) => String(value))
+    .filter(Boolean);
+  if (noteIds.length === 0) return { error: words.bulkNothingPicked };
+
+  const what = String(data.get("what") ?? "");
+  if (what !== "trash" && what !== "move") return { error: "Nieznane działanie." };
+
+  // Cudzych notatek nie ruszamy i nie mówimy o nich ani słowa więcej, niż
+  // trzeba: dla zaznaczającego wyglądają tak samo jak te, których nie ma.
+  const mine = await prisma.note.findMany({
+    where: { id: { in: noteIds }, ownerId: user.id, deletedAt: null },
+    select: { id: true },
+  });
+  if (mine.length === 0) return { error: words.bulkNothingPicked };
+
+  if (what === "trash") {
+    let failed = 0;
+    for (const note of mine) {
+      const outcome = await setNoteDeletedForUser(user.id, note.id, true);
+      if (outcome.status === "error") failed += 1;
+    }
+    revalidatePath("/library");
+    revalidatePath("/library/trash");
+    if (failed > 0) {
+      return { error: bulkPartlyFailedMsg(words, failed, mine.length) };
+    }
+    return { success: bulkTrashedMsg(words, mine.length) };
+  }
+
+  const folderRaw = String(data.get("folderId") ?? "");
+  const folderId = folderRaw === "" || folderRaw === "__none" ? null : folderRaw;
+
+  let folderName: string | null = null;
+  if (folderId) {
+    const folder = await prisma.folder.findUnique({
+      where: { id: folderId },
+      select: { ownerId: true, name: true },
+    });
+    if (!folder || folder.ownerId !== user.id) return { error: "Nie ma takiego folderu." };
+    folderName = folder.name;
+  }
+
+  // Jednym zapisem, nie notatka po notatce: przeniesienie nie ma żadnej
+  // roboty pobocznej (plików, załączników, nagrobków), więc nie ma czego
+  // rozkładać na kroki, a wersja rośnie każdej z nich tak samo.
+  const moved = await prisma.note.updateMany({
+    where: { id: { in: mine.map((note) => note.id) }, ownerId: user.id },
+    data: { folderId, version: { increment: 1 } },
+  });
+
+  revalidatePath("/library");
+  for (const note of mine) revalidatePath(`/note/${note.id}`);
+  return { success: bulkMovedMsg(words, moved.count, folderName) };
 }
 
 export async function createFolder(_previous: Result, data: FormData): Promise<Result> {

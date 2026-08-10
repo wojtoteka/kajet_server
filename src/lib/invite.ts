@@ -21,6 +21,21 @@ const inviteCookieSeconds = 30 * 60;
 
 export type InviteCheck = { invite: InviteCode } | { error: string };
 
+/**
+ * Czy kodem można jeszcze założyć konto.
+ *
+ * Ujemna liczba miejsc znaczy „bez ograniczeń" - tak samo jak przy limicie
+ * miejsca na notatki, żeby minus wszędzie w panelu znaczył to samo. Taki kod
+ * nie wyczerpuje się nigdy, więc jest zwykłym otwartym odnośnikiem do
+ * rejestracji; termin ważności obowiązuje go tak samo jak każdy inny.
+ *
+ * Bez tej funkcji porównanie `usedSeats >= seats` uznawało kod bez ograniczeń
+ * za zużyty od pierwszej chwili (zero jest większe od minus jednego).
+ */
+export function hasFreeSeat(invite: { seats: number; usedSeats: number }): boolean {
+  return invite.seats < 0 || invite.usedSeats < invite.seats;
+}
+
 /** Czy kodem można teraz założyć konto. */
 export async function checkInvite(rawCode: string): Promise<InviteCheck> {
   const code = rawCode.trim();
@@ -33,7 +48,7 @@ export async function checkInvite(rawCode: string): Promise<InviteCheck> {
   if (invite.expiresAt && invite.expiresAt < new Date()) {
     return { error: (await apiWords()).apiCodeExpired };
   }
-  if (invite.usedSeats >= invite.seats) {
+  if (!hasFreeSeat(invite)) {
     return { error: (await apiWords()).apiCodeUsedUp };
   }
   return { invite };

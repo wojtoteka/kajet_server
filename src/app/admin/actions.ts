@@ -68,12 +68,33 @@ function newCode(): string {
 }
 
 const codeForm = z.object({
-  seats: z.coerce.number().int().min(1).max(500),
-  quotaMb: z.coerce.number().int().min(0).max(1_048_576),
-  validDays: z.coerce.number().int().min(0).max(3650),
+  // Minus jeden znaczy „bez ograniczeń", tak samo jak przy miejscu na
+  // notatki. Zera nie ma po co przepuszczać: kod na zero kont to kod, którym
+  // nie da się nic zrobić.
+  /*
+    Dwie liczby znaczą w całym formularzu to samo:
+
+      0  - nic (konto bez miejsca, konto bez asystenta),
+     -1  - bez ograniczeń (dowolnie wiele kont, miejsce bez limitu, kod
+           bez terminu ważności).
+
+    Zera nie ma po co przepuszczać tam, gdzie znaczyłoby „kod martwy w chwili
+    wydania": ani zero kont, ani zero dni ważności nie są do niczego. Wcześniej
+    zero w polu dni znaczyło „bez terminu", czyli w jednym formularzu to samo
+    zero raz mówiło „nic", a raz „bez końca".
+  */
+  seats: z.coerce.number().int().min(-1).max(500).refine((value) => value !== 0),
+  quotaMb: z.coerce.number().int().min(-1).max(1_048_576),
+  validDays: z.coerce.number().int().min(-1).max(3650).refine((value) => value !== 0),
   description: z.string().trim().max(200).optional(),
   email: z.string().trim().toLowerCase().email().optional().or(z.literal("")),
-  grantsAi: z.boolean(),
+  /*
+    Ile razy dziennie konto z tego kodu może poprosić asystenta. Zero znaczy
+    „bez asystenta" — jedna liczba zamiast znacznika „daj dostęp" obok pola
+    „ile", bo dostęp bez limitu i limit bez dostępu to dwa stany, których nikt
+    nie potrzebuje, a dało się je nastawić.
+  */
+  aiPerDay: z.coerce.number().int().min(0).max(10_000),
 });
 
 export async function createCode(_previous: Result, data: FormData): Promise<Result> {
@@ -82,25 +103,31 @@ export async function createCode(_previous: Result, data: FormData): Promise<Res
   const parsed = codeForm.safeParse({
     seats: data.get("seats") || 1,
     quotaMb: data.get("quotaMb") || 0,
-    validDays: data.get("validDays") || 0,
+    validDays: data.get("validDays") || 30,
     description: data.get("description") || "",
     email: data.get("email") || "",
-    grantsAi: data.get("grantsAi") === "on",
+    aiPerDay: data.get("aiPerDay") || 0,
   });
   if (!parsed.success) return { error: (await currentWords()).actCheckNumbers };
 
-  const { seats, quotaMb, validDays, description, email, grantsAi } = parsed.data;
+  const { seats, quotaMb, validDays, description, email, aiPerDay } = parsed.data;
   const code = newCode();
+  const grantsAi = aiPerDay > 0;
 
   await prisma.inviteCode.create({
     data: {
       code,
       seats,
-      // Zero in the quota field means "as by default", not "no quota".
-      // No quota is set on the account itself, once it has been created.
-      quotaBytes: quotaMb > 0 ? BigInt(quotaMb) * 1024n * 1024n : null,
+      // Liczba wpisana wprost, nigdy null: kod ma mówić, ile daje. Puste pole
+      // zostało tylko w kodach wystawionych wcześniej i znaczy przy nich
+      // „tyle, ile mówią ustawienia serwera" - czyli dziś zero.
+      quotaBytes: quotaFromMb(quotaMb),
+      // Znacznik i liczba idą razem, żeby jedno nie mówiło czegoś innego
+      // niż drugie. Sam znacznik zostaje dla starszych kodów.
       grantsAi,
-      expiresAt: validDays > 0 ? new Date(Date.now() + validDays * 86_400_000) : null,
+      aiDailyLimit: aiPerDay,
+      // Ujemna liczba dni to kod bez terminu - puste pole w bazie.
+      expiresAt: validDays < 0 ? null : new Date(Date.now() + validDays * 86_400_000),
       description: description || null,
       issuedById: admin.id,
     },
@@ -109,7 +136,10 @@ export async function createCode(_previous: Result, data: FormData): Promise<Res
   await writeToLog(
     admin.id,
     "code.created",
-    `${code}, seats: ${seats}${grantsAi ? ", z KajetAI" : ""}`,
+    `${code}, seats: ${seats < 0 ? "no limit" : seats}` +
+      `, ${quotaMb < 0 ? "no limit" : `${quotaMb} MB`}` +
+      `, ${validDays < 0 ? "no deadline" : `${validDays} days`}` +
+      (grantsAi ? `, KajetAI ${aiPerDay}/doba` : ""),
   );
 
   const words = await currentWords();
@@ -146,9 +176,18 @@ export async function deleteCode(_previous: Result, data: FormData): Promise<Res
 
 const quotaForm = z.object({
   userId: z.string().min(1),
-quotaMb: z.coerce.number().int().min(0).max(10_485_760),
-forDays: z.coerce.number().int().min(0).max(3650),
+  // Ta sama zasada co przy kodzie zaproszenia: -1 to „bez ograniczeń", zero
+  // to zero. Przy dniach „bez ograniczeń" znaczy „na stałe", a zero nie
+  // znaczy nic - limit na zero dni jest limitem, który mija w tej samej
+  // chwili, w której go nadano.
+  quotaMb: z.coerce.number().int().min(-1).max(10_485_760),
+  forDays: z.coerce.number().int().min(-1).max(3650).refine((value) => value !== 0),
 });
+
+/** Megabajty z formularza na bajty w bazie. -1 zostaje -1: bez ograniczeń. */
+function quotaFromMb(quotaMb: number): bigint {
+  return quotaMb < 0 ? -1n : BigInt(quotaMb) * 1024n * 1024n;
+}
 
 export async function setQuota(_previous: Result, data: FormData): Promise<Result> {
   const admin = await requireAdmin();
@@ -156,12 +195,12 @@ export async function setQuota(_previous: Result, data: FormData): Promise<Resul
   const parsed = quotaForm.safeParse({
     userId: data.get("userId"),
     quotaMb: data.get("quotaMb") ?? 0,
-    forDays: data.get("forDays") ?? 0,
+    forDays: data.get("forDays") ?? -1,
   });
   if (!parsed.success) return { error: (await currentWords()).actCheckNumbers };
 
   const { userId, quotaMb, forDays } = parsed.data;
-  const quota = BigInt(quotaMb) * 1024n * 1024n;
+  const quota = quotaFromMb(quotaMb);
 
   await prisma.user.update({
     where: { id: userId },
@@ -183,14 +222,19 @@ export async function setQuota(_previous: Result, data: FormData): Promise<Resul
   await writeToLog(
     admin.id,
     "account.quota",
-    `${userId}: ${quotaMb === 0 ? "no quota" : `${quotaMb} MB`}` +
+    `${userId}: ${quotaMb < 0 ? "no limit" : `${quotaMb} MB`}` +
       (forDays > 0 ? `, for ${forDays} days` : ", permanently"),
   );
 
   revalidatePath("/admin/accounts");
   const words = await currentWords();
   return {
-    success: quotaMb === 0 ? words.actUnlimitedGiven : quotaSetTo(words, quotaMb, forDays),
+    success:
+      quotaMb < 0
+        ? words.actUnlimitedGiven
+        : quotaMb === 0
+          ? words.actNoSpaceGiven
+          : quotaSetTo(words, quotaMb, forDays),
   };
 }
 

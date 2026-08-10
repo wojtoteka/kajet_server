@@ -1,41 +1,38 @@
-/*
-  Strona tytułowa: kartka papieru, po której ktoś przeciągnął o wiele za grubą
-  kreskę zielonego atramentu. Kreska występuje dokładnie cztery razy (wpada
-  w hero, podkreśla słowo Kajet, rozwidla się przy wyborze konta i kończy
-  haczykiem przy pobieraniu), a każdy jej zakręt coś wskazuje. Reszta strony
-  jest cicha: między sekcjami nie ma linii, oddechy robi sam odstęp.
+﻿/*
+  Strona tytuĹ‚owa: kartka papieru, po ktĂłrej ktoĹ› przeciÄ…gnÄ…Ĺ‚ o wiele za grubÄ…
+  kreskÄ™ zielonego atramentu. Kreska wystÄ™puje dokĹ‚adnie cztery razy (wpada
+  w hero, podkreĹ›la sĹ‚owo Kajet, rozwidla siÄ™ przy wyborze konta i koĹ„czy
+  haczykiem przy pobieraniu), a kaĹĽdy jej zakrÄ™t coĹ› wskazuje. Reszta strony
+  jest cicha: miÄ™dzy sekcjami nie ma linii, oddechy robi sam odstÄ™p.
 
-  Barwy idą z globals.css (biurko, pismo, zieleń), więc motyw ciemny i pasek
-  przeglądarki działają jak na każdej innej stronie serwisu. Własne są tylko
-  dwie: --wkladka (ciemna kartka z kodem) i --obrys (ramka przycisków,
-  mocniejsza niż linia włosowa panelu, bo tu ramki są rzadkie i muszą być
-  widoczne także dla słabszych oczu - 3:1 do tła w obu motywach).
+  Barwy idÄ… z globals.css (biurko, pismo, zieleĹ„), wiÄ™c motyw ciemny i pasek
+  przeglÄ…darki dziaĹ‚ajÄ… jak na kaĹĽdej innej stronie serwisu. WĹ‚asna jest tylko
+  jedna: --obrys (ramka przyciskĂłw, mocniejsza niĹĽ linia wĹ‚osowa panelu, bo tu
+  ramki sÄ… rzadkie i muszÄ… byÄ‡ widoczne takĹĽe dla sĹ‚abszych oczu - 3:1 do tĹ‚a
+  w obu motywach).
 */
 
 .strona {
   font-size: 17px;
-  --wkladka: #171614;
   --obrys: color-mix(in srgb, var(--text) 55%, transparent);
 }
 
 @media (prefers-color-scheme: dark) {
   :global(:root:not([data-theme="light"])) .strona {
-    --wkladka: var(--sheet);
     --obrys: color-mix(in srgb, var(--text) 40%, transparent);
   }
 }
 
 :global(:root[data-theme="dark"]) .strona {
-  --wkladka: var(--sheet);
   --obrys: color-mix(in srgb, var(--text) 40%, transparent);
 }
 
-/* Pismo tytułowe jest inne niż w panelu - strona ma prawo mówić głośniej
-   niż formularze. Rozmiary nadpisują h1-h3 z globals.css. */
+/* Pismo tytuĹ‚owe jest inne niĹĽ w panelu - strona ma prawo mĂłwiÄ‡ gĹ‚oĹ›niej
+   niĹĽ formularze. Rozmiary nadpisujÄ… h1-h3 z globals.css. */
 .strona h1,
 .strona h2,
 .strona h3 {
-  font-family: "Bricolage Grotesque", var(--font-heading);
+  font-family: var(--font-bricolage), "Bricolage Grotesque", var(--font-heading);
   letter-spacing: -0.015em;
 }
 
@@ -69,7 +66,7 @@
   padding-inline: 22px;
 }
 
-/* Wąska kolumna stoi przy lewej krawędzi wspólnej siatki, nie na środku okna. */
+/* WÄ…ska kolumna stoi przy lewej krawÄ™dzi wspĂłlnej siatki, nie na Ĺ›rodku okna. */
 .waska {
   max-width: 640px;
   margin-inline: max(22px, calc((100% - 1120px) / 2 + 22px)) auto;
@@ -77,7 +74,7 @@
 }
 
 .nadtytul {
-  font-family: "Bricolage Grotesque", var(--font-heading);
+  font-family: var(--font-bricolage), "Bricolage Grotesque", var(--font-heading);
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.12em;
@@ -103,7 +100,7 @@
   margin: 10px 22px;
 }
 
-/* --- Przyciski: rzadkie, więc z wyraźniejszą ramką niż w panelu --- */
+/* --- Przyciski: rzadkie, wiÄ™c z wyraĹşniejszÄ… ramkÄ… niĹĽ w panelu --- */
 
 .przycisk {
   display: inline-flex;
@@ -145,14 +142,14 @@
   margin-bottom: 18px;
 }
 
-/* Goły odnośnik obok przycisków. Globals zdejmuje podkreślenie odnośników,
-   a tutaj bez niego zostałby sam zielony napis bez zaproszenia do kliknięcia. */
+/* GoĹ‚y odnoĹ›nik obok przyciskĂłw. Globals zdejmuje podkreĹ›lenie odnoĹ›nikĂłw,
+   a tutaj bez niego zostaĹ‚by sam zielony napis bez zaproszenia do klikniÄ™cia. */
 .zwyklyOdnosnik {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
-/* --- Pasek górny: bez tła i bez kreski, trzyma go sam odstęp --- */
+/* --- Pasek gĂłrny: bez tĹ‚a i bez kreski, trzyma go sam odstÄ™p --- */
 
 .naglowek {
   display: flex;
@@ -168,7 +165,7 @@
   gap: 10px;
   color: var(--text);
   text-decoration: none;
-  font-family: "Bricolage Grotesque", var(--font-heading);
+  font-family: var(--font-bricolage), "Bricolage Grotesque", var(--font-heading);
   font-size: 22px;
   font-weight: 700;
 }
@@ -212,10 +209,10 @@
 }
 
 /*
-  Na wąskim ekranie kreski nie ma wcale. W jednej kolumnie zostawał z niej
-  ucięty kawałek łuku bez początku i końca, wiszący w pustym, 130-pikselowym
-  pasie nad nagłówkiem. Rysunek ma sens dopiero obok tekstu, więc wraca
-  razem z układem dwukolumnowym.
+  Na wÄ…skim ekranie kreski nie ma wcale. W jednej kolumnie zostawaĹ‚ z niej
+  uciÄ™ty kawaĹ‚ek Ĺ‚uku bez poczÄ…tku i koĹ„ca, wiszÄ…cy w pustym, 130-pikselowym
+  pasie nad nagĹ‚Ăłwkiem. Rysunek ma sens dopiero obok tekstu, wiÄ™c wraca
+  razem z ukĹ‚adem dwukolumnowym.
 */
 .gest {
   display: none;
@@ -263,8 +260,8 @@
   margin-bottom: 26px;
 }
 
-/* Podkreślenie przyklejone do samego słowa, więc nie rozjedzie się przy
-   żadnej szerokości okna ani po zmianie języka. */
+/* PodkreĹ›lenie przyklejone do samego sĹ‚owa, wiÄ™c nie rozjedzie siÄ™ przy
+   ĹĽadnej szerokoĹ›ci okna ani po zmianie jÄ™zyka. */
 .podkreslone {
   position: relative;
   white-space: nowrap;
@@ -280,9 +277,9 @@
   pointer-events: none;
 }
 
-/* Kreska w hero kreśli się raz przy wczytaniu. Tylko ona się rusza i tylko
-   u ludzi, którzy nie prosili o spokój (globals.css i tak zeruje animacje
-   przy prefers-reduced-motion, ale nie ma co na tym polegać w ciemno). */
+/* Kreska w hero kreĹ›li siÄ™ raz przy wczytaniu. Tylko ona siÄ™ rusza i tylko
+   u ludzi, ktĂłrzy nie prosili o spokĂłj (globals.css i tak zeruje animacje
+   przy prefers-reduced-motion, ale nie ma co na tym polegaÄ‡ w ciemno). */
 @media (prefers-reduced-motion: no-preference) {
   .gestKreska {
     stroke-dasharray: 1;
@@ -297,7 +294,7 @@
   }
 }
 
-/* --- Cztery rodzaje notatek: cztery pasma, każde inne --- */
+/* --- Cztery rodzaje notatek: cztery pasma, kaĹĽde inne --- */
 
 .rodzaje {
   padding-block: 0 48px;
@@ -342,9 +339,9 @@
   color: var(--text);
 }
 
-/* Pasmo tekstu stoi w tej samej siatce co pismo odręczne, tylko niżej
-   i bez oddechu wokół rysunku - trzy linijki są niskie, więc same robią
-   przerwę między domkiem a mapą myśli. */
+/* Pasmo tekstu stoi w tej samej siatce co pismo odrÄ™czne, tylko niĹĽej
+   i bez oddechu wokĂłĹ‚ rysunku - trzy linijki sÄ… niskie, wiÄ™c same robiÄ…
+   przerwÄ™ miÄ™dzy domkiem a mapÄ… myĹ›li. */
 .pasmoTekst {
   display: grid;
   gap: 18px;
@@ -410,35 +407,54 @@
 }
 
 /*
-  Ciemna wkładka z kodem zapowiada motyw ciemny, zanim ktoś kliknie
-  przełącznik. Leży krzywo jak domek w paśmie pisma - rogi się mijają,
-  a cała kartka jest przechylona - ale to, co na niej stoi, jest już
+  Kartka z kodem leĹĽy krzywo jak domek w paĹ›mie pisma - rogi siÄ™ mijajÄ…,
+  a caĹ‚a kartka jest przechylona - ale to, co na niej stoi, jest juĹĽ
   maszynowe: prawdziwy kod pismem maszynowym, nie kreski.
 
-  Pismo i zieleń są tu wpisane na sztywno, bo ta kartka jest ciemna
-  w obu motywach: barwy jasnego motywu byłyby na niej nieczytelne.
+  Papier jest ten sam co pod domkiem i pod kartkÄ… asystenta (--sheet),
+  wiÄ™c w jasnym motywie kartka jest jasna, a w ciemnym ciemna. WczeĹ›niej
+  byĹ‚a ciemna zawsze: miaĹ‚a zapowiadaÄ‡ motyw ciemny, ale na jasnej stronie
+  wyglÄ…daĹ‚a jak wklejka z innego serwisu. Pismo bierze barwÄ™ pisma strony,
+  a wypisana odpowiedĹş - barwÄ™ wyrĂłĹĽnienia, wiÄ™c obie zmieniajÄ… siÄ™ razem
+  z motywem i ĹĽadna nie musi juĹĽ byÄ‡ wpisana na sztywno.
 
-  Trójkąt nie stoi na pozycji bezwzględnej, tylko jest drugim elementem
-  zginanego rzędu - na wąskim ekranie schodzi pod kod, zamiast wejść
-  na niego.
+  TrĂłjkÄ…t stoi w rzÄ™dzie obok kodu i NIE zawija siÄ™ pod niego.
+
+  ZawijaĹ‚ siÄ™: przy 360 px szerokoĹ›ci ekranu kod miaĹ‚ dolnÄ… granicÄ™ 220 px,
+  odstÄ™p 24 i trĂłjkÄ…t 52 - razem wiÄ™cej, niĹĽ zostawaĹ‚o w kartce. TrĂłjkÄ…t
+  schodziĹ‚ wtedy do drugiego wiersza, sam pod prawÄ… krawÄ™dĹş, a obok niego
+  zostawaĹ‚ pusty pas na caĹ‚Ä… szerokoĹ›Ä‡ kartki. Kartka rosĹ‚a przy tym dwa
+  razy, wiÄ™c i skos z clip-path (liczony w procentach wysokoĹ›ci) robiĹ‚ siÄ™
+  dwa razy wiÄ™kszy - stÄ…d ta przechylona pustka na telefonie.
+
+  Teraz kod kurczy siÄ™ razem z kartkÄ… (min-width: 0), a gdyby komuĹ› nie
+  starczyĹ‚o miejsca na wiersz, jedzie on w bok W SAMEJ KARTCE zamiast
+  rozpychaÄ‡ stronÄ™.
 */
 .wkladka {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 16px 24px;
+  flex-wrap: nowrap;
+  gap: 16px 20px;
   margin: 0;
-  background: var(--wkladka);
-  padding: 26px 26px 24px;
+  background: var(--sheet);
+  padding: 22px 20px 20px;
   clip-path: polygon(0% 4%, 100% 0%, 99% 96%, 0.8% 100%);
   transform: rotate(-1.1deg);
 
-  --kod-pismo: #f4f1ea;
-  --kod-zielen: #4fb39c;
+  --kod-pismo: var(--text);
+  --kod-zielen: var(--accent);
+}
+
+@media (min-width: 560px) {
+  .wkladka {
+    gap: 16px 24px;
+    padding: 26px 26px 24px;
+  }
 }
 
 .wkladka > div {
-  flex: 1 1 220px;
+  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -455,10 +471,19 @@
 .kod {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 15px;
+  font-size: 13px;
   line-height: 1.75;
   color: var(--kod-pismo);
   white-space: pre;
+  /* Ostatnia deska ratunku dla bardzo wÄ…skich ekranĂłw: wiersz jedzie w bok
+     wewnÄ…trz kartki, a nie wypycha caĹ‚ej strony. */
+  overflow-x: auto;
+}
+
+@media (min-width: 560px) {
+  .kod {
+    font-size: 15px;
+  }
 }
 
 @media (min-width: 880px) {
@@ -467,14 +492,17 @@
   }
 }
 
-/* Napis w cudzysłowie jest cichszy od wywołania, znaki zachęty jeszcze
-   cichsze - to one mają tłumaczyć, a nie przyciągać wzrok. */
+/* Napis w cudzysĹ‚owie jest cichszy od wywoĹ‚ania, znaki zachÄ™ty jeszcze
+   cichsze - to one majÄ… tĹ‚umaczyÄ‡, a nie przyciÄ…gaÄ‡ wzrok. */
 .napis {
   color: color-mix(in srgb, var(--kod-pismo) 62%, transparent);
 }
 
+/* OdrobinÄ™ mocniej niĹĽ dotÄ…d (32%): ciemne pismo rozcieĹ„czone na jasnym
+   papierze gaĹ›nie szybciej niĹĽ jasne na ciemnym, a te trzy znaki majÄ… byÄ‡
+   widoczne w obu motywach. */
 .zacheta {
-  color: color-mix(in srgb, var(--kod-pismo) 32%, transparent);
+  color: color-mix(in srgb, var(--kod-pismo) 38%, transparent);
 }
 
 .wyjscie {
@@ -484,12 +512,17 @@
 .uruchom {
   display: block;
   flex: 0 0 auto;
-  width: 52px;
+  width: 42px;
   height: auto;
-  margin-left: auto;
 }
 
-/* --- Rozwidlenie: katalog na urządzeniu albo konto na serwerze --- */
+@media (min-width: 560px) {
+  .uruchom {
+    width: 52px;
+  }
+}
+
+/* --- Rozwidlenie: katalog na urzÄ…dzeniu albo konto na serwerze --- */
 
 .wybor {
   padding-block: 40px 64px;
@@ -534,8 +567,8 @@
   margin-bottom: 0;
 }
 
-/* Konto dostaje własny arkusz - jaśniejszą kartkę położoną na biurku,
-   tak jak arkusze w całym panelu. Bez ramki. */
+/* Konto dostaje wĹ‚asny arkusz - jaĹ›niejszÄ… kartkÄ™ poĹ‚oĹĽonÄ… na biurku,
+   tak jak arkusze w caĹ‚ym panelu. Bez ramki. */
 .zKontem {
   background: var(--sheet);
   border-radius: var(--radius);
@@ -548,7 +581,45 @@
   }
 }
 
-/* --- Udostępnianie: mała, cicha, sam tekst --- */
+/* --- Asystent: rysunek po lewej, tekst po prawej, jak przy mapie myĹ›li --- */
+
+.asystent {
+  padding-block: 0 64px;
+}
+
+.pasmoAsystent {
+  display: grid;
+  gap: 18px;
+  align-items: center;
+}
+
+@media (min-width: 880px) {
+  .pasmoAsystent {
+    grid-template-columns: 5fr 7fr;
+    gap: 48px;
+  }
+}
+
+.pasmoAsystent figure {
+  margin: 0;
+}
+
+.pasmoAsystent figure svg {
+  display: block;
+  width: min(340px, 100%);
+  height: auto;
+  color: var(--text);
+}
+
+.pasmoAsystent h2 {
+  margin-bottom: 10px;
+}
+
+.pasmoAsystent p:last-child {
+  margin-bottom: 0;
+}
+
+/* --- UdostÄ™pnianie: maĹ‚a, cicha, sam tekst --- */
 
 .udostepnianie {
   padding-block: 0 64px;
@@ -591,8 +662,8 @@
   margin-bottom: 8px;
 }
 
-/* Margines wyrównuje prawą kolumnę do h2 z lewej, więc obowiązuje tylko
-   wtedy, gdy lewa kolumna (wydanie aplikacji) naprawdę stoi obok. */
+/* Margines wyrĂłwnuje prawÄ… kolumnÄ™ do h2 z lewej, wiÄ™c obowiÄ…zuje tylko
+   wtedy, gdy lewa kolumna (wydanie aplikacji) naprawdÄ™ stoi obok. */
 @media (min-width: 880px) {
   .pobranieKolumny > div + .pobraniePrawa {
     margin-top: 62px;

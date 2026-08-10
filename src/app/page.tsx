@@ -248,10 +248,11 @@ export default async function HomePage() {
               <p>{words.homeKindCodeBody}</p>
             </div>
             {/*
-              Kartka z kodem leży krzywo, tak jak domek wyżej, ale to, co na
-              niej stoi, jest już maszynowe: prawdziwa linijka Pythona i to,
-              co wypisała. Znaki zachęty konsoli tłumaczą drugą linijkę same,
-              więc nie ma tu żadnego podpisu do przetłumaczenia.
+              Kartka z kodem leży krzywo, tak jak domek wyżej, i jest z tego
+              samego papieru (--sheet), ale to, co na niej stoi, jest już
+              maszynowe: prawdziwa linijka Pythona i to, co wypisała. Znaki
+              zachęty konsoli tłumaczą drugą linijkę same, więc nie ma tu
+              żadnego podpisu do przetłumaczenia.
 
               role="img" z podpisem, bo czytnik ekranu przeczytałby „większy
               większy większy print cudzysłów..." zamiast rzeczy, o którą chodzi.
@@ -269,7 +270,7 @@ export default async function HomePage() {
                 <path
                   d="M14 10 C 13 34, 13 62, 15 88 C 33 76, 50 63, 64 51 C 47 37, 31 23, 14 10 Z"
                   fill="none"
-                  stroke="#4fb39c"
+                  stroke="var(--accent)"
                   strokeWidth="5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -306,6 +307,87 @@ export default async function HomePage() {
             <div className={styles.zKontem}>
               <h3>{words.homeWithAccountTitle}</h3>
               <p>{words.homeWithAccountBody}</p>
+            </div>
+          </div>
+        </section>
+
+        {/*
+          Asystent stoi PO wyborze konta, bo bez konta go nie ma. Do tej pory
+          jedynym miejscem na stronie, gdzie w ogóle padało słowo KajetAI, była
+          polityka prywatności — czyli tam, gdzie zagląda się na końcu, i to
+          nie po to, żeby się o czymś dowiedzieć.
+
+          Zdania mają pokrycie w kodzie: co asystent umie zmienić — lib/ai/tools.ts
+          (tekst, kod, mapa myśli i dopytanie), kogo wpuszcza — lib/ai/access.ts
+          (uprawnienie przy koncie plus zgoda), cofanie — components/AiPanel.tsx.
+        */}
+        <section className={`${styles.rzad} ${styles.asystent}`}>
+          <div className={styles.pasmoAsystent}>
+            {/*
+              Kartka w trakcie poprawiania: środkowa linijka skreślona, nad nią
+              dopisana nowa z daszkiem wstawki. Iskry obok są jedynym znakiem,
+              że robi to maszyna — cała reszta jest z tej samej ręki co domek
+              przy piśmie odręcznym.
+            */}
+            <figure>
+              <svg viewBox="0 0 460 300" role="img" aria-label={words.homeAiPicture}>
+                <path d="M104 104 L338 88 L350 262 L112 276 Z" fill="var(--sheet)" />
+                <path d="M130 76 L370 60 L382 234 L138 248 Z" fill="var(--sheet)" />
+                <g
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  opacity="0.85"
+                >
+                  <path d="M152 118 c 10 -14 16 10 26 -2 c 8 -10 12 6 22 0 c 8 -4 10 -10 18 -6 m 16 2 c 10 -12 16 6 26 -4 c 8 -7 14 4 22 0 m 18 0 c 8 -10 16 4 26 -4" />
+                  <path d="M196 152 c 8 -10 14 8 22 -2 c 8 -8 12 6 20 0 c 6 -4 10 -8 16 -4" />
+                  {/* Daszek wstawki stoi w przerwie: pod nową linijką,
+                      nad skreśloną. */}
+                  <path d="M212 178 c 5 -7 9 -12 14 -17 c 6 4 10 9 15 15" strokeWidth="2.4" />
+                  <path
+                    d="M156 186 c 10 -12 16 8 26 -2 c 10 -8 14 6 26 0 m 18 -2 c 8 -12 18 4 28 -6"
+                    opacity="0.45"
+                  />
+                  <path
+                    d="M150 182 C 192 187, 236 189, 266 186"
+                    strokeWidth="2.4"
+                    opacity="0.45"
+                  />
+                  <path d="M154 224 c 10 -12 16 8 28 -2 c 10 -8 14 6 24 0 m 18 -2 c 8 -10 16 4 24 -4" />
+                </g>
+                <g
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  opacity="0.85"
+                >
+                  <path d="M398 78 C 400 95, 402 97, 424 104 C 402 111, 400 113, 398 130 C 396 113, 394 111, 372 104 C 394 97, 396 95, 398 78 Z" />
+                  <path
+                    d="M352 40 C 353 49, 354 50, 366 54 C 354 58, 353 59, 352 68 C 351 59, 350 58, 338 54 C 350 50, 351 49, 352 40 Z"
+                    strokeWidth="2.4"
+                  />
+                  <path
+                    d="M426 154 C 427 161, 427 161, 436 164 C 427 167, 427 167, 426 174 C 425 167, 425 167, 416 164 C 425 161, 425 161, 426 154 Z"
+                    strokeWidth="2.2"
+                  />
+                </g>
+              </svg>
+            </figure>
+
+            <div>
+              <h2>{words.homeAiTitle}</h2>
+              <p>{words.homeAiBody}</p>
+              <p className={styles.drobne}>
+                {words.homeAiConsent}{" "}
+                <Link className={styles.zwyklyOdnosnik} href="/privacy#sek3-9">
+                  {words.homeAiPrivacy}
+                </Link>
+                .
+              </p>
             </div>
           </div>
         </section>

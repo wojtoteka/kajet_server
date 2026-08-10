@@ -12,6 +12,8 @@
   też bez logowania - na stronie logowania i przy notatce z odnośnika.
 */
 
+import type { IconName } from "@/lib/icon-names";
+
 export type ThemeChoice = "system" | "light" | "dark";
 
 /** Klucz w localStorage. Zmiana nazwy skasuje ludziom dotychczasowy wybór. */
@@ -22,7 +24,7 @@ export const DESK_LIGHT = "#e7e2d6";
 export const DESK_DARK = "#171614";
 
 // Nazwy motywów stoją w słowniku (lib/i18n.ts), bo widzi je człowiek.
-export const THEME_CHOICES: { id: ThemeChoice; icon: string }[] = [
+export const THEME_CHOICES: { id: ThemeChoice; icon: IconName }[] = [
   { id: "system", icon: "brightness_auto" },
   { id: "light", icon: "light_mode" },
   { id: "dark", icon: "dark_mode" },

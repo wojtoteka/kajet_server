@@ -34,13 +34,36 @@ export async function quotaState(userId: string): Promise<QuotaState> {
     });
   }
 
-  const unlimited = quota === 0n;
+  return { ...readQuota(quota, user.usedBytes), quotaUntil };
+}
+
+/**
+ * Jak czytać zapisany limit miejsca.
+ *
+ * ZERO ZNACZY ZERO, a „bez ograniczeń" zapisuje się liczbą UJEMNĄ (-1).
+ * Do niedawna było odwrotnie: zerem zapisywało się brak ograniczeń, a konto,
+ * któremu nikt miejsca nie nadał, dostawało pół giga z ustawień serwera.
+ * Pomyłka w jedną stronę (wpisane zero) oddawała cały dysk, a w drugą -
+ * rozdawała miejsce bez pytania. Teraz brak nadania znaczy dokładnie tyle,
+ * ile mówi: nic, dopóki miejsce nie zostanie nadane świadomie.
+ *
+ * Wolne miejsce wychodzi ujemne dla konta, któremu miejsce odebrano po tym,
+ * jak zdążyło coś zapisać. To jest w porządku: [fitsInQuota] porównuje liczby,
+ * więc każdy kolejny zapis odbija się, a to, co już leży, zostaje nietknięte.
+ *
+ * Osobna funkcja, bo to jedyne miejsce, w którym rozstrzyga się znaczenie
+ * tych liczb - i jedyne, które da się sprawdzić testem bez bazy danych.
+ */
+export function readQuota(
+  quota: bigint,
+  used: bigint,
+): Omit<QuotaState, "quotaUntil"> {
+  const unlimited = quota < 0n;
   return {
     quota,
-    used: user.usedBytes,
-    free: unlimited ? null : quota - user.usedBytes,
+    used,
+    free: unlimited ? null : quota - used,
     unlimited,
-    quotaUntil,
   };
 }
 
@@ -51,7 +74,7 @@ export async function fitsInQuota(userId: string, addedBytes: number): Promise<Q
 
   const state = await quotaState(userId);
 
-  if (!state.unlimited && state.free !== null && BigInt(addedBytes) > state.free) {
+  if (!fitsIn(state, addedBytes)) {
     return {
       ok: false,
       reason: outOfSpaceReason(await apiWords(), humanSize(state.used), humanSize(state.quota)),
@@ -67,6 +90,22 @@ export async function fitsInQuota(userId: string, addedBytes: number): Promise<Q
   }
 
   return { ok: true };
+}
+
+/**
+ * Czy zapis tylu bajtów mieści się w limicie konta.
+ *
+ * Jedna funkcja dla obu dróg: sprawdzenia z góry ([fitsInQuota]) i tej pod
+ * blokadą wiersza ([reserveBytes]). Wcześniej każda miała własne porównanie
+ * i przy zmianie znaczenia zera jedna z nich została przy starym - konto
+ * z zerowym limitem zapisywało bez końca, choć na ekranie miało „0 B".
+ */
+export function fitsIn(
+  state: { unlimited: boolean; free: bigint | null },
+  addedBytes: number,
+): boolean {
+  if (state.unlimited || state.free === null) return true;
+  return BigInt(addedBytes) <= state.free;
 }
 
 /**
@@ -147,13 +186,19 @@ export async function reserveBytes(userId: string, addedBytes: number): Promise<
         });
       }
 
-      if (quota !== 0n) {
-        const free = quota - user.usedBytes;
-        if (BigInt(addedBytes) > free) {
-          throw Object.assign(new Error("out-of-space"), {
-            quotaReason: outOfSpaceReason(words, humanSize(user.usedBytes), humanSize(quota)),
-          });
-        }
+      /*
+        Znaczenie liczb czytamy przez [readQuota], a nie porównaniem na
+        miejscu. To JEST ta zapora - wszystko, co zapisuje bajty, przechodzi
+        tędy - a stała tu własna, druga kopia reguły. Kiedy zero przestało
+        znaczyć „bez ograniczeń", tamta kopia została przy starym: konto
+        z zerem miało pomijane sprawdzenie i zapisywało bez końca, a konto
+        bez ograniczeń (-1) odbijało się od ujemnego zapasu przy pierwszym
+        zapisie. Dokładnie odwrotnie, niż mówi ekran.
+      */
+      if (!fitsIn(readQuota(quota, user.usedBytes), addedBytes)) {
+        throw Object.assign(new Error("out-of-space"), {
+          quotaReason: outOfSpaceReason(words, humanSize(user.usedBytes), humanSize(quota)),
+        });
       }
 
       /*
@@ -215,9 +260,10 @@ export const DEFAULT_QUOTA = BigInt(settings.quotas.default);
 
 export function humanSize(bytes: bigint | number): string {
   const value = typeof bytes === "bigint" ? Number(bytes) : bytes;
-  // Zero bytes of use is "0 B". Unlimited storage is quota === 0, handled
-  // separately by callers (storage.unlimited), not here.
-  if (value === 0) return "0 B";
+  // Zero bajtów to „0 B" - i przy limicie znaczy to dokładnie tyle, ile
+  // pisze. Miejsce bez ograniczeń zapisuje się liczbą ujemną i wołający
+  // odsiewa je wcześniej (storage.unlimited), więc tutaj nie ma prawa dojść.
+  if (value <= 0) return "0 B";
   if (value < 1024) return `${value} B`;
   const units = ["kB", "MB", "GB", "TB"];
   let size = value / 1024;

@@ -4,7 +4,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { CopyButton } from "@/components/CopyableLink";
 import { useWords } from "@/components/LanguageProvider";
-import { Icon } from "@/components/Icon";
+import { Icon, type IconName } from "@/components/Icon";
 
 type ActionResult = {
   error?: string;
@@ -37,7 +37,7 @@ export function ActionForm({
   compact?: boolean;
   confirmation?: string;
   /** Nazwa ikony z fonts.google.com/icons, na przykład "delete". */
-  icon?: string;
+  icon?: IconName;
   /** Sam znak, bez podpisu. Podpis idzie wtedy na tytuł i do czytnika ekranu. */
   iconOnly?: boolean;
   /** Stan włączony - na przykład gwiazdka na notatce już ulubionej. */

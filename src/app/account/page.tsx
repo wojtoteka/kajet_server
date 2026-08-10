@@ -48,9 +48,16 @@ export default async function AccountPage() {
   const words = await currentWords();
   const writing = readWritingSettings(user);
 
-  const percent =
-    storage.unlimited || storage.quota === 0n
-      ? 0
+  /*
+    Bez ograniczeń - pasek nie ma czego mierzyć. Zero miejsca - pasek pełny,
+    bo wolnego nie ma ani bajta; dzielenie przez zero omijamy osobno. Do
+    niedawna oba te przypadki dawały pusty pasek, bo zero znaczyło „bez
+    ograniczeń" i jedno pytanie załatwiało obie sprawy.
+  */
+  const percent = storage.unlimited
+    ? 0
+    : storage.quota <= 0n
+      ? 100
       : Math.min(100, Math.round((Number(storage.used) / Number(storage.quota)) * 100));
 
   return (
@@ -140,7 +147,13 @@ export default async function AccountPage() {
         <div className={`storage-bar${percent >= 90 ? " full" : ""}`}>
           <span style={{ width: `${storage.unlimited ? 4 : percent}%` }} />
         </div>
-        {percent >= 90 && !storage.unlimited ? (
+        {/* Konto bez nadanego miejsca nie zapisze ani jednej notatki, więc
+            zamiast „miejsce się kończy" mówimy, co jest naprawdę. */}
+        {storage.quota <= 0n && !storage.unlimited ? (
+          <p className="small" style={{ marginTop: 8 }}>
+            {words.noSpaceAtAll}
+          </p>
+        ) : percent >= 90 && !storage.unlimited ? (
           <p className="small" style={{ marginTop: 8 }}>
             {words.spaceRunningOut}
           </p>
