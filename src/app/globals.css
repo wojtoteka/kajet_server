@@ -1093,7 +1093,7 @@ textarea.mono-field {
 }
 
 .rich-text ul[data-kind="task"] > li::before {
-  content: "â";
+  content: "☐";
   display: inline-block;
   width: 22px;
   cursor: pointer;
@@ -1101,7 +1101,7 @@ textarea.mono-field {
 }
 
 .rich-text ul[data-kind="task"] > li[data-done="true"]::before {
-  content: "â‘";
+  content: "☑";
   color: var(--accent);
 }
 
@@ -1392,7 +1392,7 @@ tbody tr:last-child td {
   /* Kropka rozdziela to, co w tabeli rozdzielaĹ‚y kolumny. OdstÄ™p z obu stron
      jest jej wĹ‚asny, bo wiersz nie ma juĹĽ odstÄ™pu w poziomie. */
   .notes-table td:nth-child(2)::after {
-    content: "Â·";
+    content: "·";
     margin: 0 10px;
     color: var(--text-muted);
   }
@@ -1403,7 +1403,7 @@ tbody tr:last-child td {
   }
 
   .notes-table .note-version::before {
-    content: "Â·";
+    content: "·";
     margin: 0 10px;
     color: var(--text-muted);
   }
@@ -1468,7 +1468,7 @@ tbody tr:last-child td {
 
   .trash-table td:nth-child(2)::after,
   .trash-table td:nth-child(3)::after {
-    content: "Â·";
+    content: "·";
     margin: 0 10px;
     color: var(--text-muted);
   }
@@ -1478,7 +1478,7 @@ tbody tr:last-child td {
   }
 
   .trash-table td:nth-child(4) > div::before {
-    content: "Â·";
+    content: "·";
     margin: 0 10px;
     color: var(--text-muted);
   }
