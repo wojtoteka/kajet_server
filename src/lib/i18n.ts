@@ -29,9 +29,11 @@ export function knownLanguage(value: string | null | undefined): Language {
   return value === "en" ? "en" : DEFAULT_LANGUAGE;
 }
 
+// Nazwy języków zostają w swoim języku - „Polski", nie „polski/Polish".
+// Angielski podpisany jako amerykański, bo taka jest flaga przy nim w wyborze.
 export const LANGUAGE_CHOICES: { id: Language; label: string }[] = [
   { id: "pl", label: "Polski" },
-  { id: "en", label: "English" },
+  { id: "en", label: "American English" },
 ];
 
 export type Words = {
@@ -2481,7 +2483,7 @@ const en: Words = {
   library: "Library",
   folders: "Folders",
   allNotes: "All",
-  favorites: "Favourites",
+  favorites: "Favorites",
   noFolder: "No folder",
   newFolder: "New folder",
   folderName: "Folder name",
@@ -2499,10 +2501,10 @@ const en: Words = {
   strike: "Strikethrough",
   underline: "Underline",
   highlight: "Highlight",
-  textColour: "Text colour",
-  textColourOfSelection: "Colour of the selected piece",
-  noColour: "No colour",
-  ownColour: "Your own text colour",
+  textColour: "Text color",
+  textColourOfSelection: "Color of the selected piece",
+  noColour: "No color",
+  ownColour: "Your own text color",
   collapse: "Collapse",
   linkAddress: "Link address",
   insertWord: "Insert",
@@ -2515,12 +2517,12 @@ const en: Words = {
   codePreviewAbout: "The preview refreshes as you type.",
   codeRunDisabled: "Running code is switched off here.",
 
-  locale: "en-GB",
+  locale: "en-US",
 
   myNotes: "My notes",
   libraryTitle: "My notes – Kajet",
   nothingMatchesFilters: "Nothing matches these filters.",
-  noFavoritesYet: "You have no favourites yet.",
+  noFavoritesYet: "You have no favorites yet.",
   nothingHereYet: "Nothing here yet.",
   inTrash: "in the bin",
   noLimit: "no limit",
@@ -2544,7 +2546,7 @@ const en: Words = {
   emptyPageTitle: "Empty page",
   emptyPageHeading: "You have gone past the last page",
   backToStart: "Back to the beginning",
-  favoritesEmptyHeading: "No favourites yet",
+  favoritesEmptyHeading: "No favorites yet",
   favoritesEmptyAbout:
     "Press the star next to any note and a shortcut to it turns up here. The note itself " +
     "stays where it was.",
@@ -2561,7 +2563,7 @@ const en: Words = {
   columnSize: "Size",
   columnChanged: "Changed",
   columnActions: "Actions",
-  tagFavorite: "favourite",
+  tagFavorite: "favorite",
   tagShared: "shared",
   attachmentsWord: "attachments",
   versionWord: "version",
@@ -2602,7 +2604,7 @@ const en: Words = {
   deleteFolder: "Delete the folder",
   saveLook: "Save the look",
   createFolderButton: "Create the folder",
-  folderColourGroup: "Folder colour",
+  folderColourGroup: "Folder color",
   folderIconGroup: "Folder icon",
 
   newNoteEyebrow: "New note",
@@ -2648,7 +2650,7 @@ const en: Words = {
   noteTextKind: "Text note",
   noteCodeKind: "Code file",
   changedWord: "Changed",
-  favoriteWord: "favourite",
+  favoriteWord: "favorite",
   editing: "Editing",
   editingMindMap: "Editing the mind map",
   editingHandwriting: "Editing the handwriting",
@@ -2702,8 +2704,8 @@ const en: Words = {
   deleteForGood: "Delete for good",
   confirmPurgeNote: "Delete the note for good? This cannot be undone.",
   confirmTrashNote: "Move the note to the bin? You can restore it later.",
-  addToFavorites: "Add to favourites",
-  removeFromFavorites: "Remove from favourites",
+  addToFavorites: "Add to favorites",
+  removeFromFavorites: "Remove from favorites",
   attachmentsEyebrow: "Attachments",
   filesWithNote: "Files with this note",
   sendFile: "Upload a file",
@@ -2757,12 +2759,12 @@ const en: Words = {
   formulaWord: "Formula",
   wholeNoteFont: "Typeface for the whole note",
   wholeNoteSize: "Text size for the whole note",
-  wholeNoteColour: "Text colour for the whole note",
-  defaultColour: "Default colour",
+  wholeNoteColour: "Text color for the whole note",
+  defaultColour: "Default color",
   alignLeft: "Align left",
-  alignCentre: "Align centre",
+  alignCentre: "Align center",
   alignRight: "Align right",
-  ownTextColour: "Your own text colour",
+  ownTextColour: "Your own text color",
   photoInNote: "Photo in the note",
   shrinkPhoto: "Make the photo smaller",
   growPhoto: "Make the photo bigger",
@@ -2792,13 +2794,13 @@ const en: Words = {
   shapeTriangle: "Triangle",
   shapeDiamond: "Diamond",
   shapeStar: "Star",
-  shapeFillOn: "Fill with the outline colour",
+  shapeFillOn: "Fill with the outline color",
   shapeFillOff: "No fill",
   shapeSquareLock: "Equal sides – circle and square",
   shapeRemove: "Remove the shape",
-  addOwnColour: "Add a colour of your own",
-  pickOwnColourNewSlot: "Pick your own colour – it is added to the palette",
-  ownInkColour: "Your own ink colour",
+  addOwnColour: "Add a color of your own",
+  pickOwnColourNewSlot: "Pick your own color – it is added to the palette",
+  ownInkColour: "Your own ink color",
   backgroundWord: "Background",
   bgPlain: "Blank",
   bgLined: "Ruled",
@@ -2853,9 +2855,9 @@ const en: Words = {
   smallerTextWord: "Smaller text",
   largerTextWord: "Larger text",
   frameWord: "Frame",
-  ownFrameColour: "Your own node frame colour",
+  ownFrameColour: "Your own node frame color",
   writingWord: "Text",
-  ownNodeTextColour: "Your own text colour in the node",
+  ownNodeTextColour: "Your own text color in the node",
   expandBranch: "Expand the branch",
   collapseBranch: "Collapse the branch",
   nodeTextLabel: "Node text",
@@ -2881,7 +2883,7 @@ const en: Words = {
   homeKindHandTitle: "Handwriting",
   homeKindHandBody:
     "Pen, fineliner, highlighter, eraser and shapes. On a tablet you write with a stylus, " +
-    "and on the website you touch a note up with a mouse or a finger. The ink colours are " +
+    "and on the website you touch a note up with a mouse or a finger. The ink colors are " +
     "the same in both.",
   homeHandPicture:
     "A little house drawn crookedly in ink on a sheet of paper; the top of the roof with " +
@@ -2912,7 +2914,7 @@ const en: Words = {
   homeWithAccountBody:
     "Notes go to the server. You open them on the website and in the app, and after " +
     "a change of phone or tablet they come back on their own. The bin, folders and " +
-    "favourites are shared too.",
+    "favorites are shared too.",
   homeAiTitle: "The KajetAI assistant",
   homeAiBody:
     "Write in a plain sentence what should change in the note. KajetAI shortens a " +
@@ -3336,7 +3338,7 @@ const en: Words = {
   nginxTooBig:
     "Nginx rejected the file as too big. Raise client_max_body_size in its settings.",
   connectionDropped2: "The connection dropped while uploading.",
-  uploadAborted: "Upload cancelled.",
+  uploadAborted: "Upload canceled.",
   pickApkFile: "Choose the APK file with the app.",
   sendingFileStage: "Uploading the file…",
   savingReleaseStage: "Saving the release…",
@@ -3612,8 +3614,8 @@ const en: Words = {
   actLanguageUnsupported: "This language is not supported on the server.",
   actPickLanguage: "Choose a language.",
   actNoteDeletedForGood: "The note has been deleted for good.",
-  actAddedToFavorites: "Added to favourites.",
-  actRemovedFromFavorites: "Removed from favourites.",
+  actAddedToFavorites: "Added to favorites.",
+  actRemovedFromFavorites: "Removed from favorites.",
   actAttachmentDataMissing: "Kajet cannot tell which file this is. Refresh the page and try again.",
   actAttachmentGone: "That attachment is gone already.",
   actOnlyOwnNote: "You can only share a note of your own.",
@@ -3654,7 +3656,7 @@ const en: Words = {
   fontLabel: "Typeface",
   tableWord: "Table",
   dividerWord: "Dividing line",
-  clearColourHint: "Remove the colour – the text goes back to the page colour",
+  clearColourHint: "Remove the color – the text goes back to the page color",
   themeLabel: "Page theme",
   themeSystem: "Same as the system",
   themeLight: "Light",
@@ -3743,13 +3745,13 @@ function polishPlural(count: number, one: string, few: string, many: string): st
 }
 
 export function notesCount(words: Words, count: number): string {
-  if (words.locale === "en-GB") return `${count} ${count === 1 ? "note" : "notes"}`;
+  if (words.locale === "en-US") return `${count} ${count === 1 ? "note" : "notes"}`;
   return `${count} ${polishPlural(count, "notatka", "notatki", "notatek")}`;
 }
 
 /** Zdanie o tym, że kosz opróżnia się sam – liczbę dni bierzemy z ustawień. */
 export function trashKeptFor(words: Words, days: number): string {
-  if (words.locale === "en-GB") {
+  if (words.locale === "en-US") {
     return `The bin empties itself: a note older than ${days} ${days === 1 ? "day" : "days"} here goes away for good, together with its files.`;
   }
   return `Kosz opróżnia się sam: notatka, która leży tu dłużej niż ${days} ${polishPlural(days, "dzień", "dni", "dni")}, znika na zawsze razem z plikami.`;
@@ -3760,9 +3762,9 @@ export function trashKeptFor(words: Words, days: number): string {
  * „Dziś" i „jutro" osobno; po polsku każda liczba od dwóch bierze „dni".
  */
 export function disappearsIn(words: Words, days: number): string {
-  if (days <= 0) return words.locale === "en-GB" ? "Disappears today" : "Zniknie dziś";
-  if (days === 1) return words.locale === "en-GB" ? "Disappears tomorrow" : "Zniknie jutro";
-  return words.locale === "en-GB" ? `Disappears in ${days} days` : `Zniknie za ${days} dni`;
+  if (days <= 0) return words.locale === "en-US" ? "Disappears today" : "Zniknie dziś";
+  if (days === 1) return words.locale === "en-US" ? "Disappears tomorrow" : "Zniknie jutro";
+  return words.locale === "en-US" ? `Disappears in ${days} days` : `Zniknie za ${days} dni`;
 }
 
 /**
@@ -3775,7 +3777,7 @@ export function disappearsIn(words: Words, days: number): string {
 export function noteTally(words: Words, wordCount: number, chars: number): string {
   const w = wordCount.toLocaleString(words.locale);
   const c = chars.toLocaleString(words.locale);
-  if (words.locale === "en-GB") {
+  if (words.locale === "en-US") {
     return `${w} ${wordCount === 1 ? "word" : "words"} · ${c} ${chars === 1 ? "character" : "characters"}`;
   }
   return (
@@ -3787,7 +3789,7 @@ export function noteTally(words: Words, wordCount: number, chars: number): strin
 /* Zdania paska zaznaczania w spisie notatek. */
 
 export function selectedNotes(words: Words, count: number): string {
-  if (words.locale === "en-GB") {
+  if (words.locale === "en-US") {
     if (count === 0) return "Nothing selected";
     return `${count} ${count === 1 ? "note" : "notes"} selected`;
   }
@@ -3798,7 +3800,7 @@ export function selectedNotes(words: Words, count: number): string {
 }
 
 export function bulkTrashedMsg(words: Words, count: number): string {
-  if (words.locale === "en-GB") {
+  if (words.locale === "en-US") {
     return `${notesCount(words, count)} moved to the bin. You can take them out of there.`;
   }
   const went = polishPlural(count, "trafiła", "trafiły", "trafiło");
@@ -3806,7 +3808,7 @@ export function bulkTrashedMsg(words: Words, count: number): string {
 }
 
 export function bulkMovedMsg(words: Words, count: number, folder: string | null): string {
-  if (words.locale === "en-GB") {
+  if (words.locale === "en-US") {
     return folder
       ? `${notesCount(words, count)} moved to “${folder}”.`
       : `${notesCount(words, count)} taken out of their folders.`;
@@ -3819,14 +3821,14 @@ export function bulkMovedMsg(words: Words, count: number, folder: string | null)
 
 /** Ile z zaznaczonych nie dało się ruszyć. Reszta poszła. */
 export function bulkPartlyFailedMsg(words: Words, failed: number, total: number): string {
-  if (words.locale === "en-GB") {
+  if (words.locale === "en-US") {
     return `${total - failed} of ${total} done, ${failed} did not work.`;
   }
   return `Zrobiono ${total - failed} z ${total}, ${failed} się nie udało.`;
 }
 
 export function attachmentsCount(words: Words, count: number): string {
-  if (words.locale === "en-GB") {
+  if (words.locale === "en-US") {
     return `${count} ${count === 1 ? "attachment" : "attachments"}`;
   }
   return `${count} ${polishPlural(count, "załącznik", "załączniki", "załączników")}`;
@@ -3838,7 +3840,7 @@ export function attachmentsCount(words: Words, count: number): string {
  */
 export function seatsUsed(words: Words, used: number, seats: number): string {
   if (seats < 0) {
-    return words.locale === "en-GB"
+    return words.locale === "en-US"
       ? `used ${used} times, no limit`
       : `użyto ${used} razy, bez ograniczeń`;
   }
@@ -3847,29 +3849,29 @@ export function seatsUsed(words: Words, used: number, seats: number): string {
 
 /** Znacznik przy kodzie zaproszenia: „KajetAI, 20 dziennie". */
 export function aiPerDayTag(words: Words, perDay: number): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `KajetAI, ${perDay} a day`
     : `KajetAI, ${perDay} dziennie`;
 }
 
 export function foldersCount(words: Words, count: number): string {
-  if (words.locale === "en-GB") return `${count} ${count === 1 ? "folder" : "folders"}`;
+  if (words.locale === "en-US") return `${count} ${count === 1 ? "folder" : "folders"}`;
   return `${count} ${polishPlural(count, "folder", "foldery", "folderów")}`;
 }
 
 export function devicesCount(words: Words, count: number): string {
-  if (words.locale === "en-GB") return `${count} ${count === 1 ? "device" : "devices"}`;
+  if (words.locale === "en-US") return `${count} ${count === 1 ? "device" : "devices"}`;
   return `${count} ${polishPlural(count, "urządzenie", "urządzenia", "urządzeń")}`;
 }
 
 
 export function folderDeleteWarning(words: Words, name: string, count: number): string {
   if (count === 0) {
-    return words.locale === "en-GB"
+    return words.locale === "en-US"
       ? `Delete the folder \u201c${name}\u201d?`
       : `Skasować folder \u201e${name}\u201d?`;
   }
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `Delete the folder \u201c${name}\u201d? ${notesCount(words, count)} will be left ` +
         "without a folder – nothing is lost."
     : `Skasować folder \u201e${name}\u201d? ${notesCount(words, count)} ` +
@@ -3879,21 +3881,21 @@ export function folderDeleteWarning(words: Words, name: string, count: number): 
 
 /** Blokada konta z powodem wpisanym przez administratora. */
 export function accountBlockedWith(words: Words, reason: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `This account has been blocked: ${reason}`
     : `To konto zostało zablokowane: ${reason}`;
 }
 
 /** Podpowiedź przy przycisku motywu: „Motyw: jasny". */
 export function themeOf(words: Words, name: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `Theme: ${name.toLowerCase()}`
     : `Motyw: ${name.toLowerCase()}`;
 }
 
 /** Brakuje miejsca na koncie: ile zajęte z ilu. */
 export function outOfSpaceReason(words: Words, used: string, quota: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `Your account is out of space. ${used} of ${quota} used. Empty the bin, or ask an ` +
         "administrator for a bigger limit."
     : `Brakuje miejsca na koncie. Zajęte ${used} z ${quota}. Opróżnij kosz albo poproś ` +
@@ -3909,7 +3911,7 @@ export function outOfSpaceReason(words: Words, used: string, quota: string): str
   człowieka w tej chwili obchodzi.
 */
 export function serverOutOfSpaceReason(words: Words, used: string, limit: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `The server has run out of space (${used} of ${limit} used), so it is not taking new ` +
         "notes right now. Nothing has been lost, and writing on your device works as usual. " +
         "Let the administrator know."
@@ -3920,12 +3922,12 @@ export function serverOutOfSpaceReason(words: Words, used: string, limit: string
 
 /** Podpis pod zajętym miejscem w panelu: ile z tego, co serwer w ogóle przyjmie. */
 export function spaceOfServerLimit(words: Words, limit: string): string {
-  return words.locale === "en-GB" ? `of the server's ${limit}` : `z ${limit} dla serwera`;
+  return words.locale === "en-US" ? `of the server's ${limit}` : `z ${limit} dla serwera`;
 }
 
 /** Podpis pod wolnym miejscem w panelu: ile z granicy serwera jeszcze zostało. */
 export function freeOfServerLimit(words: Words, limit: string): string {
-  return words.locale === "en-GB" ? `still free of the server's ${limit}` : `jeszcze wolne z ${limit}`;
+  return words.locale === "en-US" ? `still free of the server's ${limit}` : `jeszcze wolne z ${limit}`;
 }
 
 /**
@@ -3934,7 +3936,7 @@ export function freeOfServerLimit(words: Words, limit: string): string {
  * i tak zatrzyma wcześniej dysk - o tym trzeba powiedzieć wprost.
  */
 export function diskUnderLimitHint(words: Words, disk: string, limit: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `The disk has ${disk} left, while the server limit still allows ${limit}. Writing will ` +
         "stop when the disk fills up, before the limit is reached. Free up space on the disk, " +
         "or lower SERVER_QUOTA_BYTES in the .env file."
@@ -3945,7 +3947,7 @@ export function diskUnderLimitHint(words: Words, disk: string, limit: string): s
 
 /** Ostrzeżenie w panelu, zanim granica serwera zacznie odrzucać zapisy. */
 export function serverNearlyFullHint(words: Words, used: string, limit: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `${used} of ${limit} used. Once the limit is reached, the server stops taking new notes ` +
         "from everyone. Free some space, or raise SERVER_QUOTA_BYTES in the .env file."
     : `Zajęte ${used} z ${limit}. Po przekroczeniu granicy serwer przestanie przyjmować nowe ` +
@@ -3954,7 +3956,7 @@ export function serverNearlyFullHint(words: Words, used: string, limit: string):
 
 /** Za dużo uruchomień kodu w ciągu minuty. */
 export function tooManyRuns(words: Words, limit: number, retryInSeconds: number): string {
-  if (words.locale === "en-GB") {
+  if (words.locale === "en-US") {
     const times = limit === 1 ? "once" : `${limit} times`;
     return `The code has already run ${times} in the past minute. Wait ${retryInSeconds} s and try again.`;
   }
@@ -3980,7 +3982,7 @@ export function aiLimitReached(
   limit: number,
   window: "doba" | "godzina",
 ): string {
-  if (words.locale === "en-GB") {
+  if (words.locale === "en-US") {
     const times = limit === 1 ? "once" : `${limit} times`;
     return window === "doba"
       ? `That is all for today – KajetAI answers ${times} a day here. The count starts again at midnight.`
@@ -4000,7 +4002,7 @@ export function aiLimitReached(
 export function aiNoteTooBig(words: Words, chars: number, most: number): string {
   const has = chars.toLocaleString(words.locale);
   const limit = most.toLocaleString(words.locale);
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `This note has ${has} characters and KajetAI takes at most ${limit}. ` +
         `Split it into smaller notes, or change the part you need by hand.`
     : `Ta notatka ma ${has} znaków, a KajetAI przyjmuje najwyżej ${limit}. ` +
@@ -4009,14 +4011,14 @@ export function aiNoteTooBig(words: Words, chars: number, most: number): string 
 
 /** Załącznik cięższy, niż serwer przyjmuje. */
 export function fileTooBig(words: Words, size: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `The file is too big. The largest one accepted is ${size}.`
     : `Plik jest za duży. Największy przyjmowany rozmiar to ${size}.`;
 }
 
 /** To samo o pliku wydania - zdanie dla administratora, więc z nazwą ustawienia. */
 export function releaseTooBig(words: Words, size: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `The file is too big. The largest one accepted is ${size}. Change it with MAX_APP_BYTES in the .env file.`
     : `Plik jest za duży. Największy przyjmowany rozmiar to ${size}. Zmienisz to w MAX_APP_BYTES w pliku .env.`;
 }
@@ -4024,34 +4026,34 @@ export function releaseTooBig(words: Words, size: string): string {
 /** Limity uruchamiania kodu - wiersz w przeglądzie serwera. */
 
 export function folderSettingsLabel(words: Words, name: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `Settings for the folder \u201c${name}\u201d`
     : `Ustawienia folderu \u201e${name}\u201d`;
 }
 
 
 export function ownColourSlot(words: Words, index: number): string {
-  return words.locale === "en-GB" ? `Your colour ${index}` : `Twój kolor ${index}`;
+  return words.locale === "en-US" ? `Your color ${index}` : `Twój kolor ${index}`;
 }
 
 export function ownColourSlotHint(words: Words, index: number): string {
-  return words.locale === "en-GB"
-    ? `Your colour ${index} – select it to change it with the picker`
+  return words.locale === "en-US"
+    ? `Your color ${index} – select it to change it with the picker`
     : `Twój kolor ${index} – wybierz go, żeby zmienić go paletą`;
 }
 
 export function changeOwnColour(words: Words, index: number): string {
-  return words.locale === "en-GB" ? `Change your colour ${index}` : `Zmień swój kolor ${index}`;
+  return words.locale === "en-US" ? `Change your color ${index}` : `Zmień swój kolor ${index}`;
 }
 
 export function tooManyOwnColours(words: Words, limit: number): string {
-  return words.locale === "en-GB"
-    ? `More than ${limit} colours of your own will not fit`
+  return words.locale === "en-US"
+    ? `More than ${limit} colors of your own will not fit`
     : `Więcej niż ${limit} własnych kolorów się nie zmieści`;
 }
 
 export function strokesOnPage(words: Words, count: number): string {
-  if (words.locale === "en-GB") return `${count} ${count === 1 ? "stroke" : "strokes"}`;
+  if (words.locale === "en-US") return `${count} ${count === 1 ? "stroke" : "strokes"}`;
   const last = count % 10;
   const twoDigits = count % 100;
   const noun =
@@ -4065,7 +4067,7 @@ export function strokesOnPage(words: Words, count: number): string {
 
 
 export function mapTally(words: Words, nodes: number, edges: number): string {
-  if (words.locale === "en-GB") {
+  if (words.locale === "en-US") {
     return `${nodes} ${nodes === 1 ? "node" : "nodes"} · ` +
       `${edges} ${edges === 1 ? "connection" : "connections"}`;
   }
@@ -4076,7 +4078,7 @@ export function mapTally(words: Words, nodes: number, edges: number): string {
 
 
 export function addressConfirmedBody(words: Words, email: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `The address ${email} is now confirmed. You can sign in here and in the tablet app.`
     : `Adres ${email} jest już potwierdzony. Możesz się zalogować tutaj i w aplikacji na tablecie.`;
 }
@@ -4087,7 +4089,7 @@ export function deviceAsksForAccess(
   login: string,
   email: string,
 ): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `The Kajet app on “${device}” is asking for access to your account ${login} (${email}). ` +
         "Confirm if it was you who started the sign-in."
     : `Aplikacja Kajet na urządzeniu „${device}” prosi o dostęp do Twojego konta ${login} ` +
@@ -4096,7 +4098,7 @@ export function deviceAsksForAccess(
 
 
 export function deviceAlreadyApproved(words: Words, device: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `The device \u201c${device}\u201d is already approved. Go back to the Kajet app – ` +
         "it should sign itself in."
     : `Urządzenie \u201e${device}\u201d jest już zatwierdzone. Wróć do aplikacji Kajet – ` +
@@ -4104,41 +4106,41 @@ export function deviceAlreadyApproved(words: Words, device: string): string {
 }
 
 export function approveButtonLabel(words: Words, device: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `Approve \u201c${device}\u201d`
     : `Zatwierdź \u201e${device}\u201d`;
 }
 
 
 export function deviceNameLabel(words: Words, device: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `Name of the device \u201c${device}\u201d`
     : `Nazwa urządzenia \u201e${device}\u201d`;
 }
 
 
 export function blockedOfWhich(words: Words, count: number): string {
-  if (words.locale === "en-GB") return `${count} of them blocked`;
+  if (words.locale === "en-US") return `${count} of them blocked`;
   return `w tym ${count} ${polishPlural(count, "zablokowane", "zablokowane", "zablokowanych")}`;
 }
 
 /** „ostatnie 7.08.2026” pod liczbą nowych kont; bez żadnego konta - inaczej. */
 export function lastAccountOn(words: Words, when: Date | null): string {
-  if (!when) return words.locale === "en-GB" ? "none yet" : "jeszcze żadnego";
+  if (!when) return words.locale === "en-US" ? "none yet" : "jeszcze żadnego";
   const date = when.toLocaleDateString(words.locale);
-  return words.locale === "en-GB" ? `latest ${date}` : `ostatnie ${date}`;
+  return words.locale === "en-US" ? `latest ${date}` : `ostatnie ${date}`;
 }
 
 /** „ostatnia 4.08.2026” pod liczbą awarii; przy pustym dzienniku - cisza. */
 export function lastCrashOn(words: Words, when: Date | null): string {
-  if (!when) return words.locale === "en-GB" ? "none ever reported" : "nigdy żadnej";
+  if (!when) return words.locale === "en-US" ? "none ever reported" : "nigdy żadnej";
   const date = when.toLocaleDateString(words.locale);
-  return words.locale === "en-GB" ? `latest ${date}` : `ostatnia ${date}`;
+  return words.locale === "en-US" ? `latest ${date}` : `ostatnia ${date}`;
 }
 
 /** Notatki z całego tygodnia, pod liczbą dzisiejszych. */
 export function notesThisWeek(words: Words, count: number): string {
-  return words.locale === "en-GB" ? `${count} this week` : `w tym tygodniu ${count}`;
+  return words.locale === "en-US" ? `${count} this week` : `w tym tygodniu ${count}`;
 }
 
 
@@ -4164,7 +4166,7 @@ export function accountSummary(
 }
 
 export function tooManySignInsIn(words: Words, minutes: number): string {
-  if (words.locale === "en-GB") {
+  if (words.locale === "en-US") {
     const wait = minutes === 1 ? "a minute" : `${minutes} minutes`;
     return (
       `Too many failed sign-in attempts. For safety, wait ${wait} and try again. ` +
@@ -4180,7 +4182,7 @@ export function tooManySignInsIn(words: Words, minutes: number): string {
 }
 
 export function tokensRevokedMsg(words: Words, count: number): string {
-  if (words.locale === "en-GB") {
+  if (words.locale === "en-US") {
     return `${count} ${count === 1 ? "token" : "tokens"} revoked. Sign the devices in again.`;
   }
   const noun = polishPlural(count, "token", "tokeny", "tokenów");
@@ -4193,7 +4195,7 @@ export function folderDeletedMsg(
   inside: number,
   subfolders: number,
 ): string {
-  if (words.locale === "en-GB") {
+  if (words.locale === "en-US") {
     return (
       `The folder “${name}” has been deleted.` +
       (inside > 0
@@ -4211,7 +4213,7 @@ export function folderDeletedMsg(
 }
 
 export function deviceConnectedMsg(words: Words, device: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `Device “${device}” connected. Go back to the Kajet app – ` +
         words.actDeviceWillSignIn
     : `Połączono urządzenie „${device}”. Wróć do aplikacji Kajet – ` +
@@ -4225,37 +4227,37 @@ export function deviceConnectedMsg(words: Words, device: string): string {
   bez niej zdanie „takiego węzła nie ma" nie mówi, którego.
 */
 export function aiMapTwoNodesSameName(words: Words, name: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `KajetAI used the name “${name}” for two new nodes.`
     : `KajetAI użył nazwy „${name}” dla dwóch nowych węzłów.`;
 }
 
 export function aiMapNoParentForNew(words: Words, parent: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `KajetAI wanted to hang a new node under “${parent}”, and there is no such node.`
     : `KajetAI chciał podwiesić nowy węzeł pod „${parent}”, a takiego węzła nie ma.`;
 }
 
 export function aiMapNoSuchNode(words: Words, name: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `KajetAI pointed at the node “${name}”, and the map has no such node.`
     : `KajetAI wskazał węzeł „${name}”, a takiego w mapie nie ma.`;
 }
 
 export function aiMapNoParentForMove(words: Words, parent: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `KajetAI wanted to move a node under “${parent}”, and there is no such node.`
     : `KajetAI chciał przenieść węzeł pod „${parent}”, a takiego węzła nie ma.`;
 }
 
 export function aiMapUnknownChange(words: Words, kind: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `KajetAI asked for an unknown change “${kind}”.`
     : `KajetAI poprosił o nieznaną zmianę „${kind}”.`;
 }
 
 export function aiMapNodeTwice(words: Words, name: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `After this change the map would hold the node “${name}” twice.`
     : `Po tej zmianie węzeł „${name}” byłby w mapie dwa razy.`;
 }
@@ -4269,7 +4271,7 @@ export function aiUsageLine(
   tokens: number,
 ): string {
   const counted = tokens.toLocaleString(words.locale);
-  if (words.locale === "en-GB") {
+  if (words.locale === "en-US") {
     return `Today: ${today} of ${limit}. This week: ${week} ${week === 1 ? "call" : "calls"}, ${counted} tokens.`;
   }
   const calls = polishPlural(week, "wywołanie", "wywołania", "wywołań");
@@ -4286,7 +4288,7 @@ export function accountsFound(
   shown: number,
   searching: boolean,
 ): string {
-  if (words.locale === "en-GB") {
+  if (words.locale === "en-US") {
     const head = searching
       ? `Accounts matching the search: ${matching}.`
       : `All accounts: ${matching}.`;
@@ -4303,7 +4305,7 @@ export function accountsFound(
 }
 
 export function noAccountMatches(words: Words, query: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `No account matches “${query}”.`
     : `Żadne konto nie pasuje do „${query}”.`;
 }
@@ -4311,25 +4313,25 @@ export function noAccountMatches(words: Words, query: string): string {
 /* --- Panel administratora: okna potwierdzenia --- */
 
 export function confirmChangeEmail(words: Words, login: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `Change the address of ${login}? Links sent to the old address will stop working.`
     : `Zmienić adres konta ${login}? Odnośniki wysłane na stary adres przestaną działać.`;
 }
 
 export function confirmSetPassword(words: Words, login: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `Set a new password for ${login}? The account will be signed out on every device.`
     : `Ustawić nowe hasło dla ${login}? Konto zostanie wylogowane ze wszystkich urządzeń.`;
 }
 
 export function confirmBlockAccount(words: Words, login: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `Block the account ${login}? It will be signed out on every device.`
     : `Zablokować konto ${login}? Zostanie wylogowane ze wszystkich urządzeń.`;
 }
 
 export function confirmMakeAdmin(words: Words, login: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `Give ${login} administrator rights?`
     : `Nadać ${login} uprawnienia administratora?`;
 }
@@ -4340,7 +4342,7 @@ export function confirmMakeAdmin(words: Words, login: string): string {
  * uczeniu modeli pada TU, przed nadaniem, a nie dopiero na ekranie zgody.
  */
 export function confirmAllowAi(words: Words, login: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `Allow ${login} to use KajetAI? The content of the notes they use it on will go ` +
         `to Google. The model is free, so Google may use it to train its models.`
     : `Pozwolić ${login} korzystać z KajetAI? Treść notatek, przy których go użyje, ` +
@@ -4349,7 +4351,7 @@ export function confirmAllowAi(words: Words, login: string): string {
 }
 
 export function confirmDeleteUser(words: Words, login: string, notes: number): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `Delete the account ${login} together with ${notesCount(words, notes)}? This cannot be undone.`
     : `Skasować konto ${login} razem z ${notesCount(words, notes)}? Tego nie da się cofnąć.`;
 }
@@ -4357,17 +4359,17 @@ export function confirmDeleteUser(words: Words, login: string, notes: number): s
 /* --- Panel administratora: odpowiedzi akcji --- */
 
 export function inviteCodeReady(words: Words, code: string): string {
-  return words.locale === "en-GB" ? `The code ${code} is ready.` : `Kod ${code} gotowy.`;
+  return words.locale === "en-US" ? `The code ${code} is ready.` : `Kod ${code} gotowy.`;
 }
 
 export function inviteSentTo(words: Words, email: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `The invitation has gone to ${email}.`
     : `Zaproszenie poszło na ${email}.`;
 }
 
 export function quotaSetTo(words: Words, megabytes: number, forDays: number): string {
-  if (words.locale === "en-GB") {
+  if (words.locale === "en-US") {
     const period = forDays > 0 ? ` for ${forDays} ${forDays === 1 ? "day" : "days"}` : "";
     return `The limit is now ${megabytes} MB${period}.`;
   }
@@ -4376,67 +4378,67 @@ export function quotaSetTo(words: Words, megabytes: number, forDays: number): st
 }
 
 export function accountBlockedMsg(words: Words, login: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `The account ${login} is blocked and signed out on every device.`
     : `Konto ${login} zablokowane i wylogowane ze wszystkich urządzeń.`;
 }
 
 export function accountUnblockedMsg(words: Words, login: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `The account ${login} is unblocked.`
     : `Konto ${login} odblokowane.`;
 }
 
 export function accountLoginNowMsg(words: Words, login: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `The account's login is now ${login}.`
     : `Konto ma teraz login ${login}.`;
 }
 
 export function accountEmailNowMsg(words: Words, email: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `The account's address is now ${email}.`
     : `Konto ma teraz adres ${email}.`;
 }
 
 export function passwordLinkSentMsg(words: Words, email: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `The link for setting a new password has gone to ${email}. It is valid for an hour.`
     : `Odnośnik do zmiany hasła poszedł na ${email}. Jest ważny przez godzinę.`;
 }
 
 export function passwordSetForMsg(words: Words, login: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `Password set for ${login}. The account was signed out on every device.`
     : `Hasło dla ${login} ustawione. Konto zostało wylogowane ze wszystkich urządzeń.`;
 }
 
 export function adminRightsGivenMsg(words: Words, login: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `${login} now has administrator rights.`
     : `${login} ma teraz uprawnienia administratora.`;
 }
 
 export function adminRightsTakenMsg(words: Words, login: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `${login} is an ordinary user again.`
     : `${login} jest znowu zwykłym użytkownikiem.`;
 }
 
 export function codeRunningAllowedMsg(words: Words, login: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `${login} can run code on the server again.`
     : `${login} może znowu uruchamiać kod na serwerze.`;
 }
 
 export function codeRunningTakenMsg(words: Words, login: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `${login} will not run code on the server any more. Writing and saving still work.`
     : `${login} nie uruchomi już kodu na serwerze. Pisać i zapisywać nadal może.`;
 }
 
 export function aiAccessGivenMsg(words: Words, login: string, needsConsent: boolean): string {
-  if (words.locale === "en-GB") {
+  if (words.locale === "en-US") {
     return (
       `${login} can now ask KajetAI for changes to notes.` +
       (needsConsent ? " They confirm consent to sending content to Google in their own settings." : "")
@@ -4449,19 +4451,19 @@ export function aiAccessGivenMsg(words: Words, login: string, needsConsent: bool
 }
 
 export function aiAccessTakenMsg(words: Words, login: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `${login} no longer has access to KajetAI. The notes stay untouched.`
     : `${login} nie ma już dostępu do KajetAI. Notatki zostają nietknięte.`;
 }
 
 export function aiLimitDefaultMsg(words: Words, login: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `${login} goes back to the default KajetAI limit.`
     : `${login} wraca do domyślnego limitu wywołań KajetAI.`;
 }
 
 export function aiLimitSetMsg(words: Words, login: string, perDay: number): string {
-  if (words.locale === "en-GB") {
+  if (words.locale === "en-US") {
     return `${login} now has ${perDay} KajetAI ${perDay === 1 ? "call" : "calls"} a day.`;
   }
   const calls = polishPlural(perDay, "wywołanie", "wywołania", "wywołań");
@@ -4469,38 +4471,38 @@ export function aiLimitSetMsg(words: Words, login: string, perDay: number): stri
 }
 
 export function accountDeletedMsg(words: Words, login: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `The account ${login} is deleted, with everything that was on it.`
     : `Konto ${login} skasowane razem ze wszystkim, co na nim było.`;
 }
 
 export function releaseNumberTaken(words: Words, number: number, version: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `The release number ${number} already belongs to version ${version}. Raise the number, or delete that release.`
     : `Numer wydania ${number} ma już wersja ${version}. Podnieś numer albo skasuj tamto wydanie.`;
 }
 
 export function olderReleasesGone(words: Words, count: number): string {
-  if (words.locale === "en-GB") {
+  if (words.locale === "en-US") {
     return `Older releases (${count}) have gone from the database and from the disk.`;
   }
   return `Starsze wydania (${count}) poszły z bazy i z dysku.`;
 }
 
 export function releaseReadyMsg(words: Words, version: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `Version ${version} is ready to download.`
     : `Wersja ${version} jest już do pobrania.`;
 }
 
 export function releaseNowCurrentMsg(words: Words, version: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `Version ${version} is the one to download now.`
     : `Do pobrania idzie teraz wersja ${version}.`;
 }
 
 export function releaseDeletedMsg(words: Words, version: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `Release ${version} is gone from the database and from the disk.`
     : `Wydanie ${version} poszło z bazy i z dysku.`;
 }
@@ -4508,19 +4510,19 @@ export function releaseDeletedMsg(words: Words, version: string): string {
 /* --- Notatka --- */
 
 export function attachmentAddedMsg(words: Words, name: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `The file “${name}” is with the note now.`
     : `Plik „${name}” leży już przy notatce.`;
 }
 
 export function attachmentRemovedMsg(words: Words, name: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `The file “${name}” is gone from the note.`
     : `Plik „${name}” zniknął z notatki.`;
 }
 
 export function shareMailSentMsg(words: Words, email: string): string {
-  return words.locale === "en-GB"
+  return words.locale === "en-US"
     ? `We sent a message to ${email}.`
     : `Wysłaliśmy wiadomość na ${email}.`;
 }

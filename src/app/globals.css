@@ -765,6 +765,101 @@ button.on,
   background: var(--accent-haze);
 }
 
+/*
+  Wybór języka: flaga w kółku z nazwą i daszkiem, a lista rozwija się dopiero
+  po kliknięciu. Jeden przycisk zamiast pasa dwóch skrótów - w nagłówku pasuje
+  do sąsiedniego przycisku motywu i zostaje miejsce na pełną nazwę języka.
+*/
+.language-pick {
+  position: relative;
+  display: inline-flex;
+}
+
+.language-current {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 2px 10px 2px 3px;
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.language-current:hover {
+  border-color: var(--accent);
+}
+
+.language-name {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Daszek z dwóch kresek - bez znaku z fontu ikon, żeby nie ciągnąć go tam,
+   gdzie potrzebna jest tylko strzałka w dół. */
+.language-caret {
+  width: 7px;
+  height: 7px;
+  margin-left: 2px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  border-radius: 1px;
+  transform: translateY(-2px) rotate(45deg);
+  opacity: 0.7;
+}
+
+/*
+  Lista wisi pod przyciskiem i nie rozpycha nagłówka. Wyrównana do prawej
+  krawędzi, bo przełącznik stoi po prawej stronie paska - otwarta w lewo
+  wychodziłaby poza ekran telefonu.
+*/
+.language-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 100%;
+  padding: 4px;
+  background: var(--sheet);
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.25);
+}
+
+.language-list button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 34px;
+  padding: 4px 12px 4px 6px;
+  border: var(--hairline) solid transparent;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.language-list button:hover {
+  color: var(--text);
+  border-color: var(--rule);
+}
+
+.language-list button.on {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-haze);
+}
+
 /* --- Asystent pod notatkÄ… --- */
 
 /*
@@ -2065,6 +2160,15 @@ tbody tr:last-child td {
   display: flex;
   align-items: flex-start;
   gap: 12px;
+  /*
+    Dymek jest dzieckiem <form>, a część formularzy to kontenery flex albo
+    siatki. Element `fixed` nadal jest wtedy pozycjonowanym dzieckiem tego
+    kontenera i dostaje od niego `flex-shrink`, więc na telefonie ściskało go
+    do szerokości jednej litery i tekst spadał w pionową kolumnę znaków.
+    Własna baza i zakaz kurczenia odcinają go od układu rodzica.
+  */
+  flex: 0 0 auto;
+  width: max-content;
   max-width: min(560px, calc(100vw - 32px));
   padding: 12px 16px;
   font-size: 13px;

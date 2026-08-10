@@ -242,7 +242,7 @@ function LookFields({
   onIcon: (id: string) => void;
 }) {
   const words = useWords();
-  const english = words.locale === "en-GB";
+  const english = words.locale === "en-US";
   return (
     <>
       <input type="hidden" name="colorId" value={colour} />

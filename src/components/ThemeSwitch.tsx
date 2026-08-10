@@ -1,10 +1,13 @@
 "use client";
 
 /*
-  Przełącznik motywu w nagłówku: „jak w systemie", jasny, ciemny.
+  Przełącznik motywu w nagłówku: jeden przycisk ze znakiem obecnego motywu.
 
-  Trzy przyciski zamiast jednego przełącznika, bo „systemowy" to osobny stan,
-  a nie brak wyboru - po wybraniu jasnego trzeba mieć jak wrócić do systemu.
+  Kliknięcie przechodzi do następnego w kółko: jak w systemie -> jasny ->
+  ciemny -> jak w systemie. Domyślny jest systemowy i wciąż da się do niego
+  wrócić, bo cykl przez niego przechodzi - dlatego jeden przycisk wystarcza
+  zamiast trzech obok siebie. Który motyw jest teraz, mówi znak na przycisku
+  i podpowiedź pod kursorem.
 */
 
 import { useEffect, useState } from "react";
@@ -25,7 +28,7 @@ export function ThemeSwitch() {
   /*
     Zaczynamy od „systemowego", bo tyle wie serwer. Zapisany wybór dojeżdża
     zaraz po wczytaniu - barwy strony ma już wtedy dobre, bo postawił je skrypt
-    z <head>, więc dopisuje się tu tylko obwódka na właściwym przycisku.
+    z <head>, więc dopisuje się tu tylko znak na przycisku.
   */
   const [choice, setChoice] = useState<ThemeChoice>("system");
 
@@ -53,11 +56,15 @@ export function ThemeSwitch() {
     return () => window.removeEventListener("storage", follow);
   }, []);
 
-  function pick(next: ThemeChoice) {
-    setChoice(next);
-    applyTheme(next);
+  const at = THEME_CHOICES.findIndex((entry) => entry.id === choice);
+  const now = THEME_CHOICES[at === -1 ? 0 : at];
+  const next = THEME_CHOICES[(at === -1 ? 0 : at + 1) % THEME_CHOICES.length];
+
+  function step() {
+    setChoice(next.id);
+    applyTheme(next.id);
     try {
-      localStorage.setItem(THEME_STORAGE_KEY, next);
+      localStorage.setItem(THEME_STORAGE_KEY, next.id);
     } catch {
       // Bez pamięci wybór działa do zamknięcia karty. Lepsze to niż błąd.
     }
@@ -65,19 +72,16 @@ export function ThemeSwitch() {
 
   return (
     <div className="theme-switch" role="group" aria-label={words.themeLabel}>
-      {THEME_CHOICES.map((entry) => (
-        <button
-          key={entry.id}
-          type="button"
-          title={themeOf(words, themeName(entry.id))}
-          aria-label={themeName(entry.id)}
-          aria-pressed={choice === entry.id}
-          className={choice === entry.id ? "on" : undefined}
-          onClick={() => pick(entry.id)}
-        >
-          <Icon name={entry.icon} size={18} filled={choice === entry.id} />
-        </button>
-      ))}
+      <button
+        type="button"
+        // Podpowiedź mówi, co jest teraz - tego szuka ktoś, kto chce się
+        // upewnić, a nie zmieniać. Czytnik ekranu dostaje to samo.
+        title={themeOf(words, themeName(now.id))}
+        aria-label={themeOf(words, themeName(now.id))}
+        onClick={step}
+      >
+        <Icon name={now.icon} size={18} filled />
+      </button>
     </div>
   );
 }

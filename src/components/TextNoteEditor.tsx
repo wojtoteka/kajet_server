@@ -646,7 +646,7 @@ export function TextNoteEditor({
           >
             {TEXT_FONTS.map((entry) => (
               <option key={entry.id} value={entry.id}>
-                {words.locale === "en-GB" ? entry.labelEn : entry.label}
+                {words.locale === "en-US" ? entry.labelEn : entry.label}
               </option>
             ))}
           </select>

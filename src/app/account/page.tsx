@@ -257,7 +257,7 @@ export default async function AccountPage() {
               <select id="font" name="font" defaultValue={writing.font}>
                 {TEXT_FONTS.map((entry) => (
                   <option key={entry.id} value={entry.id}>
-                    {words.locale === "en-GB" ? entry.labelEn : entry.label}
+                    {words.locale === "en-US" ? entry.labelEn : entry.label}
                   </option>
                 ))}
               </select>
@@ -284,7 +284,7 @@ export default async function AccountPage() {
               <select id="align" name="align" defaultValue={writing.align}>
                 {TEXT_ALIGNMENTS.map((entry) => (
                   <option key={entry.id} value={entry.id}>
-                    {words.locale === "en-GB" ? entry.labelEn : entry.label}
+                    {words.locale === "en-US" ? entry.labelEn : entry.label}
                   </option>
                 ))}
               </select>
