@@ -30,10 +30,9 @@ export function knownLanguage(value: string | null | undefined): Language {
 }
 
 // Nazwy języków zostają w swoim języku - „Polski", nie „polski/Polish".
-// Angielski podpisany jako amerykański, bo taka jest flaga przy nim w wyborze.
 export const LANGUAGE_CHOICES: { id: Language; label: string }[] = [
   { id: "pl", label: "Polski" },
-  { id: "en", label: "American English" },
+  { id: "en", label: "English" },
 ];
 
 export type Words = {
