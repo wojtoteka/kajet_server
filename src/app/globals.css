@@ -2513,6 +2513,44 @@ tbody tr:last-child td {
 
 /* --- Used-storage bar --- */
 
+/*
+  Nagłówek biblioteki: po lewej tytuł z podpisem, po prawej licznik miejsca
+  („0 B z 500 MB" i pasek pod spodem). Stoją w jednym rzędzie na KAŻDEJ
+  szerokości - także na telefonie, gdzie licznik kurczy się do 136 px.
+
+  Przedtem był to zwykły .row-spread z licznikiem na sztywne 220 px i to się
+  na telefonie rozjeżdżało na dwa sposoby naraz. Po pierwsze 220 px nie
+  mieściło się obok tytułu, więc licznik spadał pod niego i ciągnął się
+  paskiem przez całą szerokość ekranu, choć jest tylko drobnym licznikiem.
+  Po drugie zawijany rząd łamie się PRZED ściśnięciem: kolumna z tytułem
+  zgłaszała szerokość swojego najdłuższego podpisu („12 notatek · strona 1
+  z 3 · 4 w koszu") i już samo to spychało licznik niżej. Dlatego kolumna
+  z tytułem ma tu min-width: 0 i oddaje miejsce, zamiast rozpychać rząd -
+  podpis zawija się w swojej kolumnie.
+*/
+.library-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: 12px;
+}
+
+.library-head > :first-child {
+  min-width: 0;
+}
+
+.storage-note {
+  flex: 0 0 auto;
+  width: 220px;
+}
+
+@media (max-width: 600px) {
+  .storage-note {
+    width: 136px;
+  }
+}
+
 .storage-bar {
   height: 6px;
   background: var(--rule);

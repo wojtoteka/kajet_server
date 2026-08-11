@@ -190,7 +190,10 @@ export default async function LibraryPage({
     <main className="page wide">
       <KajetMark caption={user.login} />
 
-      <div className="row-spread" style={{ alignItems: "flex-end", marginBottom: 12 }}>
+      {/* Tytuł i licznik miejsca stoją w jednym rzędzie na każdej szerokości -
+          układ siedzi w .library-head (globals.css), bo na telefonie wymaga
+          czegoś więcej niż zawijanego rzędu. */}
+      <div className="library-head">
         <div>
           <h1 style={{ marginBottom: 4 }}>
             {favoritesOnly ? (
@@ -217,7 +220,7 @@ export default async function LibraryPage({
           </p>
         </div>
 
-        <div style={{ minWidth: 220 }}>
+        <div className="storage-note">
           <p className="small" style={{ margin: "0 0 4px 0", textAlign: "right" }}>
             {humanSize(storage.used)} {words.ofWord}{" "}
             {storage.unlimited ? words.noLimit : humanSize(storage.quota)}
