@@ -200,6 +200,42 @@
   text-decoration: none;
 }
 
+/*
+  Telefon: pasek zostaje jednym rzędem.
+
+  Przy 360 px sam znak brał 98 px, a przełączniki z odnośnikiem 248 - razem
+  o 44 px za dużo, więc `flex-wrap` znosił całą prawą stronę pod znak. Pasek
+  robił się przez to wysoki na 130 px, a przełączniki wisiały w pustym polu
+  po prawej, jakby ktoś je tam upuścił.
+
+  Nic tu nie znika: wybór języka kurczy się do flagi ze skrótem (globals.css),
+  a znak, odstępy i odnośnik schodzą o kilka pikseli. Razem starcza tego, żeby
+  znak, język, motyw i „Moje notatki" (dłuższe z dwóch możliwych) stały obok
+  siebie od 360 px wzwyż, czyli na każdym dzisiejszym telefonie. Węższe ekrany
+  (320 px) dalej zawijają - to zostaje jako wyjście awaryjne, tak samo jak przy
+  powiększonym piśmie - ale pasek jest wtedy niższy niż był.
+*/
+@media (max-width: 560px) {
+  .naglowek {
+    gap: 10px;
+    padding-block: 16px;
+  }
+
+  .znak {
+    gap: 8px;
+    font-size: 20px;
+  }
+
+  .naglowekPrawa {
+    gap: 8px;
+  }
+
+  .cichy {
+    font-size: 14px;
+    padding: 8px 2px;
+  }
+}
+
 /* --- Otwarcie: tekst po lewej, po prawej powietrze i kreska --- */
 
 .otwarcie {

@@ -800,6 +800,36 @@ button.on,
   white-space: nowrap;
 }
 
+/*
+  Skrót zamiast nazwy na telefonie. Pełne „Polski" zabierało w pasku strony
+  tytułowej tyle miejsca, że odnośnik „Moje notatki" nie mieścił się już
+  w rzędzie i cała prawa strona nagłówka spadała pod znak. Skrót oszczędza
+  te kilkanaście pikseli, a czym jest przycisk, mówi flaga obok - pełne nazwy
+  czekają w liście, która rozwija się po kliknięciu.
+*/
+.language-short {
+  display: none;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  .language-name {
+    display: none;
+  }
+
+  .language-short {
+    display: inline;
+  }
+
+  .language-current {
+    gap: 6px;
+    padding: 2px 7px;
+  }
+}
+
 /* Daszek z dwóch kresek - bez znaku z fontu ikon, żeby nie ciągnąć go tam,
    gdzie potrzebna jest tylko strzałka w dół. */
 .language-caret {

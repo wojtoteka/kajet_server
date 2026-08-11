@@ -30,9 +30,11 @@ export function knownLanguage(value: string | null | undefined): Language {
 }
 
 // Nazwy języków zostają w swoim języku - „Polski", nie „polski/Polish".
-export const LANGUAGE_CHOICES: { id: Language; label: string }[] = [
-  { id: "pl", label: "Polski" },
-  { id: "en", label: "English" },
+// Skrót stoi obok flagi na wąskim ekranie, gdzie na pełną nazwę nie ma
+// miejsca; lista po rozwinięciu i tak podpisuje języki pełnym imieniem.
+export const LANGUAGE_CHOICES: { id: Language; label: string; short: string }[] = [
+  { id: "pl", label: "Polski", short: "PL" },
+  { id: "en", label: "English", short: "EN" },
 ];
 
 export type Words = {

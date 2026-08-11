@@ -2,7 +2,9 @@
 
 /*
   Przełącznik języka w nagłówku: flaga w kółku, obok nazwa i daszek, a po
-  kliknięciu krótka lista do wyboru.
+  kliknięciu krótka lista do wyboru. Na telefonie nazwa kurczy się do skrótu
+  („PL", „EN"), bo na wąskim pasku nie ma miejsca na pełną - w rozwiniętej
+  liście języki zawsze podpisane są pełnym imieniem.
 
   Wybór idzie do ciasteczka, nie do localStorage - napisy składa serwer, więc
   musi go poznać przed wysłaniem strony. Zaraz po zapisaniu odświeżamy widok
@@ -100,7 +102,14 @@ export function LanguageSwitch({ current }: { current: Language }) {
         onClick={() => setOpen((was) => !was)}
       >
         <Flag language={chosen.id} size={22} />
+        {/* Pełna nazwa i skrót stoją oba w przycisku, a arkusz pokazuje ten,
+            na który jest miejsce: „Polski" na szerokim ekranie, „PL" na
+            telefonie. Czytnik ekranu dostaje pełną nazwę z aria-label
+            przycisku, więc żaden z tych napisów nic mu nie odbiera. */}
         <span className="language-name">{chosen.label}</span>
+        <span className="language-short" aria-hidden>
+          {chosen.short}
+        </span>
         <span className="language-caret" aria-hidden />
       </button>
 
