@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { FULL_ADDRESS, PREVIEW_MESSAGE, previewDocument } from "./code-preview";
+import { words } from "./i18n";
 
 describe("podgląd HTML z notatki", () => {
   it("nie stawia niczego przed doctype", () => {
@@ -65,6 +66,21 @@ describe("podgląd HTML z notatki", () => {
     }
     expect(js).toContain("unhandledrejection");
     expect(js).toContain("postMessage");
+  });
+
+  it("wkleja napisy konsoli z języka Kajetu, nie na sztywno po polsku", () => {
+    // Ramka nie czyta słownika - te trzy napisy muszą wejść w skrypt już
+    // przetłumaczone, inaczej angielska strona pokazywałaby polski chrome.
+    const en = previewDocument("", words("en"));
+    const pl = previewDocument("", words("pl"));
+
+    expect(en).toContain(words("en").htmlConsoleScriptError);
+    expect(en).toContain(words("en").htmlConsoleUnhandledPromise);
+    expect(en).toContain(JSON.stringify(words("en").htmlConsoleLineWord));
+    expect(en).not.toContain(words("pl").htmlConsoleScriptError);
+
+    expect(pl).toContain(words("pl").htmlConsoleScriptError);
+    expect(pl).toContain(words("pl").htmlConsoleUnhandledPromise);
   });
 
   it("do nowej karty wyprowadza tylko pełne adresy", () => {

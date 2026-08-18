@@ -91,6 +91,7 @@ export type Words = {
   textColour: string;
   textColourOfSelection: string;
   noColour: string;
+  colourWord: string;
   ownColour: string;
   collapse: string;
   linkAddress: string;
@@ -108,6 +109,9 @@ export type Words = {
   htmlConsoleAbout: string;
   htmlConsoleEmpty: string;
   htmlConsoleClear: string;
+  htmlConsoleScriptError: string;
+  htmlConsoleUnhandledPromise: string;
+  htmlConsoleLineWord: string;
 
 
   /** Format daty i godziny; służy też za znacznik języka w pomocnikach. */
@@ -452,6 +456,7 @@ export type Words = {
   expandBranch: string;
   collapseBranch: string;
   nodeTextLabel: string;
+  nodeTextIdle: string;
   mindMapCanvas: string;
   clickToRemoveEdge: string;
   mindMapHints: string;
@@ -1211,6 +1216,7 @@ const pl: Words = {
   textColour: "Kolor pisma",
   textColourOfSelection: "Kolor zaznaczonego fragmentu",
   noColour: "Bez koloru",
+  colourWord: "Kolor",
   ownColour: "Własny kolor pisma",
   collapse: "Zwiń",
   linkAddress: "Adres odnośnika",
@@ -1229,6 +1235,9 @@ const pl: Words = {
     "Stoi tu, gdzie przy pozostałych językach stoi wynik uruchomienia.",
   htmlConsoleEmpty: "Strona nic jeszcze nie wypisała.",
   htmlConsoleClear: "Wyczyść",
+  htmlConsoleScriptError: "Błąd w skrypcie",
+  htmlConsoleUnhandledPromise: "Nieobsłużona obietnica: ",
+  htmlConsoleLineWord: "wiersz",
 
   locale: "pl-PL",
 
@@ -1577,6 +1586,8 @@ const pl: Words = {
   expandBranch: "Rozwiń gałąź",
   collapseBranch: "Zwiń gałąź",
   nodeTextLabel: "Tekst węzła",
+  nodeTextIdle:
+    "Kliknij węzeł, żeby go zaznaczyć. Podwójne kliknięcie pustego miejsca dodaje nowy.",
   mindMapCanvas: "Edytor mapy myśli",
   clickToRemoveEdge: "Kliknij, aby usunąć połączenie",
   mindMapHints:
@@ -2511,6 +2522,7 @@ const en: Words = {
   textColour: "Text color",
   textColourOfSelection: "Color of the selected piece",
   noColour: "No color",
+  colourWord: "Color",
   ownColour: "Your own text color",
   collapse: "Collapse",
   linkAddress: "Link address",
@@ -2529,6 +2541,9 @@ const en: Words = {
     "It sits where the run output sits for every other language.",
   htmlConsoleEmpty: "The page has not printed anything yet.",
   htmlConsoleClear: "Clear",
+  htmlConsoleScriptError: "Error in the script",
+  htmlConsoleUnhandledPromise: "Unhandled promise: ",
+  htmlConsoleLineWord: "line",
 
   locale: "en-US",
 
@@ -2873,6 +2888,8 @@ const en: Words = {
   expandBranch: "Expand the branch",
   collapseBranch: "Collapse the branch",
   nodeTextLabel: "Node text",
+  nodeTextIdle:
+    "Click a node to select it. Double-clicking empty space adds a new one.",
   mindMapCanvas: "Mind map editor",
   clickToRemoveEdge: "Click to remove this connection",
   mindMapHints:

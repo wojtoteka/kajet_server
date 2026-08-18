@@ -931,7 +931,7 @@ export function MindMapEditor({
             type="button"
             className="ink-swatch"
             title={colour.label}
-            aria-label={`Kolor: ${colour.label}`}
+            aria-label={`${words.colourWord}: ${colour.label}`}
             onClick={() =>
               updateNode(shown.id, {
                 colorId: colour.id,
@@ -1018,9 +1018,7 @@ export function MindMapEditor({
         style={{ marginTop: 12, opacity: idle ? 0.55 : 1, transition: "opacity 160ms ease" }}
       >
         <label htmlFor="node-text">
-          {idle
-            ? "Kliknij węzeł, żeby go zaznaczyć. Podwójne kliknięcie pustego miejsca dodaje nowy."
-            : words.nodeTextLabel}
+          {idle ? words.nodeTextIdle : words.nodeTextLabel}
         </label>
         <textarea
           id="node-text"

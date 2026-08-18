@@ -17,6 +17,8 @@
   `postMessage`-em, a panel pokazuje je pod podglądem.
 */
 
+import { words, type Words } from "./i18n";
+
 /**
  * Adres pisany pełny - tylko taki wyprowadzamy do nowej karty. Skoki po
  * kotwicach (`#dalej`), `mailto:` i ścieżki względne zostają przy swoim
@@ -64,11 +66,18 @@ body { background-color: #fff; }
 
   Nasłuch kliknięć zakładamy w fazie przechwytywania, żeby zadziałał także
   wtedy, gdy autor podglądu sam obsługuje kliknięcia.
+
+  Napisy konsoli (błąd skryptu, obietnica, numer wiersza) wchodzą z słownika
+  Kajetu: ramka nie ma do niego dostępu, więc wklejamy je tu jako zwykły tekst.
 */
-const WSTRZYKNIETY = `${STRONA}
+function wstrzyknietySkrypt(napisy: Words): string {
+  return `${STRONA}
 <script>
 (function () {
   var ZNAK = ${JSON.stringify(PREVIEW_MESSAGE)};
+  var BLAD = ${JSON.stringify(napisy.htmlConsoleScriptError)};
+  var OBIETNICA = ${JSON.stringify(napisy.htmlConsoleUnhandledPromise)};
+  var WIERSZ = ${JSON.stringify(napisy.htmlConsoleLineWord)};
 
   function slowo(wartosc) {
     if (typeof wartosc === "string") return wartosc;
@@ -108,12 +117,12 @@ const WSTRZYKNIETY = `${STRONA}
   }
 
   window.addEventListener("error", function (zdarzenie) {
-    var gdzie = zdarzenie.lineno ? " (wiersz " + zdarzenie.lineno + ")" : "";
-    wyslij("error", (zdarzenie.message || "Błąd w skrypcie") + gdzie);
+    var gdzie = zdarzenie.lineno ? " (" + WIERSZ + " " + zdarzenie.lineno + ")" : "";
+    wyslij("error", (zdarzenie.message || BLAD) + gdzie);
   });
 
   window.addEventListener("unhandledrejection", function (zdarzenie) {
-    wyslij("error", "Nieobsłużona obietnica: " + slowo(zdarzenie.reason));
+    wyslij("error", OBIETNICA + slowo(zdarzenie.reason));
   });
 
   document.addEventListener("click", function (event) {
@@ -131,12 +140,14 @@ const WSTRZYKNIETY = `${STRONA}
   }, true);
 })();
 </script>`;
+}
 
 /** Kod z notatki, gotowy do wstawienia w ramkę podglądu. */
-export function previewDocument(source: string): string {
+export function previewDocument(source: string, napisy: Words = words("pl")): string {
   const doctype = source.match(DOCTYPE);
-  if (!doctype) return WSTRZYKNIETY + source;
+  const wstrzykniety = wstrzyknietySkrypt(napisy);
+  if (!doctype) return wstrzykniety + source;
 
   const poczatek = doctype[1];
-  return poczatek + WSTRZYKNIETY + source.slice(poczatek.length);
+  return poczatek + wstrzykniety + source.slice(poczatek.length);
 }

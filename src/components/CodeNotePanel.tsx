@@ -345,7 +345,7 @@ export function CodeNotePanel({
             className="code-html-preview"
             title={words.htmlPreviewFrame}
             sandbox="allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox"
-            srcDoc={previewDocument(currentSource)}
+            srcDoc={previewDocument(currentSource, words)}
             style={{
               width: "100%",
               minHeight: 360,
