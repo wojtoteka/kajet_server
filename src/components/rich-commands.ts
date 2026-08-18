@@ -1,5 +1,7 @@
 "use client";
 
+import { lineMarkupLength, plainTextToPasteHtml } from "@/lib/rich-text";
+
 /*
   Polecenia paska narzędzi dla pola z bogatym tekstem.
 
@@ -299,8 +301,15 @@ export function toggleBlock(block: BlockName): void {
     run(list?.tagName === "OL" ? "insertOrderedList" : "insertUnorderedList");
   }
 
-  // Blok kodu i reszta idą tą samą drogą co nagłówek - przeglądarka sama
-  // przerabia akapit, więc nic po drodze nie ginie.
+  // Nagłówek zdejmuje kratki z treści zanim zmieni znacznik - inaczej
+  // formatBlock zostawiałby „# Tytuł" w środku H2, a zapis dokładałby kolejne.
+  if (block === "h1" || block === "h2" || block === "h3") {
+    toggleHeading(block);
+    return;
+  }
+
+  // Blok kodu i cytat: przeglądarka sama przerabia akapit, więc nic po drodze
+  // nie ginie.
   const inside = closestTag(current.anchorNode, block);
   run("formatBlock", inside ? "<p>" : `<${block}>`);
 
@@ -311,6 +320,68 @@ export function toggleBlock(block: BlockName): void {
     const made = closestTag(selection()?.anchorNode, block);
     if (made) paragraphAfter(made);
   }
+}
+
+/**
+ * To samo H2 zdejmuje nagłówek; inne H zostawia dokładnie jeden poziom.
+ * Kratki i znacznik listy/cytatu schodzą z treści, żeby się nie zagnieżdżały.
+ */
+function toggleHeading(block: "h1" | "h2" | "h3"): void {
+  const host = blockAbove(selection()?.anchorNode);
+  if (host) peelBlockMarkup(host);
+
+  const current = closest(
+    selection()?.anchorNode,
+    (element) => /^H[1-3]$/.test(element.tagName),
+  );
+  if (current && current.tagName.toLowerCase() === block) {
+    run("formatBlock", "<p>");
+    return;
+  }
+  run("formatBlock", `<${block}>`);
+}
+
+/** Zaznaczenie pierwszych [count] widocznych znaków bloku. */
+function leadingRange(root: HTMLElement, count: number): Range | null {
+  if (count <= 0) return null;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let remaining = count;
+  let startNode: Text | null = null;
+  let endNode: Text | null = null;
+  let endOffset = 0;
+  let node: Node | null;
+  while ((node = walker.nextNode())) {
+    const text = node as Text;
+    if (text.length === 0) continue;
+    if (!startNode) startNode = text;
+    if (text.length >= remaining) {
+      endNode = text;
+      endOffset = remaining;
+      remaining = 0;
+      break;
+    }
+    remaining -= text.length;
+    endNode = text;
+    endOffset = text.length;
+  }
+  if (!startNode || !endNode || remaining > 0) return null;
+  const range = document.createRange();
+  range.setStart(startNode, 0);
+  range.setEnd(endNode, endOffset);
+  return range;
+}
+
+/** Kasuje kratki / listę / cytat z początku bloku przez execCommand (cofanie). */
+function peelBlockMarkup(block: HTMLElement): void {
+  const peel = lineMarkupLength(block.textContent ?? "");
+  if (peel <= 0) return;
+  const range = leadingRange(block, peel);
+  if (!range) return;
+  const current = selection();
+  if (!current) return;
+  current.removeAllRanges();
+  current.addRange(range);
+  run("delete");
 }
 
 /*
@@ -526,15 +597,7 @@ export function linkAtCursor(): string {
 
 /** Wklejanie: sam tekst, bez cudzych stylów. Puste wiersze dzielą akapity. */
 export function insertPlainText(text: string): void {
-  const escaped = text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-  const html = escaped
-    .split(/\n{2,}/)
-    .map((block) => `<p>${block.replace(/\n/g, "<br>") || "<br>"}</p>`)
-    .join("");
-  run("insertHTML", html);
+  run("insertHTML", plainTextToPasteHtml(text));
 }
 
 export type Formats = { marks: Set<MarkName>; blocks: Set<BlockName> };

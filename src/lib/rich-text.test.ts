@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { htmlToMarkdown, markdownToHtml, parseInline, inlineToMarkdown } from "./rich-text";
+import {
+  headingLine,
+  headingPrefixLength,
+  htmlToMarkdown,
+  inlineToMarkdown,
+  lineMarkupLength,
+  markdownToHtml,
+  markdownToPlain,
+  parseInline,
+  plainTextToPasteHtml,
+} from "./rich-text";
 
 /** Droga tam i z powrotem: tak wygląda otwarcie notatki i zapisanie jej. */
 function round(markdown: string): string {
@@ -82,6 +92,28 @@ describe("bloki", () => {
     expect(markdownToHtml("### Trzeci")).toBe("<h3>Trzeci</h3>");
     expect(markdownToHtml("> cytat")).toBe("<blockquote>cytat</blockquote>");
     expect(markdownToHtml("---")).toBe("<hr>");
+  });
+
+  it("poskładane kratki schodzą, zanim wiersz stanie się nagłówkiem", () => {
+    expect(markdownToHtml("## # Tytuł")).toBe("<h2>Tytuł</h2>");
+    expect(markdownToHtml("# ### Tytuł")).toBe("<h1>Tytuł</h1>");
+    expect(markdownToHtml("### ## Tytuł")).toBe("<h3>Tytuł</h3>");
+    expect(markdownToPlain("## # Tytuł")).toBe("Tytuł");
+    expect(round("## # Tytuł")).toBe("## Tytuł");
+    expect(round("# ### Tytuł")).toBe("# Tytuł");
+  });
+
+  it("czwarty poziom i hashtag zostają zwykłym tekstem", () => {
+    expect(markdownToHtml("#### czwarty poziom")).toBe("<p>#### czwarty poziom</p>");
+    expect(markdownToHtml("#hashtag")).toBe("<p>#hashtag</p>");
+    expect(markdownToHtml("####### nie nagłówek")).toBe("<p>####### nie nagłówek</p>");
+    expect(markdownToHtml("###")).toBe("<p>###</p>");
+  });
+
+  it("zapis z wyciekiem kratek w HTML-u zostawia jeden znacznik", () => {
+    expect(htmlToMarkdown("<h2># Tytuł</h2>")).toBe("## Tytuł");
+    expect(htmlToMarkdown("<h1>## # Tytuł</h1>")).toBe("# Tytuł");
+    expect(htmlToMarkdown("<h3># </h3>")).toBe("");
   });
 
   it("lista zwykła, numerowana i zadania", () => {
@@ -201,6 +233,44 @@ describe("droga tam i z powrotem", () => {
     // Drugie przejście też niczego nie rusza - inaczej notatka „pełzałaby"
     // z każdym otwarciem.
     expect(round(round(note))).toBe(note);
+  });
+});
+
+describe("kratki nagłówka", () => {
+  it("liczy też poskładane znaczniki H1–H3", () => {
+    expect(headingPrefixLength("# Tytuł")).toBe(2);
+    expect(headingPrefixLength("## Tytuł")).toBe(3);
+    expect(headingPrefixLength("## # Tytuł")).toBe(5);
+    expect(headingPrefixLength("# ### Tytuł")).toBe(6);
+    expect(headingPrefixLength("Tytuł")).toBe(0);
+    expect(headingPrefixLength("#### czwarty poziom")).toBe(0);
+    expect(headingPrefixLength("####### nie nagłówek")).toBe(0);
+    expect(headingPrefixLength("###")).toBe(0);
+    expect(headingPrefixLength("## #")).toBe(4);
+    expect(headingPrefixLength("#hashtag")).toBe(0);
+  });
+
+  it("poziom bierze z pierwszej grupy kratek", () => {
+    expect(headingLine("## # Tytuł")).toEqual({ level: 2, body: "Tytuł" });
+    expect(headingLine("# ### Tytuł")).toEqual({ level: 1, body: "Tytuł" });
+    expect(headingLine("#### czwarty")).toBeNull();
+  });
+
+  it("nagłówek i lista zastępują się, zamiast się doklejać", () => {
+    expect(lineMarkupLength("# Tytuł")).toBe(2);
+    expect(lineMarkupLength("- Zakupy")).toBe(2);
+    expect("# - Zakupy".slice(lineMarkupLength("# - Zakupy"))).toBe("Zakupy");
+    expect("> cytat".slice(lineMarkupLength("> cytat"))).toBe("cytat");
+    expect("## Tytuł".slice(lineMarkupLength("## Tytuł"))).toBe("Tytuł");
+  });
+
+  it("wklejony wiersz nagłówka nie zostawia kratek w akapicie", () => {
+    expect(plainTextToPasteHtml("# Tytuł")).toBe("<h1>Tytuł</h1>");
+    expect(plainTextToPasteHtml("## # Tytuł")).toBe("<h2>Tytuł</h2>");
+    expect(plainTextToPasteHtml("#### czwarty")).toBe("<p>#### czwarty</p>");
+    expect(plainTextToPasteHtml("akapit\n\ndrugi")).toBe("<p>akapit</p><p>drugi</p>");
+    expect(plainTextToPasteHtml("dwa\nwiersze")).toBe("<p>dwa<br>wiersze</p>");
+    expect(plainTextToPasteHtml("a < b")).toBe("<p>a &lt; b</p>");
   });
 });
 

@@ -439,7 +439,104 @@ function inlineToHtml(nodes: Inline[], options: HtmlOptions = {}): string {
 /* Markdown -> HTML                                                     */
 /* ------------------------------------------------------------------ */
 
-const HEADING = /^(#{1,3})\s+(.*)$/;
+/*
+  Nagłówek to JEDEN znacznik wiersza. Doklejanie „## " do „# Tytuł"
+  dawało „## # Tytuł": stary parser chował tylko zewnętrzne kratki, a
+  wewnętrzne `#` wychodziły na wierzch w <h2>. Dlatego kratki - także
+  poskładane z poprzednich przełączeń H1/H2/H3 - schodzą wszystkie,
+  zanim wiersz stanie się nagłówkiem. Kajet zna trzy poziomy; czwarty
+  i dalsze zostają zwykłym tekstem.
+*/
+const HEADING_MAX = 3;
+
+/**
+ * Długość kratek na początku wiersza - także poskładanych
+ * („## # Tytuł"). Zero, gdy wiersz nie jest nagłówkiem H1–H3.
+ */
+export function headingPrefixLength(line: string): number {
+  let i = 0;
+  let consumed = 0;
+  while (i < line.length && line[i] === "#") {
+    let hashes = 0;
+    while (i < line.length && line[i] === "#") {
+      hashes += 1;
+      i += 1;
+    }
+    if (hashes < 1 || hashes > HEADING_MAX) break;
+    if (i < line.length && line[i] === " ") {
+      i += 1;
+      consumed = i;
+      continue;
+    }
+    // Ogonek bez spacji po już zdjętej kratce („## #") - to nadal
+    // znacznik, nie treść. Samo „###" bez spacji zostaje tekstem.
+    if (consumed > 0 && i === line.length) consumed = i;
+    break;
+  }
+  return consumed;
+}
+
+/** Nagłówek H1–H3; poziom bierze się z pierwszej grupy kratek. */
+export function headingLine(line: string): { level: number; body: string } | null {
+  const prefix = headingPrefixLength(line);
+  if (prefix === 0) return null;
+  let level = 0;
+  while (level < line.length && line[level] === "#") level += 1;
+  return {
+    level: Math.min(HEADING_MAX, Math.max(1, level)),
+    body: line.slice(prefix),
+  };
+}
+
+/** Lista, zadanie, cytat - wszystko, co nie jest kratkami nagłówka. */
+const OTHER_LINE_PREFIX = /^(?:> |[-*+] \[[ xX]] |[-*+] |\d+[.)] )/;
+
+/**
+ * Długość znacznika wiersza: poskładane kratki, a za nimi ewentualnie
+ * lista albo cytat. Przy przełączaniu nagłówek i lista zastępują się,
+ * zamiast się doklejać.
+ */
+export function lineMarkupLength(line: string): number {
+  const headingLen = headingPrefixLength(line);
+  const other = OTHER_LINE_PREFIX.exec(line.slice(headingLen))?.[0] ?? "";
+  return headingLen + other.length;
+}
+
+/**
+ * Wklejony zwykły tekst na HTML pola. Wiersz nagłówka staje się `<h1>`–`<h3>`
+ * z jedną kratką, żeby późniejsze przełączenie z paska nie dokleiło drugiej.
+ */
+export function plainTextToPasteHtml(text: string): string {
+  const escaped = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  const html = escaped.split(/\n{2,}/).map(chunkToPasteHtml).join("");
+  return html || "<p><br></p>";
+}
+
+function chunkToPasteHtml(chunk: string): string {
+  if (!chunk) return "<p><br></p>";
+  const parts: string[] = [];
+  let paragraph: string[] = [];
+  const flush = () => {
+    if (paragraph.length === 0) return;
+    parts.push(`<p>${paragraph.join("<br>")}</p>`);
+    paragraph = [];
+  };
+  for (const line of chunk.split("\n")) {
+    const heading = headingLine(line);
+    if (heading) {
+      flush();
+      parts.push(`<h${heading.level}>${heading.body || "<br>"}</h${heading.level}>`);
+      continue;
+    }
+    paragraph.push(line);
+  }
+  flush();
+  return parts.join("");
+}
+
 const QUOTE = /^\s*>\s?(.*)$/;
 const RULE = /^\s*(-{3,}|\*{3,}|_{3,})\s*$/;
 const TABLE_ROW = /^\s*\|(.+)\|\s*$/;
@@ -557,11 +654,12 @@ export function markdownToHtml(markdown: string, options: HtmlOptions = {}): str
       continue;
     }
 
-    const heading = HEADING.exec(line);
+    const heading = headingLine(line);
     if (heading) {
       closeParagraph();
-      const level = heading[1].length;
-      out.push(`<h${level}>${inlineToHtml(parseInline(heading[2]), options)}</h${level}>`);
+      out.push(
+        `<h${heading.level}>${inlineToHtml(parseInline(heading.body), options)}</h${heading.level}>`,
+      );
       at += 1;
       continue;
     }
@@ -712,9 +810,9 @@ export function markdownToPlain(markdown: string): string {
       continue;
     }
 
-    const heading = HEADING.exec(line);
+    const heading = headingLine(line);
     if (heading) {
-      out.push(inlineToPlain(parseInline(heading[2])));
+      out.push(inlineToPlain(parseInline(heading.body)));
       at += 1;
       continue;
     }
@@ -1083,7 +1181,10 @@ export function htmlToMarkdown(html: string): string {
           // Notatka zna trzy poziomy - głębsze schodzą do trzeciego.
           const level = Math.min(3, Number(node.tag[1]));
           const { own, nested } = splitBlocks(node.children);
-          const text = inlineMarkdown(own).replace(/\n/g, " ").trim();
+          const raw = inlineMarkdown(own).replace(/\n/g, " ");
+          // Wyciekłe kratki w treści nagłówka (`<h2># Tytuł</h2>`) schodzą,
+          // żeby zapis miał dokładnie jeden znacznik.
+          const text = raw.slice(headingPrefixLength(raw)).trim();
           if (text) blocks.push(`${"#".repeat(level)} ${text}`);
           // Zdarza się, że przeglądarka wsadzi w nagłówek całą listę. Taki
           // kawałek notatki ma zostać listą, a nie zlać się w jeden wiersz.
