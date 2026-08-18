@@ -328,6 +328,11 @@ export function CodeNotePanel({
           bo w ramce większość z nich pokazałaby tylko „serwer odrzucił połączenie".
           Nowa karta ma być zwykłą kartą, a nie kolejnym odciętym pudełkiem - stąd
           `allow-popups-to-escape-sandbox`; sam podgląd zostaje odcięty jak był.
+
+          `.code-html-preview` trzyma ramkę przy jasnym schemacie i białym tle,
+          żeby ciemny motyw Kajetu nie wciekał do środka. Same html/body w
+          dokumencie podglądu maluje lib/code-preview.ts - też na biało, bez
+          podmieniania arkusza z notatki.
         */
         <section className="sheet" style={{ padding: "22px 24px" }}>
           <p className="eyebrow">{words.previewEyebrow}</p>
@@ -337,6 +342,7 @@ export function CodeNotePanel({
           </p>
           <iframe
             ref={previewRef}
+            className="code-html-preview"
             title={words.htmlPreviewFrame}
             sandbox="allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox"
             srcDoc={previewDocument(currentSource)}
@@ -345,7 +351,6 @@ export function CodeNotePanel({
               minHeight: 360,
               border: "var(--hairline) solid var(--rule)",
               borderRadius: "var(--radius)",
-              background: "#fff",
             }}
           />
         </section>

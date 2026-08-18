@@ -38,6 +38,22 @@ export const PREVIEW_MESSAGE = "kajet-podglad-konsola";
 const DOCTYPE = /^(\s*<!doctype[^>]*>)/i;
 
 /*
+  Białe płótno jak w zwykłej karcie przeglądarki.
+
+  Domyślny HTML ma przezroczyste html i body, a ramka bez własnego
+  `color-scheme` bierze ciemny schemat ze strony Kajetu - wtedy kartka
+  wygląda na ciemny arkusz. Tu jest tylko nieprzezroczysta biel i jasny
+  schemat, bez kroju, barwy pisma i reszty chrome. Arkusz autora stoi
+  później w dokumencie i wygrywa: `body { background }` maluje się na
+  wierzchu, tak samo jak w WebView na tablecie.
+*/
+const STRONA = `
+<style>
+html { color-scheme: light; background-color: #fff; }
+body { background-color: #fff; }
+</style>`;
+
+/*
   Skrypt wchodzi ZARAZ ZA `<!DOCTYPE html>`, a nie na końcu dokumentu.
 
   Przed doctype nie wolno postawić niczego, bo przeglądarka wrzuciłaby podgląd
@@ -49,7 +65,7 @@ const DOCTYPE = /^(\s*<!doctype[^>]*>)/i;
   Nasłuch kliknięć zakładamy w fazie przechwytywania, żeby zadziałał także
   wtedy, gdy autor podglądu sam obsługuje kliknięcia.
 */
-const WSTRZYKNIETY = `
+const WSTRZYKNIETY = `${STRONA}
 <script>
 (function () {
   var ZNAK = ${JSON.stringify(PREVIEW_MESSAGE)};

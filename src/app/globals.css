@@ -1157,6 +1157,18 @@ textarea.mono-field {
   }
 }
 
+/*
+  Podgląd HTML: biała kartka jak w przeglądarce, nie arkusz Kajetu.
+  `color-scheme: light` odcina ramkę od ciemnego motywu strony, żeby
+  przezroczyste body w srcdoc nie brało ciemnego płótna z layoutu.
+  Samej treści w ramce tu nie ruszamy - płótno dokumentu ustawia
+  wstrzyknięcie w lib/code-preview.ts, a arkusz autora wygrywa.
+*/
+.code-html-preview {
+  background: #fff;
+  color-scheme: light;
+}
+
 /* Notatka tekstowa w kawaĹ‚kach - jak w aplikacji. ZdjÄ™cie stoi w treĹ›ci jako
    zdjÄ™cie, a kawaĹ‚ki do pisania majÄ… wyglÄ…daÄ‡ na dalszy ciÄ…g tej samej
    kartki, wiÄ™c same w sobie sÄ… niewidoczne: ramkÄ™ ma tylko caĹ‚oĹ›Ä‡. */

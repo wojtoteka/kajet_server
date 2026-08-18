@@ -16,8 +16,23 @@ describe("podgląd HTML z notatki", () => {
   it("bez doctype wchodzi na samym początku", () => {
     const document = previewDocument("<h1>Cześć</h1>");
 
-    expect(document.startsWith("\n<script>")).toBe(true);
+    expect(document.startsWith("\n<style>")).toBe(true);
     expect(document.endsWith("<h1>Cześć</h1>")).toBe(true);
+  });
+
+  it("płótno jest białe, a arkusz autora zostaje bez zmian", () => {
+    // Jak WebView.setBackgroundColor(WHITE): początkowe html/body są białe
+    // i jasne. Tego nie wolno wklejać w treść notatki - tylko przed nią,
+    // żeby `body { background: navy }` ucznia nadal wygrywał.
+    const source = "<!DOCTYPE html>\n<style>body{background:navy}</style><p>Hej</p>";
+    const document = previewDocument(source);
+
+    expect(document).toContain("color-scheme: light");
+    expect(document).toContain("background-color: #fff");
+    expect(document).toContain("body{background:navy}");
+    expect(document.indexOf("background-color: #fff")).toBeLessThan(
+      document.indexOf("body{background:navy}"),
+    );
   });
 
   it("wchodzi PRZED skrypty autora, inaczej nie złapałby ich console.log", () => {
