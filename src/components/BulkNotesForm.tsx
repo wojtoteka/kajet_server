@@ -78,12 +78,12 @@ export function BulkNotesForm({
   }, [state, setAll]);
 
   /*
-    Przyciski działań NIE gasną przy pustym zaznaczeniu.
+    Pasek schodzi z ekranu, gdy nic nie wskazano. Formularz zostaje w drzewie,
+    bo kwadraciki w wierszach wskazują go atrybutem `form` — bez niego
+    zaznaczenie nie miałoby do kogo należeć.
 
-    Licznik liczy się w przeglądarce, a przy wyłączonych skryptach stoi na
-    zerze — zgaszone przyciski zostałyby wtedy zgaszone na zawsze. Puste
-    zaznaczenie i tak odbija się od serwera zdaniem „nie zaznaczono żadnej
-    notatki", więc nic złego się nie stanie.
+    hidden=true przy zerze: CSS `.bulk-bar { display: flex }` przebija zwykły
+    atrybut hidden, więc w arkuszu jest osobna reguła `.bulk-bar[hidden]`.
   */
 
   return (
@@ -92,6 +92,7 @@ export function BulkNotesForm({
       ref={form}
       action={submit}
       className="bulk-bar"
+      hidden={count === 0}
       aria-label={words.bulkBarLabel}
       onSubmit={(event) => {
         const submitter = (event.nativeEvent as SubmitEvent).submitter as

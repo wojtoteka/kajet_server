@@ -1727,6 +1727,11 @@ tbody tr:last-child td {
   border-radius: var(--radius);
 }
 
+/* display: flex powyżej przebija atrybut hidden z arkusza przeglądarki. */
+.bulk-bar[hidden] {
+  display: none;
+}
+
 /* Licznik odpycha resztÄ™ do prawej krawÄ™dzi paska. */
 .bulk-count {
   margin-right: auto;
