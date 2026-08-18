@@ -5,6 +5,7 @@ import {
   useActionState,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -39,12 +40,12 @@ type Action = (previous: ActionResult, data: FormData) => Promise<ActionResult>;
 
 const GAP_X = 64;
 const GAP_Y = 20;
-const VIEWPORT_W = 960;
-const VIEWPORT_H = 540;
 const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 4;
 const MIN_W = 80;
 const MIN_H = 40;
+/** Najmniejsza wysokość planszy, zanim ResizeObserver odczyta prawdziwą. */
+const MIN_BOARD_H = 480;
 
 /** Pola węzła, po których hasło może przestać się mieścić w pudełku. */
 const GROWING = ["text", "font", "fontSize", "bold", "italic"] as const;
@@ -125,6 +126,14 @@ export function MindMapEditor({
   const svgRef = useRef<SVGSVGElement | null>(null);
   const boxRef = useRef<HTMLDivElement | null>(null);
   const editingRef = useRef<HTMLTextAreaElement | null>(null);
+  /*
+    Plansza ma tyle pikseli, ile naprawdę zajmuje kartka — nie sztywne 960×540.
+    Tamten kadr był znaczkiem pocztowym: przybliżanie i przesuwanie liczyły się
+    do innego prostokąta niż ten na ekranie, więc mapa na WWW rozjeżdżała się
+    względem tabletu (ten sam rodzaj usterki co zoom kontra pismo na Androidzie).
+  */
+  const [boardW, setBoardW] = useState(0);
+  const [boardH, setBoardH] = useState(0);
 
   const payload = useMemo(
     () => JSON.stringify({ nodes, edges, viewX, viewY, zoom }),
@@ -191,16 +200,34 @@ export function MindMapEditor({
     () => ({
       left: viewX,
       top: viewY,
-      width: VIEWPORT_W / zoom,
-      height: VIEWPORT_H / zoom,
+      width: boardW > 0 ? boardW / zoom : 0,
+      height: boardH > 0 ? boardH / zoom : 0,
     }),
-    [viewX, viewY, zoom],
+    [viewX, viewY, zoom, boardW, boardH],
   );
 
   // Kółko myszy czyta stan przez tę zaczepkę, dzięki czemu nasłuch zakładamy
   // raz, a nie przy każdej zmianie przybliżenia.
-  const viewRef = useRef({ viewX, viewY, zoom });
-  viewRef.current = { viewX, viewY, zoom };
+  const viewRef = useRef({ viewX, viewY, zoom, boardW, boardH });
+  viewRef.current = { viewX, viewY, zoom, boardW, boardH };
+
+  useLayoutEffect(() => {
+    const box = boxRef.current;
+    if (!box) return;
+
+    const read = () => {
+      const width = box.clientWidth;
+      const height = box.clientHeight;
+      if (width <= 0 || height <= 0) return;
+      setBoardW((prev) => (prev === width ? prev : width));
+      setBoardH((prev) => (prev === height ? prev : height));
+    };
+
+    read();
+    const observer = new ResizeObserver(read);
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, []);
 
   // --- Historia zmian ---
 
@@ -376,6 +403,8 @@ export function MindMapEditor({
   /** Ustawia widok tak, żeby cała mapa zmieściła się na ekranie. */
   const fitToView = useCallback(() => {
     if (visibleNodes.length === 0) return;
+    const { boardW: screenW, boardH: screenH } = viewRef.current;
+    if (screenW <= 0 || screenH <= 0) return;
     let left = Infinity;
     let top = Infinity;
     let right = -Infinity;
@@ -391,11 +420,11 @@ export function MindMapEditor({
     const height = bottom - top + pad * 2;
     const next = Math.min(
       MAX_ZOOM,
-      Math.max(MIN_ZOOM, Math.min(VIEWPORT_W / width, VIEWPORT_H / height)),
+      Math.max(MIN_ZOOM, Math.min(screenW / width, screenH / height)),
     );
     setZoom(next);
-    setViewX(left - pad - (VIEWPORT_W / next - width) / 2);
-    setViewY(top - pad - (VIEWPORT_H / next - height) / 2);
+    setViewX(left - pad - (screenW / next - width) / 2);
+    setViewY(top - pad - (screenH / next - height) / 2);
   }, [visibleNodes]);
 
   /*
@@ -412,6 +441,9 @@ export function MindMapEditor({
   const refit = useRef(false);
   useEffect(() => {
     if (framed.current) return;
+    // Dopiero po pierwszym pomiarze planszy - inaczej kadr liczyłby się do
+    // pustego prostokąta i „Zmieść całość" trafiałoby w nic.
+    if (worldView.width <= 0 || worldView.height <= 0) return;
     framed.current = true;
     if (visibleNodes.length === 0) return;
     const somethingInFrame = visibleNodes.some(
@@ -439,14 +471,16 @@ export function MindMapEditor({
   // --- Przybliżanie ---
 
   const zoomAt = useCallback((factor: number, relX = 0.5, relY = 0.5) => {
-    const { viewX: vx, viewY: vy, zoom: current } = viewRef.current;
+    const { viewX: vx, viewY: vy, zoom: current, boardW: screenW, boardH: screenH } =
+      viewRef.current;
+    if (screenW <= 0 || screenH <= 0) return;
     const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, current * factor));
     if (next === current) return;
-    const worldX = vx + relX * (VIEWPORT_W / current);
-    const worldY = vy + relY * (VIEWPORT_H / current);
+    const worldX = vx + relX * (screenW / current);
+    const worldY = vy + relY * (screenH / current);
     setZoom(next);
-    setViewX(worldX - relX * (VIEWPORT_W / next));
-    setViewY(worldY - relY * (VIEWPORT_H / next));
+    setViewX(worldX - relX * (screenW / next));
+    setViewY(worldY - relY * (screenH / next));
   }, []);
 
   /*
@@ -464,7 +498,8 @@ export function MindMapEditor({
     const onWheel = (event: WheelEvent) => {
       if (event.ctrlKey || event.metaKey) {
         event.preventDefault();
-        const rect = box.getBoundingClientRect();
+        const target = svgRef.current ?? box;
+        const rect = target.getBoundingClientRect();
         if (rect.width <= 0 || rect.height <= 0) return;
         zoomAt(
           event.deltaY > 0 ? 0.9 : 1.1,
@@ -1006,18 +1041,28 @@ export function MindMapEditor({
           overflow: "hidden",
           background: "var(--desk)",
           touchAction: "none",
+          width: "100%",
+          height: `clamp(${MIN_BOARD_H}px, 72dvh, 900px)`,
+          minHeight: MIN_BOARD_H,
         }}
       >
         <svg
           ref={svgRef}
-          viewBox={`${worldView.left} ${worldView.top} ${worldView.width} ${worldView.height}`}
+          width="100%"
+          height="100%"
+          viewBox={
+            worldView.width > 0 && worldView.height > 0
+              ? `${worldView.left} ${worldView.top} ${worldView.width} ${worldView.height}`
+              : undefined
+          }
+          preserveAspectRatio="none"
           role="application"
           aria-label={words.mindMapCanvas}
           tabIndex={0}
           onKeyDown={onCanvasKeyDown}
           style={{
             width: "100%",
-            minHeight: 480,
+            height: "100%",
             display: "block",
             cursor: canvasCursor,
             outline: "none",
@@ -1120,11 +1165,23 @@ export function MindMapEditor({
                   />
                 )}
 
-                <foreignObject x={node.x} y={node.y} width={width} height={height}>
+                <foreignObject
+                  x={node.x}
+                  y={node.y}
+                  width={width}
+                  height={height}
+                  overflow="hidden"
+                >
+                  {/*
+                    Wysokość wiersza 1.3 (bez jednostki) - ten sam mnożnik co
+                    na tablecie. viewBox skaluje całe foreignObject, więc 1.3
+                    trzyma pionowy środek przy każdym przybliżeniu. overflow
+                    ucina hasło na krawędzi węzła.
+                  */}
                   <div
                     style={{
-                      width: "100%",
-                      height: "100%",
+                      width: `${width}px`,
+                      height: `${height}px`,
                       display: "flex",
                       alignItems: "center",
                       justifyContent:
@@ -1175,8 +1232,10 @@ export function MindMapEditor({
                           resize: "none",
                           background: "transparent",
                           font: "inherit",
+                          lineHeight: "inherit",
                           color: "inherit",
                           textAlign: align,
+                          overflow: "hidden",
                         }}
                       />
                     ) : (
