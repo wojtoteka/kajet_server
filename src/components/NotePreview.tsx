@@ -441,6 +441,8 @@ function MindMap({
                   color: node.textColor ? displayInkColor(node.textColor) : "var(--text)",
                   textAlign: align,
                   overflow: "hidden",
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
                 }}
               >
                 {node.text ?? ""}
