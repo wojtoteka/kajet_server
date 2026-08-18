@@ -44,11 +44,17 @@ describe("znaczniki w wierszu", () => {
     expect(markdownToHtml("[opis](https://kajet.pl)")).toBe(
       '<p><a href="https://kajet.pl">opis</a></p>',
     );
-    // Szerokość z opisu zdjęcia rysuje się od razu, ale w opisie zostaje -
-    // dzięki temu wraca do notatki tak, jak w niej stała.
+    // Szerokość z opisu rysuje się od razu; w atrybucie alt zostaje sam opis,
+    // a dopisek wraca do markdownu ze stylu, żeby człowiek nie widział `|60%`.
     expect(markdownToHtml("![zdjęcie|60%](assets/kot.png)")).toBe(
-      '<p><img src="assets/kot.png" alt="zdjęcie|60%" style="width:60%"></p>',
+      '<p><img src="assets/kot.png" alt="zdjęcie" style="width:60%"></p>',
     );
+    expect(markdownToHtml('![zdjęcie](assets/kot.png "60%")')).toBe(
+      '<p><img src="assets/kot.png" alt="zdjęcie" style="width:60%"></p>',
+    );
+    expect(
+      htmlToMarkdown('<p><img src="assets/kot.png" alt="zdjęcie|60%" style="width:60%"></p>'),
+    ).toBe("![zdjęcie|60%](assets/kot.png)");
   });
 
   it("odnośnik javascript: nie ma prawa nigdzie zaprowadzić", () => {
@@ -185,6 +191,8 @@ describe("droga tam i z powrotem", () => {
     ["- [ ] zrobić\n- [x] zrobione", "- [ ] zrobić\n- [x] zrobione"],
     ["[opis](https://kajet.pl)", "[opis](https://kajet.pl)"],
     ["![zdjęcie](assets/kot.png)", "![zdjęcie](assets/kot.png)"],
+    ["![zdjęcie|60%](assets/kot.png)", "![zdjęcie|60%](assets/kot.png)"],
+    ['![zdjęcie](assets/kot.png "60%")', "![zdjęcie|60%](assets/kot.png)"],
     ["---", "---"],
     // Ujednolicenia: markdown ma po kilka zapisów tej samej rzeczy.
     ["_pochyły_", "*pochyły*"],

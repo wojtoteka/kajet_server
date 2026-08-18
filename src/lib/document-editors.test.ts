@@ -35,6 +35,7 @@ import {
   persistFontSize,
   readImageAlt,
   splitTextBlocks,
+  writeImageAlt,
   storedFontSize,
   textAppearanceFromContent,
   textMarkdownFromContent,
@@ -424,14 +425,19 @@ describe("bloki treści tekstowej", () => {
 });
 
 /*
-  Rozmiar zdjęcia nie ma gdzie stanąć w markdownie, więc siedzi w opisie
-  zdjęcia. Aplikacja czyta samo `![...](...)`, więc dopisek nie może psuć ani
-  opisu, ani adresu.
+  Rozmiar zdjęcia nie ma gdzie stanąć w markdownie, więc kanonicznie siedzi
+  w opisie: `![zdjęcie|60%](url)`. Tablet kiedyś pisał go w tytule
+  (`![zdjęcie](url "60%")`). Oba zapisy muszą wrócić tym samym markdownem,
+  inaczej synchronizacja gubi szerokość.
 */
 describe("rozmiar zdjęcia w treści", () => {
   it("czyta szerokość z opisu", () => {
     expect(readImageAlt("zdjęcie|60%")).toEqual({ alt: "zdjęcie", width: 60 });
     expect(readImageAlt("zdjęcie")).toEqual({ alt: "zdjęcie", width: 100 });
+  });
+
+  it("czyta szerokość ze starego tytułu w cudzysłowie", () => {
+    expect(readImageAlt("zdjęcie", "60%")).toEqual({ alt: "zdjęcie", width: 60 });
   });
 
   it("trzyma szerokość przy podziale i sklejeniu", () => {
@@ -445,6 +451,30 @@ describe("rozmiar zdjęcia w treści", () => {
     expect(joinTextBlocks(blocks)).toBe("![zdjęcie|40%](assets/kot.gif)");
   });
 
+  it("stary zapis z tytułem wraca kanonicznym dopiskiem w opisie", () => {
+    const blocks = splitTextBlocks('![zdjęcie](assets/kot.gif "40%")');
+    expect(blocks[1]).toEqual({
+      kind: "image",
+      alt: "zdjęcie",
+      target: "assets/kot.gif",
+      width: 40,
+    });
+    expect(joinTextBlocks(blocks)).toBe("![zdjęcie|40%](assets/kot.gif)");
+  });
+
+  it("czyta oba zapisy przy nazwie z nawiasem", () => {
+    const fromAlt = splitTextBlocks("![z|40%](assets/zdjecie (2).png)");
+    const fromTitle = splitTextBlocks('![z](assets/zdjecie (2).png "40%")');
+    expect(fromAlt[1]).toEqual({
+      kind: "image",
+      alt: "z",
+      target: "assets/zdjecie (2).png",
+      width: 40,
+    });
+    expect(fromTitle[1]).toEqual(fromAlt[1]);
+    expect(joinTextBlocks(fromTitle)).toBe("![z|40%](assets/zdjecie (2).png)");
+  });
+
   it("zdjęcie na całą szerokość zapisuje się bez dopisku", () => {
     const joined = joinTextBlocks([
       { kind: "image", alt: "zdjęcie", target: "assets/kot.gif", width: 100 },
@@ -452,9 +482,16 @@ describe("rozmiar zdjęcia w treści", () => {
     expect(joined).toBe("![zdjęcie](assets/kot.gif)");
   });
 
-  it("zbyt małe i zbyt duże wartości ściąga do granic", () => {
-    expect(readImageAlt("a|5%").width).toBe(20);
+  it("z pliku czyta małe wartości, a zapis ściąga do 20%", () => {
+    // 5% ze starego suwaka w aplikacji zostaje przy odczycie; zapis dopiero
+    // schodzi do wspólnego progu ze stroną.
+    expect(readImageAlt("a|5%").width).toBe(5);
     expect(readImageAlt("a|400%").width).toBe(100);
+    expect(writeImageAlt("a", 5)).toBe("a|20%");
+    expect(writeImageAlt("a", 400)).toBe("a");
+    expect(joinTextBlocks(splitTextBlocks("![a|5%](assets/x.png)"))).toBe(
+      "![a|20%](assets/x.png)",
+    );
   });
 });
 

@@ -106,35 +106,64 @@ export type TextBlock =
 /*
   Wiersz ze zdjęciem. Adres łapiemy zachłannie do ostatniego nawiasu w wierszu,
   tak samo jak podgląd, bo nazwy plików potrafią same mieć nawiasy:
-  „zdjecie (2).png".
+  „zdjecie (2).png". Tytuł w cudzysłowie (stary zapis szerokości z tabletu)
+  odcinamy dopiero potem, żeby nawias w nazwie pliku nie uciął adresu.
 */
 const IMAGE_LINE = /^!\[([^\]]*)\]\((.+)\)\s*$/;
 
 /*
   Rozmiar zdjęcia w treści. Markdown sam z siebie nie ma na to miejsca, więc
-  szerokość dopisujemy do opisu zdjęcia - `![zdjęcie|60%](assets/kot.gif)` -
-  bo tego kawałka nie widać w gotowym wyglądzie i żaden czytnik markdownu się
-  o niego nie potyka: aplikacja i tak pokaże samo zdjęcie, tylko na całą
-  szerokość. Liczymy w procentach szerokości notatki, żeby na telefonie i na
-  tablecie zdjęcie zajmowało tę samą część kartki.
+  kanoniczny zapis to dopisek w opisie: `![zdjęcie|60%](assets/kot.gif)`.
+  Tablet kiedyś pisał szerokość w tytule: `![zdjęcie](assets/kot.gif "60%")`.
+  Oba odczyty muszą dać to samo, a zapis zawsze wraca do postaci z kreską -
+  inaczej synchronizacja gubi rozmiar: opis|60% lądował na tablecie jako sam
+  tekst, a zdjęcie rosło na całą szerokość.
+
+  Z pliku czytamy, co stoi (także 10% ze starego suwaka w aplikacji). Przy
+  zapisie ściągamy do 20–100%, bo taki próg ma strona i nowy suwak.
 */
 const ALT_WIDTH = /^(.*?)\s*\|\s*(\d{1,3})\s*%$/;
+const TITLE_WIDTH = /^(\d{1,3})%$/;
 
 export const IMAGE_FULL_WIDTH = 100;
 export const IMAGE_SMALLEST_WIDTH = 20;
 /** O tyle procent zmienia się zdjęcie od jednego kliknięcia. */
 export const IMAGE_WIDTH_STEP = 10;
 
-/** Czyta opis zdjęcia: sam opis i szerokość (100 = na całą szerokość). */
-export function readImageAlt(raw: string): { alt: string; width: number } {
-  const match = raw.match(ALT_WIDTH);
-  if (!match) return { alt: raw, width: IMAGE_FULL_WIDTH };
-  return { alt: match[1], width: clampImageWidth(Number(match[2])) };
+/** Procent z pliku: bez dolnego progu, tylko 400% ścinamy do 100. */
+function percentFromFile(raw: string): number {
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return IMAGE_FULL_WIDTH;
+  return Math.min(IMAGE_FULL_WIDTH, Math.max(1, Math.round(n)));
+}
+
+/**
+ * Rozbija środek `](…)` na adres i opcjonalny tytuł w cudzysłowie.
+ * Tytuł to stary zapis szerokości z tabletu.
+ */
+export function readImageDestination(inside: string): { target: string; title: string } {
+  const titled = /^(.*)\s+"([^"]*)"\s*$/.exec(inside);
+  if (titled) return { target: titled[1].trim(), title: titled[2] };
+  return { target: inside.trim(), title: "" };
+}
+
+/**
+ * Czyta opis zdjęcia: sam opis i szerokość (100 = na całą szerokość).
+ * Drugi argument to tytuł z `](adres "60%")` - gdy w opisie nie ma kreski.
+ */
+export function readImageAlt(raw: string, title = ""): { alt: string; width: number } {
+  const fromAlt = raw.match(ALT_WIDTH);
+  if (fromAlt) return { alt: fromAlt[1], width: percentFromFile(fromAlt[2]) };
+  const fromTitle = TITLE_WIDTH.exec(title.trim());
+  if (fromTitle) return { alt: raw, width: percentFromFile(fromTitle[1]) };
+  return { alt: raw, width: IMAGE_FULL_WIDTH };
 }
 
 /** Składa opis z powrotem. Zdjęcie na całą szerokość nie potrzebuje dopisku. */
 export function writeImageAlt(alt: string, width: number): string {
-  return width >= IMAGE_FULL_WIDTH ? alt : `${alt}|${clampImageWidth(width)}%`;
+  const clean = readImageAlt(alt).alt;
+  const clamped = clampImageWidth(width);
+  return clamped >= IMAGE_FULL_WIDTH ? clean : `${clean}|${clamped}%`;
 }
 
 export function clampImageWidth(width: number): number {
@@ -163,8 +192,9 @@ export function splitTextBlocks(markdown: string): TextBlock[] {
       continue;
     }
     closeText();
-    const { alt, width } = readImageAlt(image[1]);
-    blocks.push({ kind: "image", alt, target: image[2].trim(), width });
+    const dest = readImageDestination(image[2]);
+    const { alt, width } = readImageAlt(image[1], dest.title);
+    blocks.push({ kind: "image", alt, target: dest.target, width });
   }
   closeText();
   return blocks;

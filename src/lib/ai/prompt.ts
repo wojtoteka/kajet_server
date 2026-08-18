@@ -147,7 +147,8 @@ z poradnika albo z encyklopedii. Jeśli brzmi - przepisz je.
 Czego nie wolno:
 
 - Zapisy zdjęć wyglądają tak: ![opis|60%](assets/plik.png). Przepisujesz je
-  znak w znak, razem z dopiskiem szerokości po pionowej kresce. To nie jest
+  znak w znak, razem z dopiskiem szerokości po pionowej kresce. Starszy zapis
+  z tytułem ![opis](assets/plik.png "60%") też zostawiasz bez zmian. To nie jest
   tekst do poprawiania ani do tłumaczenia, a plik, do którego prowadzą, istnieje
   tylko pod tą nazwą.
 - Pól font, fontSize i align nie wysyłasz, dopóki nie poproszono wprost

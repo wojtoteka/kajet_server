@@ -1,3 +1,5 @@
+import { IMAGE_FULL_WIDTH, readImageAlt, readImageDestination, writeImageAlt } from "./text-note";
+
 /*
   Bogaty tekst: markdown <-> HTML.
 
@@ -38,7 +40,7 @@ export type Inline =
   /** Złamanie wiersza wewnątrz akapitu (w markdownie zwykły znak nowej linii). */
   | { kind: "break" }
   | { kind: "code"; text: string }
-  | { kind: "image"; alt: string; target: string }
+  | { kind: "image"; alt: string; target: string; width: number }
   | { kind: "link"; target: string; children: Inline[] }
   /*
     Barwa pisma. Markdown jej nie zna, więc - tak samo jak podkreślenie -
@@ -213,11 +215,14 @@ export function parseInline(text: string): Inline[] {
     }
 
     // Adres łapiemy zachłannie do ostatniego nawiasu, bo nazwy plików
-    // z aplikacji potrafią same mieć nawiasy: „zdjecie (2).png".
+    // z aplikacji potrafią same mieć nawiasy: „zdjecie (2).png". Tytuł
+    // w cudzysłowie (stary zapis szerokości) odcinamy od adresu osobno.
     const image = /^!\[([^\]]*)\]\((.+)\)/.exec(rest);
     if (image && !image[2].includes("\n")) {
       flush();
-      nodes.push({ kind: "image", alt: image[1], target: image[2] });
+      const dest = readImageDestination(image[2]);
+      const { alt, width } = readImageAlt(image[1], dest.title);
+      nodes.push({ kind: "image", alt, target: dest.target, width });
       at += image[0].length;
       continue;
     }
@@ -329,7 +334,7 @@ export function inlineToMarkdown(nodes: Inline[]): string {
         case "code":
           return `\`${node.text}\``;
         case "image":
-          return `![${node.alt}](${node.target})`;
+          return `![${writeImageAlt(node.alt, node.width)}](${node.target})`;
         case "link":
           return `[${inlineToMarkdown(node.children)}](${node.target})`;
         case "underline":
@@ -398,14 +403,18 @@ export type HtmlOptions = {
   imageUrl?: (target: string) => string;
 };
 
-function imageHtml(node: { alt: string; target: string }, options: HtmlOptions): string {
+function imageHtml(
+  node: { alt: string; target: string; width: number },
+  options: HtmlOptions,
+): string {
   const source = options.imageUrl ? options.imageUrl(node.target) : node.target;
   const target =
     source === node.target ? "" : ` data-target="${escapeHtml(node.target)}"`;
-  // Szerokość zdjęcia siedzi w jego opisie - patrz text-note.ts.
-  const percent = /\|\s*(\d{1,3})\s*%$/.exec(node.alt);
-  const width = percent && Number(percent[1]) < 100 ? ` style="width:${percent[1]}%"` : "";
-  return `<img src="${escapeHtml(safeUrl(source))}" alt="${escapeHtml(node.alt)}"${target}${width}>`;
+  // W atrybucie alt zostaje sam opis; szerokość idzie w styl, bo kanoniczny
+  // dopisek `|60%` nie jest tekstem dla człowieka - patrz text-note.ts.
+  const size =
+    node.width < IMAGE_FULL_WIDTH ? ` style="width:${node.width}%"` : "";
+  return `<img src="${escapeHtml(safeUrl(source))}" alt="${escapeHtml(node.alt)}"${target}${size}>`;
 }
 
 function inlineToHtml(nodes: Inline[], options: HtmlOptions = {}): string {
@@ -1000,12 +1009,18 @@ function inlineFromHtml(nodes: HtmlNode[]): Inline[] {
       continue;
     }
     if (tag === "img") {
+      const styleWidth = /(?:^|;)\s*width\s*:\s*(\d{1,3})\s*%/i.exec(node.attrs.style ?? "");
+      const { alt, width } = readImageAlt(
+        node.attrs.alt ?? "",
+        styleWidth ? `${styleWidth[1]}%` : "",
+      );
       out.push({
         kind: "image",
-        alt: node.attrs.alt ?? "",
+        alt,
         // `data-target` trzyma zapis z notatki (assets/kot.png), a `src` adres,
         // spod którego przeglądarka wzięła zdjęcie. Do notatki wraca ten pierwszy.
         target: node.attrs["data-target"] || node.attrs.src || "",
+        width,
       });
       continue;
     }
