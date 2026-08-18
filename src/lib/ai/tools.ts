@@ -44,7 +44,7 @@ export const NAZWA_PYTANIE = "dopytaj";
 const OPIS = {
   type: "string",
   description:
-    "Jedno krótkie zdanie po polsku o tym, co zostało zmienione. Bez wstępu, " +
+    "Jedno krótkie zdanie w języku polecenia o tym, co zostało zmienione. Bez wstępu, " +
     "bez zwrotu do użytkownika, na przykład: „Skrócono drugi akapit o połowę.”",
 };
 
@@ -75,8 +75,8 @@ const NARZEDZIE_TEKST: GeminiTool = {
       markdown: {
         type: "string",
         description:
-          "Cała treść notatki po zmianie, w markdownie. Zapisy zdjęć " +
-          "![opis|60%](assets/plik.png) przepisz bez zmian, razem z dopiskiem " +
+          "Cała treść notatki po zmianie, w markdownie Kajetu (nagłówki tylko #–###). " +
+          "Zapisy zdjęć ![opis|60%](assets/plik.png) przepisz bez zmian, razem z dopiskiem " +
           "szerokości - to nie jest tekst do poprawiania.",
       },
       opis: OPIS,
@@ -84,18 +84,25 @@ const NARZEDZIE_TEKST: GeminiTool = {
       font: {
         type: "string",
         enum: TEXT_FONTS.map((font) => font.id),
-        description: "Krój pisma całej notatki. Podaj tylko wtedy, gdy proszono o zmianę kroju.",
+        description:
+          "Krój pisma całej notatki: body, heading albo mono. Podaj tylko wtedy, " +
+          "gdy proszono o zmianę kroju całej notatki.",
       },
       fontSize: {
         type: "integer",
         minimum: TEXT_SMALLEST_SIZE,
         maximum: TEXT_LARGEST_SIZE,
-        description: "Rozmiar pisma. Podaj tylko wtedy, gdy proszono o zmianę rozmiaru.",
+        description:
+          "Rozmiar pisma całej notatki. Podaj tylko wtedy, gdy proszono o zmianę " +
+          "rozmiaru. Nie podawaj 17 jako „normalnego” - pominięcie pola zostawia " +
+          "rozmiar nietknięty.",
       },
       align: {
         type: "string",
         enum: ["left", "center", "right"],
-        description: "Wyrównanie. Podaj tylko wtedy, gdy proszono o zmianę wyrównania.",
+        description:
+          "Wyrównanie całej notatki: left, center albo right. Podaj tylko wtedy, " +
+          "gdy proszono o zmianę wyrównania całej notatki.",
       },
     },
     required: ["markdown", "opis"],
@@ -115,7 +122,8 @@ const NARZEDZIE_KOD: GeminiTool = {
         type: "string",
         description:
           "Całe źródło po zmianie. Zachowaj język, w którym notatka jest napisana, " +
-          "oraz sposób wcinania, jaki był w niej dotąd.",
+          "oraz sposób wcinania, jaki był w niej dotąd. Jeden plik, bez README. " +
+          "Całego pliku przy okazji nie formatuj.",
       },
       opis: OPIS,
       tytul: {
@@ -166,7 +174,7 @@ const NARZEDZIE_MAPA: GeminiTool = {
             },
             text: {
               type: "string",
-              description: "Napis w węźle. Tylko dla rodzajów dodaj i zmien_tekst.",
+              description: "Napis w węźle: kilka słów, nie zdanie. Tylko dla rodzajów dodaj i zmien_tekst.",
             },
             rodzicId: {
               type: "string",
@@ -201,7 +209,9 @@ const NARZEDZIE_PYTANIE: GeminiTool = {
     properties: {
       pytanie: {
         type: "string",
-        description: "Jedno konkretne pytanie po polsku. Nie lista pytań i nie prośba o „więcej szczegółów”.",
+        description:
+          "Jedno konkretne pytanie w języku polecenia. Nie lista pytań i nie prośba " +
+          "o „więcej szczegółów”. Gdy nie wiadomo, o który fragment chodzi - dwie możliwości.",
       },
     },
     required: ["pytanie"],
