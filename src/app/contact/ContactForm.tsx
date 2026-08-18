@@ -46,6 +46,9 @@ declare global {
 
 const HCAPTCHA_SCRIPT_ID = "hcaptcha-api";
 
+/** Szerokość zwykłego okienka hCaptchy - obca ramka o stałych wymiarach. */
+const SZEROKIE_OKIENKO = 303;
+
 /** Czy arkusz jest teraz ciemny - ręczny wybór z <html>, inaczej system. */
 function ciemnyMotyw(): boolean {
   const pick = document.documentElement.dataset.theme;
@@ -87,7 +90,6 @@ export function ContactForm({
       zmienia: przełączenie „systemowy" na „jasny" przy jasnym systemie nie
       kosztuje nikogo rozwiązywania od nowa.
     */
-    const ciasno = window.matchMedia("(max-width: 400px)");
     let paintedTheme: "light" | "dark" | null = null;
     let paintedSize: "normal" | "compact" | null = null;
 
@@ -96,8 +98,15 @@ export function ContactForm({
       const hcaptcha = window.hcaptcha;
       if (!alive || !box || !hcaptcha) return;
       const theme = ciemnyMotyw() ? "dark" : "light";
-      // Zwykłe okienko (303 px) nie mieści się na kartce wąskiego telefonu.
-      const size = ciasno.matches ? "compact" : "normal";
+      /*
+        Ciasna odmiana okienka rośnie w dół (164 x 144) zamiast w bok i przy
+        formularzu wygląda obco, więc sięgamy po nią tylko wtedy, gdy szeroka
+        (303 x 78) naprawdę nie ma gdzie się położyć. Mierzymy kartkę, nie okno
+        przeglądarki: to kartka decyduje o miejscu, a okno bywa dużo szersze od
+        niej. Zero znaczy „kartki jeszcze nie widać" - wtedy zwykłe okienko.
+      */
+      const miejsce = box.clientWidth;
+      const size = miejsce > 0 && miejsce < SZEROKIE_OKIENKO ? "compact" : "normal";
       if (captchaWidget.current !== null && theme === paintedTheme && size === paintedSize) {
         return;
       }
@@ -117,6 +126,9 @@ export function ContactForm({
       });
       paintedTheme = theme;
       paintedSize = size;
+      // Arkusz zaklepuje miejsce pod okienko z tego napisu - inaczej kartka
+      // podskakiwałaby, gdy ciasna odmiana okaże się wyższa od zaklepanej.
+      box.dataset.rozmiar = size;
     }
 
     if (window.hcaptcha) {
@@ -149,7 +161,11 @@ export function ContactForm({
       if (!document.documentElement.dataset.theme) paint();
     };
     system.addEventListener("change", naSystem);
-    ciasno.addEventListener("change", paint);
+    // Kartka zmienia szerokość nie tylko przy obracaniu telefonu (siatka
+    // przechodzi z jednej kolumny w dwie), a paint() sam pilnuje, żeby przy tej
+    // samej szerokości nie rysować okienka od nowa - więc zapętlenia nie ma.
+    const naSzerokosc = new ResizeObserver(paint);
+    if (captchaBox.current) naSzerokosc.observe(captchaBox.current);
     const naWybor = new MutationObserver(paint);
     naWybor.observe(document.documentElement, {
       attributes: true,
@@ -159,7 +175,7 @@ export function ContactForm({
     return () => {
       alive = false;
       system.removeEventListener("change", naSystem);
-      ciasno.removeEventListener("change", paint);
+      naSzerokosc.disconnect();
       naWybor.disconnect();
       if (captchaWidget.current !== null && window.hcaptcha) {
         try {

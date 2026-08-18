@@ -484,9 +484,6 @@ export default async function LibraryPage({
                       <td className="small">{humanSize(note.sizeBytes)}</td>
                       <td className="small">
                         {note.updatedAt.toLocaleString(words.locale)}
-                        <span className="note-version">
-                          {words.versionWord} {note.version}
-                        </span>
                       </td>
                       <td className="cell-actions">
                         <div className="row-actions">

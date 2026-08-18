@@ -110,16 +110,39 @@
   font-weight: 600;
 }
 
-/* Okienko hCaptchy - obca ramka o stałych wymiarach (~303 x 78). Zaklepane
-   miejsce, żeby kartka nie podskoczyła, gdy skrypt w końcu je narysuje. */
+/* Okienko hCaptchy - obca ramka o stałych wymiarach: szeroka odmiana ma
+   ~303 x 78, ciasna 164 x 144. Zaklepane miejsce, żeby kartka nie podskoczyła,
+   gdy skrypt w końcu je narysuje. */
 .captcha {
   min-height: 78px;
   margin-bottom: 16px;
 }
 
-/* Na wąskim telefonie formularz rysuje ciasną odmianę okienka (164 x 144) -
-   patrz paint() w ContactForm.tsx - więc i zaklepane miejsce jest wyższe. */
-@media (max-width: 400px) {
+/* Po narysowaniu ContactForm mówi tutaj, którą odmianę wybrał - patrz paint().
+   Ciasna jest prawie dwa razy wyższa, więc miejsce trzeba dołożyć. */
+.captcha[data-rozmiar="compact"] {
+  min-height: 144px;
+}
+
+/*
+  Na telefonie szeroka odmiana mieści się dopiero wtedy, gdy wolno jej wyjść
+  w marginesy kartki (kartka ma po 20 px z boków) - inaczej paint() musiałby
+  sięgnąć po ciasną, a ta rośnie w dół i przy formularzu wygląda obco.
+  Okienko zostaje na środku, więc od krawędzi kartki i tak dzieli je kilka
+  punktów, a węższe od niego pola formularza dalej wyznaczają linię.
+*/
+@media (max-width: 560px) {
+  .captcha {
+    margin-inline: -20px;
+    display: flex;
+    justify-content: center;
+  }
+}
+
+/* Poniżej ~347 px szeroka odmiana nie zmieści się nawet krawędź w krawędź,
+   więc paint() wybierze ciasną - zaklepujemy wyższe miejsce od razu, jeszcze
+   przed narysowaniem okienka. */
+@media (max-width: 346px) {
   .captcha {
     min-height: 144px;
   }

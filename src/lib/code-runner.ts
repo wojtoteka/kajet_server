@@ -64,6 +64,40 @@ export const LANGUAGES: Language[] = [
     executableTmp: true,
   },
   {
+    id: "csharp",
+    namePl: "C#",
+    extension: "cs",
+    // mcs kompiluje do /tmp, bo /code jest tylko do odczytu. Gotowy .exe czyta
+    // potem mono jak zwykły plik z danymi, więc /tmp może zostać bez prawa
+    // uruchamiania - inaczej niż przy C i C++, gdzie system startuje program
+    // wprost i `exec` na /tmp jest konieczne.
+    command: ["bash", "-c", "mcs -out:/tmp/program.exe %s && mono /tmp/program.exe"],
+  },
+  {
+    id: "java",
+    namePl: "Java",
+    extension: "java",
+    /*
+      Jeden plik uruchamia się wprost, bez osobnego javac - tak działa Java od
+      wydania 11. Nazwa klasy nie musi zgadzać się z nazwą pliku, więc uczeń
+      może napisać `public class Main` i to zadziała.
+
+      Nastawy pamięci stoją w linii polecenia, a nie w JAVA_TOOL_OPTIONS
+      w obrazie, bo tamta droga wypisuje przy każdym starcie „Picked up..."
+      na stderr - czyli w miejscu, w którym uczeń szuka błędów własnego
+      programu. Kontener ma 256 MB na wszystko, a `java Plik.java` to
+      kompilator i maszyna wirtualna w jednym procesie.
+    */
+    command: [
+      "java",
+      "-Xmx128m",
+      "-Xss4m",
+      "-XX:TieredStopAtLevel=1",
+      "-XX:+UseSerialGC",
+      "%s",
+    ],
+  },
+  {
     id: "php",
     namePl: "PHP",
     extension: "php",
@@ -80,6 +114,24 @@ export const LANGUAGES: Language[] = [
     namePl: "SQL",
     extension: "sql",
     command: ["bash", "-c", "sqlite3 :memory: < %s"],
+  },
+  /*
+    MySQL osobno od SQL-a wyżej, bo to nie jest ten sam język. Szkoła uczy
+    MySQL-a i pisze SHOW TABLES, DESCRIBE, NOW(), AUTO_INCREMENT,
+    ENGINE=InnoDB - SQLite żadnego z nich nie zna i odpowiada „syntax error".
+
+    Rozszerzenie jest celowo takie samo jak przy SQLite. `guessLanguageFromTitle`
+    bierze PIERWSZE dopasowanie ze spisu, a SQLite stoi wyżej, więc plik .sql
+    przyniesiony z tabletu rozpoznaje się dokładnie tak jak dotąd. Kto chce
+    MySQL-a, wybiera go z listy.
+
+    Serwer bazy wstaje wewnątrz kontenera - patrz docker/uruchom-mysql.sh.
+  */
+  {
+    id: "mysql",
+    namePl: "MySQL",
+    extension: "sql",
+    command: ["uruchom-mysql", "%s"],
   },
   /*
     HTML nie jest programem do policzenia - to strona do obejrzenia. Docker nie
@@ -193,6 +245,13 @@ function execute(
     "--network",
     "none",
 
+    // Output travels only through the attached stream. Without this Docker
+    // would also copy every byte into a log file on the host disk, and a
+    // program printing in a loop would be writing to our disk for as long
+    // as it ran.
+    "--log-driver",
+    "none",
+
     // Resources. Without these a single loop can take the machine down.
     "--memory",
     `${settings.code.memoryMb}m`,
@@ -206,10 +265,13 @@ function execute(
 
     // The container filesystem is read-only. The program writes only to /tmp,
     // which disappears with the container anyway.
+    // `exec` przy językach kompilowanych musi stać jawnie: Docker dokłada do
+    // `--tmpfs` własne `noexec`, więc samo pominięcie go nie wystarcza i
+    // świeżo skompilowany /tmp/program nie chciał się uruchomić.
     "--read-only",
     "--tmpfs",
     language.executableTmp
-      ? `/tmp:rw,nosuid,size=${settings.code.tmpMb}m`
+      ? `/tmp:rw,exec,nosuid,size=${settings.code.tmpMb}m`
       : `/tmp:rw,noexec,nosuid,size=${settings.code.tmpMb}m`,
 
     // No system privileges and no way of gaining any.
@@ -238,7 +300,11 @@ function execute(
     const child = execFile(
       settings.code.docker,
       args,
-      { maxBuffer: settings.code.maxOutputChars, encoding: "utf8" },
+      // Zapas ponad granicę obcinania jest po to, żeby `truncate` miało co
+      // obciąć. Gdy maxBuffer równał się granicy, execFile przerywał odczyt
+      // dokładnie w tym samym miejscu, w którym `truncate` miało dopisać
+      // zdanie o ucięciu - i zdanie nie pokazywało się nigdy.
+      { maxBuffer: settings.code.maxOutputChars + BUFFER_SLACK, encoding: "utf8" },
       (problem, output, errors) => {
         clearTimeout(timer);
 
@@ -246,8 +312,8 @@ function execute(
           output: truncate(output),
           errors: interrupted
             ? `Program działał dłużej niż ${settings.code.timeoutSeconds} s i został przerwany.`
-            : truncate(errors) || (problem ? readableError(problem, errors, words) : ""),
-          exitCode: interrupted ? null : ((problem as { code?: number } | null)?.code ?? 0),
+            : failureText(problem, errors, words),
+          exitCode: interrupted ? null : exitCodeOf(problem),
           interrupted,
           timeMs: Date.now() - startedAt,
         });
@@ -282,6 +348,68 @@ function execute(
 }
 
 const KILL_GRACE_MS = 5_000;
+
+/** Zapas czytanego wyniku ponad granicę, po której go obcinamy. */
+const BUFFER_SLACK = 4_096;
+
+/**
+ * Kod, którym kończy się sam Docker, gdy nie zdołał uruchomić kontenera -
+ * brak obrazu, brak praw do gniazda, zła nazwa. Programu wtedy nie było.
+ */
+const DOCKER_FAILED = 125;
+
+/** Zabity sygnałem KILL. Przy naszych nastawach znaczy to zwykle brak pamięci. */
+const KILLED = 137;
+
+/**
+ * Numer, którym skończył się program.
+ *
+ * `problem.code` nie zawsze jest liczbą: przy awariach po stronie Node'a stoi
+ * tam napis w rodzaju ERR_CHILD_PROCESS_STDIO_MAXBUFFER. Kiedyś szedł wprost
+ * do klienta jako „kod wyjścia", więc na ekranie stawało „kod wyjścia
+ * ERR_CHILD_PROCESS_STDIO_MAXBUFFER".
+ */
+function exitCodeOf(problem: unknown): number | null {
+  if (!problem) return 0;
+  const code = (problem as { code?: unknown }).code;
+  return typeof code === "number" ? code : null;
+}
+
+/**
+ * Co pokazać, gdy uruchomienie skończyło się niezerowym kodem.
+ *
+ * Rzecz, o którą tu chodzi: program, który zwraca 1 i nic nie pisze, jest
+ * programem DZIAŁAJĄCYM. Wcześniej puste stderr było brane za brak treści
+ * i wchodził komunikat „Uruchamianie kodu na tym serwerze nie działa",
+ * ten sam co przy braku Dockera. Uczeń czytał, że serwer padł, choć to jego
+ * `return 1` zadziałało dokładnie tak, jak napisał.
+ *
+ * Awaria samego uruchamiania ma własny numer (125) albo nie ma numeru wcale
+ * (ENOENT, gdy nie ma polecenia docker) - i tylko wtedy tłumaczymy ją zdaniem.
+ */
+function failureText(problem: unknown, errors: string, words: Words): string {
+  const stderr = truncate(errors);
+  if (!problem) return stderr;
+
+  const code = (problem as { code?: unknown }).code;
+
+  if (typeof code === "number") {
+    if (code === DOCKER_FAILED) return stderr || readableError(problem as Error, errors, words);
+    if (code === KILLED) {
+      return (
+        stderr ||
+        `Program został zatrzymany. Najczęściej znaczy to, że przekroczył limit ${settings.code.memoryMb} MB pamięci.`
+      );
+    }
+    // Zwykły niezerowy kod wyjścia programu. Sam numer stoi obok wyniku.
+    return stderr;
+  }
+
+  // Wynik dłuższy niż wolno: `truncate` dopisało już zdanie o ucięciu.
+  if (code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER") return stderr;
+
+  return readableError(problem as Error, errors, words);
+}
 
 function removeContainer(name: string): Promise<void> {
   return new Promise((done) => {

@@ -1,0 +1,25 @@
+# Nastawy MariaDB dla Kajetu.
+#
+# Osobny plik zamiast debianowego /etc/mysql/my.cnf, bo tamten kaze bazie
+# chodzic jako uzytkownik mysql i trzymac dane w /var/lib/mysql. W kontenerze
+# program jest nikim (65534) i jedyne miejsce do pisania to /tmp.
+#
+# Rozmiary sa male nie dla oszczednosci, tylko dlatego, ze musza sie zmiescic:
+# /tmp to tmpfs na 64 MB, a caly kontener ma 256 MB pamieci. Domyslny dziennik
+# InnoDB to 96 MB, czyli sam nie zmiescilby sie w /tmp.
+
+[mysqld]
+skip-networking
+skip-name-resolve
+skip-grant-tables
+
+innodb_buffer_pool_size = 16M
+innodb_log_file_size    = 8M
+# Program zyje kilka sekund i ginie razem z kontenerem, wiec nie ma czego
+# ratowac po awarii - zapis dziennika na dysk przy kazdej transakcji tylko
+# zabiera czas z limitu dziesieciu sekund.
+innodb_flush_log_at_trx_commit = 0
+
+key_buffer_size    = 8M
+max_connections    = 10
+performance_schema = OFF

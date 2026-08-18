@@ -1415,11 +1415,6 @@ tbody tr:last-child td {
   white-space: nowrap;
 }
 
-/* Numer wersji stoi pod datÄ… - wĹ‚asny wiersz w kolumnie â€žZmieniona". */
-.note-version {
-  display: block;
-}
-
 /*
   Spis notatek na telefonie: te same wiersze tabeli uĹ‚oĹĽone w karty.
 
@@ -1522,17 +1517,6 @@ tbody tr:last-child td {
   /* Kropka rozdziela to, co w tabeli rozdzielaĹ‚y kolumny. OdstÄ™p z obu stron
      jest jej wĹ‚asny, bo wiersz nie ma juĹĽ odstÄ™pu w poziomie. */
   .notes-table td:nth-child(2)::after {
-    content: "·";
-    margin: 0 10px;
-    color: var(--text-muted);
-  }
-
-  /* Numer wersji doĹ‚Ä…cza do daty zamiast stawaÄ‡ w swoim wierszu. */
-  .notes-table .note-version {
-    display: inline;
-  }
-
-  .notes-table .note-version::before {
     content: "·";
     margin: 0 10px;
     color: var(--text-muted);

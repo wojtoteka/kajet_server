@@ -1,8 +1,18 @@
+import type { ReactNode } from "react";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { currentLanguage } from "@/lib/language";
 import { ThemeSwitch } from "./ThemeSwitch";
 
-export async function KajetMark({ caption }: { caption?: string }) {
+export async function KajetMark({
+  caption,
+  action,
+}: {
+  caption?: string;
+  // Jedno przejście dalej - odnośnik obok przełączników, tak jak „Moje
+  // notatki" na stronie tytułowej. Strona podaje go sama, bo na każdej
+  // prowadzi gdzie indziej.
+  action?: ReactNode;
+}) {
   const language = await currentLanguage();
 
   return (
@@ -62,9 +72,10 @@ export async function KajetMark({ caption }: { caption?: string }) {
       {caption ? <span className="small">{caption}</span> : null}
       {/* Wybór języka i motywu stoi przy znaku, więc jest na każdej stronie -
           także przed zalogowaniem i przy notatce otwartej z odnośnika. */}
-      <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+      <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
         <LanguageSwitch current={language} />
         <ThemeSwitch />
+        {action}
       </div>
     </div>
   );

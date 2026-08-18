@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev --port 9081",
     "build": "node scripts/prisma.mjs generate && next build",
-    "start": "next start --port 9081",
+    "start": "next start --port 9081 --hostname 127.0.0.1",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

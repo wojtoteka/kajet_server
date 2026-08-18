@@ -1,8 +1,16 @@
 "use client";
 
-import { startTransition, useActionState, useCallback, useMemo, useRef, useState } from "react";
+import {
+  startTransition,
+  useActionState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { assistKey, type CodeAssistEdit } from "@/lib/code-assist";
-import { previewDocument } from "@/lib/code-preview";
+import { PREVIEW_MESSAGE, previewDocument } from "@/lib/code-preview";
 import { useWords } from "@/components/LanguageProvider";
 import { SaveStatus } from "@/components/SaveStatus";
 import { useAutosave } from "@/components/useAutosave";
@@ -23,6 +31,9 @@ type RunResult = {
   disabled?: string;
 };
 type RunAction = (previous: RunResult, data: FormData) => Promise<RunResult>;
+
+/** Ile wierszy konsoli podglądu pokazujemy, zanim przestaniemy zbierać. */
+const CONSOLE_LIMIT = 300;
 
 export function CodeNotePanel({
   saveAction,
@@ -84,6 +95,47 @@ export function CodeNotePanel({
   const previewLanguage = languages.some(
     (entry) => entry.id === currentLanguage && entry.preview,
   );
+
+  /*
+    Konsola podglądu.
+
+    Ramka jest odcięta (sandbox bez `allow-same-origin`), więc nie da się do
+    niej sięgnąć i odczytać, co wypisała - to ona mówi nam sama, przez
+    `postMessage`. Skrypt, który to wysyła, wstrzykuje lib/code-preview.ts.
+
+    Sprawdzamy `event.source`, a nie `event.origin`: obce pochodzenie ramki
+    przychodzi jako "null" i nie da się po nim poznać niczego.
+  */
+  const previewRef = useRef<HTMLIFrameElement | null>(null);
+  const [consoleLines, setConsoleLines] = useState<{ kind: string; text: string }[]>([]);
+
+  useEffect(() => {
+    function listen(event: MessageEvent) {
+      const frame = previewRef.current;
+      if (!frame || event.source !== frame.contentWindow) return;
+
+      const note = event.data as { zrodlo?: string; rodzaj?: string; tekst?: string } | null;
+      if (!note || note.zrodlo !== PREVIEW_MESSAGE) return;
+
+      // Podgląd wczytał się od nowa - poprzednie wiersze dotyczą strony,
+      // której już nie ma.
+      if (note.rodzaj === "start") {
+        setConsoleLines([]);
+        return;
+      }
+
+      setConsoleLines((before) =>
+        // Pętla z `console.log` w środku potrafi wypisać tysiące wierszy
+        // szybciej, niż przeglądarka zdąży je narysować.
+        before.length >= CONSOLE_LIMIT
+          ? before
+          : [...before, { kind: note.rodzaj ?? "log", text: note.tekst ?? "" }],
+      );
+    }
+
+    window.addEventListener("message", listen);
+    return () => window.removeEventListener("message", listen);
+  }, []);
 
   // Autozapis jak w aplikacji: kod zapisuje się sam po pauzie w pisaniu.
   // Nowy plik zakłada pierwszy zapis, gdy tylko jest w nim cokolwiek.
@@ -284,6 +336,7 @@ export function CodeNotePanel({
             {words.codePreviewAbout}
           </p>
           <iframe
+            ref={previewRef}
             title={words.htmlPreviewFrame}
             sandbox="allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox"
             srcDoc={previewDocument(currentSource)}
@@ -389,8 +442,78 @@ export function CodeNotePanel({
           </div>
         ) : null}
       </section>
+
+      {previewLanguage ? (
+        /*
+          Konsola stoi dokładnie tam, gdzie przy pozostałych językach stoi
+          wynik uruchomienia - sekcja wyżej jest przy HTML-u schowana, więc
+          to miejsce jest wolne i człowiek szuka wyniku właśnie tutaj.
+
+          Tu trafia szkolny JavaScript: w notatce „JavaScript" stoi Node,
+          bez `document` i bez `alert`, więc zadania z przeglądarki robi się
+          w HTML-u - i dotąd nie było ich gdzie zobaczyć.
+        */
+        <section className="sheet" style={{ padding: "22px 24px" }}>
+          <p className="eyebrow">{words.runningEyebrow}</p>
+          <h2 style={{ marginBottom: 8 }}>{words.htmlConsole}</h2>
+          <p className="lead" style={{ marginBottom: 14 }}>
+            {words.htmlConsoleAbout}
+          </p>
+
+          {consoleLines.length === 0 ? (
+            <p className="notice" style={{ marginBottom: 0 }}>
+              {words.htmlConsoleEmpty}
+            </p>
+          ) : (
+            <>
+              <div
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 13,
+                  background: "var(--desk)",
+                  padding: "14px 16px",
+                  borderRadius: "var(--radius)",
+                  borderLeft: "2px solid var(--accent)",
+                  overflowX: "auto",
+                }}
+              >
+                {consoleLines.map((line, at) => (
+                  <div
+                    key={at}
+                    style={{
+                      whiteSpace: "pre-wrap",
+                      // Sam kolor nie wystarcza - stąd znak z przodu, tak samo
+                      // czytelny przy monochromatycznym ekranie i dla kogoś,
+                      // kto barw nie rozróżnia.
+                      color: line.kind === "error" || line.kind === "warn" ? "var(--warning)" : undefined,
+                    }}
+                  >
+                    {consoleMark(line.kind)}
+                    {line.text}
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="compact"
+                style={{ marginTop: 10 }}
+                onClick={() => setConsoleLines([])}
+              >
+                {words.htmlConsoleClear}
+              </button>
+            </>
+          )}
+        </section>
+      ) : null}
     </div>
   );
+}
+
+/** Znak przed wierszem konsoli, żeby rodzaj wpisu był widać bez koloru. */
+function consoleMark(kind: string): string {
+  if (kind === "error") return "✕ ";
+  if (kind === "warn") return "▲ ";
+  return "› ";
 }
 
 /*

@@ -56,7 +56,6 @@ import {
   changeOwnColour,
   ownColourSlot,
   ownColourSlotHint,
-  strokesOnPage,
   tooManyOwnColours,
   type Words,
 } from "@/lib/i18n";
@@ -1288,7 +1287,7 @@ export function HandwritingEditor({
       <div className="row-spread" style={{ marginTop: 10, marginBottom: 8 }}>
         <p className="small" style={{ margin: 0 }}>
           {words.pageWord} {pageIndex + 1} {words.ofWord} {pages.length} ·{" "}
-          {strokesOnPage(words, (page?.strokes ?? []).length)} · {words.pageGrowsHint}
+          {words.pageGrowsHint}
         </p>
         <div className="row">
           <button

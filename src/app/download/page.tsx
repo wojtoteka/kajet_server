@@ -27,7 +27,16 @@ export default async function DownloadPage() {
 
   return (
     <main className="page">
-      <KajetMark caption={words.androidAppCaption} />
+      {/* Bez dopisku przy znaku: zaraz pod nim stoi „Do pobrania" i nazwa
+          pliku z Androidem, więc „aplikacja na Androida" przy nagłówku tylko
+          powtarzała to samo dwa razy. */}
+      <KajetMark
+        action={
+          <Link className="button compact" href="/library">
+            {words.myNotes}
+          </Link>
+        }
+      />
 
       <div
         className="sheet-ruled"
@@ -42,14 +51,13 @@ export default async function DownloadPage() {
               {words.downloadLead}
             </p>
 
+            {/* Sam plik do pobrania - „Moje notatki" stoi na pasku u góry,
+                obok przełączników, więc nie odciąga stąd uwagi. */}
             <div className="row" style={{ marginTop: 22, alignItems: "center" }}>
               <a className="button primary" href="/download/file" download>
                 <Icon name="download" />
                 {words.downloadWord} {release.fileName}
               </a>
-              <Link className="button" href="/library">
-                {words.myNotes}
-              </Link>
             </div>
             {/* Co to za plik — system, rozmiar i data — w osobnej linijce
                 pod przyciskami, a nie wciśnięte obok nich. */}
@@ -73,11 +81,6 @@ export default async function DownloadPage() {
             <p className="lead" style={{ maxWidth: 560 }}>
               {words.noAppYetBody}
             </p>
-            <div className="row" style={{ marginTop: 22 }}>
-              <Link className="button primary" href="/library">
-                {words.myNotes}
-              </Link>
-            </div>
           </>
         )}
       </div>

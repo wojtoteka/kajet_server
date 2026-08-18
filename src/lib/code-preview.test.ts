@@ -1,14 +1,35 @@
 import { describe, expect, it } from "vitest";
-import { FULL_ADDRESS, previewDocument } from "./code-preview";
+import { FULL_ADDRESS, PREVIEW_MESSAGE, previewDocument } from "./code-preview";
 
 describe("podgląd HTML z notatki", () => {
-  it("zostawia kod nietknięty i dopisuje się dopiero na końcu", () => {
+  it("nie stawia niczego przed doctype", () => {
+    // Cokolwiek przed `<!DOCTYPE html>` wrzuca stronę w tryb zgodności
+    // i podgląd wygląda inaczej niż strona naprawdę.
     const source = "<!DOCTYPE html>\n<h1>Cześć</h1>";
     const document = previewDocument(source);
 
-    // Nic przed doctype - inaczej podgląd wpadłby w tryb zgodności.
-    expect(document.startsWith(source)).toBe(true);
+    expect(document.startsWith("<!DOCTYPE html>")).toBe(true);
+    expect(document).toContain("<h1>Cześć</h1>");
     expect(document).toContain("window.open");
+  });
+
+  it("bez doctype wchodzi na samym początku", () => {
+    const document = previewDocument("<h1>Cześć</h1>");
+
+    expect(document.startsWith("\n<script>")).toBe(true);
+    expect(document.endsWith("<h1>Cześć</h1>")).toBe(true);
+  });
+
+  it("wchodzi PRZED skrypty autora, inaczej nie złapałby ich console.log", () => {
+    // O to chodzi w całej konsoli: uczeń pisze `console.log` w pierwszym
+    // wierszu strony. Skrypt doklejony na końcu dokumentu obudziłby się,
+    // gdy tamten już dawno by się wykonał.
+    const source = '<!DOCTYPE html>\n<script>console.log("suma")</script>';
+    const document = previewDocument(source);
+
+    expect(document.indexOf(PREVIEW_MESSAGE)).toBeLessThan(
+      document.indexOf('console.log("suma")'),
+    );
   });
 
   it("wstrzykiwany skrypt jest poprawnym JavaScriptem", () => {
@@ -19,6 +40,16 @@ describe("podgląd HTML z notatki", () => {
 
     expect(js).not.toBe("");
     expect(() => new Function(js)).not.toThrow();
+  });
+
+  it("przechwytuje console i błędy", () => {
+    const js = previewDocument("");
+
+    for (const rodzaj of ["log", "info", "warn", "error", "debug"]) {
+      expect(js).toContain(`"${rodzaj}"`);
+    }
+    expect(js).toContain("unhandledrejection");
+    expect(js).toContain("postMessage");
   });
 
   it("do nowej karty wyprowadza tylko pełne adresy", () => {

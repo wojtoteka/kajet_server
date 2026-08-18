@@ -104,6 +104,10 @@ export type Words = {
   codePreview: string;
   codePreviewAbout: string;
   codeRunDisabled: string;
+  htmlConsole: string;
+  htmlConsoleAbout: string;
+  htmlConsoleEmpty: string;
+  htmlConsoleClear: string;
 
 
   /** Format daty i godziny; służy też za znacznik języka w pomocnikach. */
@@ -153,7 +157,6 @@ export type Words = {
   tagFavorite: string;
   tagShared: string;
   attachmentsWord: string;
-  versionWord: string;
   openNote: string;
   starIt: string;
   unstarIt: string;
@@ -529,7 +532,6 @@ export type Words = {
 
   // --- Do pobrania ---
   metaDownload: string;
-  androidAppCaption: string;
   toDownload: string;
   downloadLead: string;
   downloadWord: string;
@@ -1221,6 +1223,12 @@ const pl: Words = {
   codePreview: "Tak wygląda ta strona",
   codePreviewAbout: "Podgląd odświeża się w trakcie pisania.",
   codeRunDisabled: "Uruchamianie kodu jest tu wyłączone.",
+  htmlConsole: "Konsola",
+  htmlConsoleAbout:
+    "To, co strona wypisze przez console.log, i błędy, na których się potknie. " +
+    "Stoi tu, gdzie przy pozostałych językach stoi wynik uruchomienia.",
+  htmlConsoleEmpty: "Strona nic jeszcze nie wypisała.",
+  htmlConsoleClear: "Wyczyść",
 
   locale: "pl-PL",
 
@@ -1271,7 +1279,6 @@ const pl: Words = {
   tagFavorite: "ulubiona",
   tagShared: "udostępniona",
   attachmentsWord: "załączników",
-  versionWord: "wersja",
   openNote: "Otwórz notatkę",
   starIt: "Oznacz gwiazdką",
   unstarIt: "Zdejmij gwiazdkę",
@@ -1685,7 +1692,6 @@ const pl: Words = {
   addressConfirmed: "Adres potwierdzony",
 
   metaDownload: "Kajet na Androida – do pobrania",
-  androidAppCaption: "aplikacja na Androida",
   toDownload: "Do pobrania",
   downloadLead:
     "Notatnik na telefon i tablet: pismo odręczne, tekst, mapy myśli i kod. Po zalogowaniu " +
@@ -2517,6 +2523,12 @@ const en: Words = {
   codePreview: "This is what the page looks like",
   codePreviewAbout: "The preview refreshes as you type.",
   codeRunDisabled: "Running code is switched off here.",
+  htmlConsole: "Console",
+  htmlConsoleAbout:
+    "Whatever the page prints with console.log, and the errors it trips over. " +
+    "It sits where the run output sits for every other language.",
+  htmlConsoleEmpty: "The page has not printed anything yet.",
+  htmlConsoleClear: "Clear",
 
   locale: "en-US",
 
@@ -2567,7 +2579,6 @@ const en: Words = {
   tagFavorite: "favorite",
   tagShared: "shared",
   attachmentsWord: "attachments",
-  versionWord: "version",
   openNote: "Open the note",
   starIt: "Add a star",
   unstarIt: "Remove the star",
@@ -2979,7 +2990,6 @@ const en: Words = {
   addressConfirmed: "Address confirmed",
 
   metaDownload: "Kajet for Android – download",
-  androidAppCaption: "the Android app",
   toDownload: "Download",
   downloadLead:
     "A notebook for phone and tablet: handwriting, text, mind maps and code. Sign in with " +
@@ -4052,20 +4062,6 @@ export function tooManyOwnColours(words: Words, limit: number): string {
     ? `More than ${limit} colors of your own will not fit`
     : `Więcej niż ${limit} własnych kolorów się nie zmieści`;
 }
-
-export function strokesOnPage(words: Words, count: number): string {
-  if (words.locale === "en-US") return `${count} ${count === 1 ? "stroke" : "strokes"}`;
-  const last = count % 10;
-  const twoDigits = count % 100;
-  const noun =
-    count === 1
-      ? "kreska"
-      : last >= 2 && last <= 4 && (twoDigits < 12 || twoDigits > 14)
-        ? "kreski"
-        : "kresek";
-  return `${count} ${noun}`;
-}
-
 
 export function mapTally(words: Words, nodes: number, edges: number): string {
   if (words.locale === "en-US") {

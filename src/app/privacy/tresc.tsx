@@ -16,7 +16,7 @@ export function PolitykaPl() {
       <div className="legal-sheet legal-accent">
         <p className="eyebrow">Kajet</p>
         <h1>Polityka prywatności</h1>
-        <p className="lead">Ostatnia aktualizacja: 9 sierpnia 2026 r.</p>
+        <p className="lead">Ostatnia aktualizacja: 15 sierpnia 2026 r.</p>
       </div>
 
       <div className="legal-sheet legal-toc">
@@ -80,6 +80,7 @@ export function PolitykaPl() {
         <li>ustawienia pisania zapisane przy koncie (autozapis, krój, rozmiar i wyrównanie pisma).</li>
       </ul>
       <p>Te dane trafiają na serwer <strong>tylko wtedy, gdy korzystasz z konta</strong>: piszesz w panelu na stronie albo masz włączoną synchronizację w aplikacji.</p>
+      <p>Osobno trafia na serwer treść pliku z kodem i dane, które podajesz programowi na wejściu — w chwili, gdy sam prosisz o jego uruchomienie, także wtedy, gdy notatka nie jest zsynchronizowana. Kod uruchamia się <strong>wyłącznie na serwerze Kajetu</strong> i wymaga zalogowania; aplikacja nie ma własnego tłumacza języków. Program działa w odciętym od sieci kontenerze, a jego treść i wynik kasują się razem z kontenerem, zaraz po zakończeniu pracy. <strong>Nie zapisujemy ich ani w bazie, ani w dzienniku serwera</strong> — do dziennika trafiają wyłącznie błędy techniczne samego mechanizmu uruchamiania.</p>
 
       <h3>3.3. Dane urządzeń</h3>
       <p>Gdy logujesz się w aplikacji, przy koncie zapisujemy: nazwę urządzenia (domyślnie producent i model, na przykład „LENOVO TB520FU” — możesz ją zmienić na własną), skrót wydanego tokenu, datę wydania i datę ostatniego użycia. Dzięki temu widzisz listę zalogowanych urządzeń i możesz odebrać dostęp wybranemu z nich.</p>
@@ -137,8 +138,8 @@ export function PolitykaPl() {
               <td><strong>lit. a</strong> — Twoja zgoda, dobrowolna i możliwa do wycofania w każdej chwili</td>
             </tr>
             <tr>
-              <td>Prowadzenie konta, przechowywanie i synchronizacja notatek, udostępnianie ich osobom, którym je udostępnisz</td>
-              <td>dane konta, treść notatek i załączniki, dane urządzeń, udostępnienia</td>
+              <td>Prowadzenie konta, przechowywanie i synchronizacja notatek, udostępnianie ich osobom, którym je udostępnisz, uruchamianie kodu z notatek</td>
+              <td>dane konta, treść notatek i załączniki, treść uruchamianego kodu, dane urządzeń, udostępnienia</td>
               <td><strong>lit. b</strong> — wykonanie umowy o świadczenie usługi, którą zawierasz, zakładając konto</td>
             </tr>
             <tr>
@@ -186,6 +187,10 @@ export function PolitykaPl() {
             <tr>
               <td>Konto i wszystko, co się z nim wiąże (notatki, załączniki, foldery, udostępnienia, urządzenia)</td>
               <td>Do usunięcia konta. Usunięcie konta kasuje te dane nieodwracalnie.</td>
+            </tr>
+            <tr>
+              <td>Treść kodu wysłanego do uruchomienia i jego wynik</td>
+              <td>Do zakończenia uruchomienia, najwyżej kilkanaście sekund. Pliki programu i kontener kasują się zaraz po jego zakończeniu; nic nie trafia do bazy ani do dziennika.</td>
             </tr>
             <tr>
               <td>Polecenia wydane KajetAI i jego odpowiedzi</td>
@@ -290,7 +295,7 @@ export function PolitykaPl() {
 
       <h2 id="sek7">7. Przekazywanie danych poza Europejski Obszar Gospodarczy</h2>
 
-      <p><strong>Serwer Kajetu, baza danych, notatki i załączniki znajdują się wyłącznie w Polsce i nie opuszczają Europejskiego Obszaru Gospodarczego.</strong></p>
+      <p><strong>Serwer Kajetu, baza danych, notatki i załączniki znajdują się wyłącznie w Polsce i nie opuszczają Europejskiego Obszaru Gospodarczego.</strong> Na tej samej maszynie uruchamia się kod z notatek.</p>
 
       <p>Poza EOG — do Google LLC w Stanach Zjednoczonych — trafiają:</p>
       <ul>
@@ -382,7 +387,7 @@ export function PolitykaPl() {
         <li>Pięć nieudanych logowań pod rząd <strong>zamyka logowanie na piętnaście minut</strong>, osobno dla adresu e-mail i dla adresu, z którego przyszło zapytanie.</li>
         <li>Zmiana hasła i „wyloguj wszędzie” <strong>unieważniają wszystkie sesje i wszystkie tokeny</strong> na wszystkich urządzeniach naraz.</li>
         <li>Przyjmowane są wyłącznie obrazy i pliki JSON, o rozmiarze do 25 MB, a rodzaj pliku sprawdzany jest po jego zawartości, a nie po deklaracji.</li>
-        <li>Uruchamianie kodu z notatek odbywa się w <strong>odciętym od sieci kontenerze</strong> z ograniczoną pamięcią, czasem i uprawnieniami. Funkcja jest obecnie wyłączona.</li>
+        <li>Uruchamianie kodu z notatek odbywa się w <strong>odciętym od sieci kontenerze</strong> z ograniczoną pamięcią, czasem i uprawnieniami. Wymaga zalogowania, a treść programu i jego wynik kasują się razem z kontenerem, zaraz po zakończeniu pracy.</li>
         <li>Dostęp do serwera i bazy ma <strong>wyłącznie administrator</strong> oraz — technicznie — dostawca hostingu utrzymujący maszynę.</li>
       </ul>
 
@@ -422,7 +427,7 @@ export function PolitykaEn() {
       <div className="legal-sheet legal-accent">
         <p className="eyebrow">Kajet</p>
         <h1>Privacy policy</h1>
-        <p className="lead">Last updated: 9 August 2026</p>
+        <p className="lead">Last updated: 15 August 2026</p>
       </div>
 
       <div className="legal-note">
@@ -490,6 +495,7 @@ export function PolitykaEn() {
         <li>writing settings saved with the account (autosave, typeface, size and alignment).</li>
       </ul>
       <p>This data reaches the server <strong>only when you use an account</strong>: writing in the panel on the website, or with synchronisation switched on in the application.</p>
+      <p>Separately, the content of a code file and whatever you give the program as input reach the server the moment you ask for it to be run — including when the note is not synchronised. Code runs <strong>on the Kajet server only</strong> and requires signing in; the application has no interpreter of its own. The program works inside a container cut off from the network, and its content and output are deleted together with the container as soon as it finishes. <strong>We save neither in the database nor in the server log</strong> — the log only ever receives technical errors of the runner itself.</p>
 
       <h3>3.3. Device data</h3>
       <p>When you sign in from the application, we save with your account: the device name (by default the manufacturer and model, for example “LENOVO TB520FU” — you can rename it), a hash of the token issued, the date it was issued and the date it was last used. This is what lets you see the list of signed-in devices and withdraw access from any of them.</p>
@@ -547,8 +553,8 @@ export function PolitykaEn() {
               <td><strong>point (a)</strong> — your consent, voluntary and withdrawable at any time</td>
             </tr>
             <tr>
-              <td>Running the account, storing and synchronising notes, sharing them with the people you share them with</td>
-              <td>account data, note content and attachments, device data, shares</td>
+              <td>Running the account, storing and synchronising notes, sharing them with the people you share them with, running the code from notes</td>
+              <td>account data, note content and attachments, the content of the code being run, device data, shares</td>
               <td><strong>point (b)</strong> — performance of the contract you enter into by creating an account</td>
             </tr>
             <tr>
@@ -616,6 +622,10 @@ export function PolitykaEn() {
             <tr>
               <td>Website session (cookie)</td>
               <td><strong>30 days</strong> from signing in. It ends earlier on signing out, changing the password or “sign out everywhere”.</td>
+            </tr>
+            <tr>
+              <td>The content of code sent to be run, and its output</td>
+              <td>Until the run finishes, a few seconds at most. The program's files and the container are deleted as soon as it ends; nothing reaches the database or the log.</td>
             </tr>
             <tr>
               <td>Instructions given to KajetAI and its replies</td>
@@ -700,7 +710,7 @@ export function PolitykaEn() {
 
       <h2 id="sek7">7. Transfers outside the European Economic Area</h2>
 
-      <p><strong>The Kajet server, the database, the notes and the attachments are in Poland only and do not leave the European Economic Area.</strong></p>
+      <p><strong>The Kajet server, the database, the notes and the attachments are in Poland only and do not leave the European Economic Area.</strong> Code from notes is run on that same machine.</p>
 
       <p>What leaves the EEA — to Google LLC in the United States — is:</p>
       <ul>
@@ -792,7 +802,7 @@ export function PolitykaEn() {
         <li>Five failed sign-ins in a row <strong>close signing in for fifteen minutes</strong>, counted separately for the e-mail address and for the address the request came from.</li>
         <li>Changing the password and “sign out everywhere” <strong>invalidate every session and every token</strong> on all devices at once.</li>
         <li>Only images and JSON files are accepted, up to 25 MB, and the file type is checked against the actual bytes rather than what was declared.</li>
-        <li>Code from notes runs in a <strong>container cut off from the network</strong>, with limited memory, time and privileges. The feature is currently switched off.</li>
+        <li>Code from notes runs in a <strong>container cut off from the network</strong>, with limited memory, time and privileges. It requires signing in, and the content of the program and its output are deleted together with the container as soon as it finishes.</li>
         <li>Access to the server and the database belongs to <strong>the administrator alone</strong> and — technically — to the hosting provider that maintains the machine.</li>
       </ul>
 

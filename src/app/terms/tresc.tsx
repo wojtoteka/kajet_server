@@ -16,7 +16,7 @@ export function RegulaminPl() {
       <div className="legal-sheet legal-accent">
         <p className="eyebrow">Kajet</p>
         <h1>Regulamin</h1>
-        <p className="lead">Ostatnia aktualizacja: 9 sierpnia 2026 r.</p>
+        <p className="lead">Ostatnia aktualizacja: 15 sierpnia 2026 r.</p>
       </div>
 
       <div className="legal-sheet legal-toc">
@@ -66,7 +66,7 @@ export function RegulaminPl() {
       <ol className="legal-items">
         <li>Kajet jest notatnikiem. Pozwala tworzyć notatki pisane odręcznie rysikiem, notatki tekstowe, mapy myśli oraz notatki z kodem, porządkować je w folderach, oznaczać znacznikami i wyszukiwać.</li>
         <li>Aplikacja na Androida działa <strong>samodzielnie, bez konta i bez internetu</strong>. Notatki przechowuje wtedy jako pliki w folderze wskazanym przez Użytkownika na jego urządzeniu.</li>
-        <li>Konto jest dobrowolne i rozszerza Kajet o: przechowywanie notatek na serwerze, synchronizację między urządzeniami, dostęp do notatek przez przeglądarkę, udostępnianie notatek innym osobom oraz wspólne pisanie w czasie rzeczywistym.</li>
+        <li>Konto jest dobrowolne i rozszerza Kajet o: przechowywanie notatek na serwerze, synchronizację między urządzeniami, dostęp do notatek przez przeglądarkę, udostępnianie notatek innym osobom, wspólne pisanie w czasie rzeczywistym oraz uruchamianie kodu z notatek.</li>
         <li>Usługa świadczona jest w miarę możliwości nieprzerwanie, przez całą dobę. Administrator zastrzega sobie prawo do przerw technicznych niezbędnych do konserwacji, naprawy albo rozwoju Kajetu.</li>
         <li>Administrator może zmieniać, rozwijać i wycofywać poszczególne funkcje Kajetu. O wycofaniu funkcji istotnej dla korzystania z Konta Administrator uprzedza w sposób opisany w § 17.</li>
       </ol>
@@ -75,7 +75,7 @@ export function RegulaminPl() {
       <ol className="legal-items">
         <li>Do korzystania z aplikacji potrzebne są: urządzenie z systemem <strong>Android 8.0 lub nowszym</strong>, procesor w architekturze <strong>arm64</strong> oraz wolne miejsce na notatki. Rysik nie jest wymagany, ale bez niego pismo odręczne stawia się palcem.</li>
         <li>Do korzystania ze strony potrzebna jest przeglądarka internetowa w aktualnej wersji, z <strong>włączoną obsługą JavaScriptu i ciasteczek</strong>.</li>
-        <li>Do synchronizacji, logowania, udostępniania i pobierania aktualizacji potrzebne jest połączenie z internetem. Pisanie notatek na urządzeniu połączenia nie wymaga.</li>
+        <li>Do synchronizacji, logowania, udostępniania, uruchamiania kodu i pobierania aktualizacji potrzebne jest połączenie z internetem. Pisanie notatek na urządzeniu połączenia nie wymaga.</li>
         <li>Zamiana pisma odręcznego na tekst wymaga jednorazowego pobrania modelu językowego z serwerów Google. Po pobraniu funkcja działa bez internetu.</li>
         <li>Korzystanie z Kajetu wiąże się ze zwykłymi zagrożeniami sieci internet, w szczególności z ryzykiem przechwycenia danych przez osoby trzecie, działania złośliwego oprogramowania i prób wyłudzenia hasła. Administrator zabezpiecza połączenie szyfrowaniem i chroni hasła w sposób opisany w Polityce prywatności, jednak Użytkownik powinien używać niepowtarzalnego hasła i nie udostępniać go nikomu.</li>
       </ol>
@@ -151,10 +151,10 @@ export function RegulaminPl() {
 
       <h2 id="par11">§ 11. Uruchamianie kodu</h2>
       <ol className="legal-items">
-        <li>Notatki z kodem można uruchamiać: na urządzeniu (wbudowany tłumacz języka Python) albo na serwerze, jeżeli Administrator włączył tę funkcję.</li>
-        <li>Kod uruchamiany na serwerze działa w odciętym od sieci kontenerze, z ograniczonym czasem działania, pamięcią i uprawnieniami, i nie ma dostępu do danych innych Użytkowników.</li>
+        <li>Kod z notatek uruchamia się <strong>wyłącznie na serwerze Kajetu</strong> i wymaga zalogowania na Konto. Aplikacja nie ma własnego tłumacza języków — żeby uruchomić program, wysyła jego treść na serwer.</li>
+        <li>Kod uruchamiany na serwerze działa w odciętym od sieci kontenerze, z ograniczonym czasem działania, pamięcią i uprawnieniami, i nie ma dostępu do danych innych Użytkowników. Treść uruchomionego programu i jego wynik kasują się razem z kontenerem, zaraz po zakończeniu pracy.</li>
         <li>Zabronione jest uruchamianie kodu, którego celem jest obejście tych ograniczeń, obciążenie serwera, wydobywanie kryptowalut, atak na inne systemy albo dostęp do cudzych danych.</li>
-        <li>Administrator może odebrać prawo uruchamiania kodu pojedynczemu Kontu albo wyłączyć tę funkcję dla wszystkich, w szczególności gdy obciąża ona serwer. Pozostałe funkcje Kajetu działają wtedy bez zmian. <strong>W chwili ostatniej aktualizacji regulaminu uruchamianie kodu na serwerze jest wyłączone</strong>, a kod uruchamia się wyłącznie na urządzeniu.</li>
+        <li>Administrator może odebrać prawo uruchamiania kodu pojedynczemu Kontu albo wyłączyć tę funkcję dla wszystkich, w szczególności gdy obciąża ona serwer. Pozostałe funkcje Kajetu działają wtedy bez zmian. <strong>W chwili ostatniej aktualizacji regulaminu uruchamianie kodu na serwerze jest włączone.</strong> Gdy funkcja jest wyłączona, kodu nie da się uruchomić w ogóle — pisanie i zapisywanie notatek z kodem działa jak zwykle.</li>
       </ol>
 
       <h2 id="par11a">§ 11a. Asystent KajetAI</h2>
@@ -270,7 +270,7 @@ export function RegulaminEn() {
       <div className="legal-sheet legal-accent">
         <p className="eyebrow">Kajet</p>
         <h1>Terms of service</h1>
-        <p className="lead">Last updated: 9 August 2026</p>
+        <p className="lead">Last updated: 15 August 2026</p>
       </div>
 
       <div className="legal-note">
@@ -324,7 +324,7 @@ export function RegulaminEn() {
       <ol className="legal-items">
         <li>Kajet is a notebook. It lets you write notes by hand with a stylus, write text notes, draw mind maps and write code, organise all of it in folders, tag it and search it.</li>
         <li>The Android application works <strong>on its own, without an account and without an internet connection</strong>. Notes are then kept as files in a folder the User chooses on their own device.</li>
-        <li>An Account is optional. It adds: storing notes on the server, synchronising them between devices, reaching them through a browser, sharing them with other people and writing together in real time.</li>
+        <li>An Account is optional. It adds: storing notes on the server, synchronising them between devices, reaching them through a browser, sharing them with other people, writing together in real time and running the code from notes.</li>
         <li>The service runs around the clock as far as this is possible. The Administrator reserves the right to technical breaks needed for maintenance, repair or development.</li>
         <li>The Administrator may change, develop and withdraw individual features. Withdrawal of a feature that matters for the use of an Account is announced as described in § 17.</li>
       </ol>
@@ -333,7 +333,7 @@ export function RegulaminEn() {
       <ol className="legal-items">
         <li>The application needs a device running <strong>Android 8.0 or newer</strong>, an <strong>arm64</strong> processor and free space for notes. A stylus is not required, but without one handwriting is done with a finger.</li>
         <li>The website needs a current web browser with <strong>JavaScript and cookies enabled</strong>.</li>
-        <li>Synchronisation, signing in, sharing and downloading updates need an internet connection. Writing notes on the device does not.</li>
+        <li>Synchronisation, signing in, sharing, running code and downloading updates need an internet connection. Writing notes on the device does not.</li>
         <li>Turning handwriting into text requires a one-off download of a language model from Google's servers. After that the feature works offline.</li>
         <li>Using Kajet carries the ordinary risks of the internet, in particular interception of data by third parties, malicious software and attempts to phish passwords. The Administrator encrypts the connection and protects passwords as described in the Privacy policy, but the User should use a unique password and share it with nobody.</li>
       </ol>
@@ -409,10 +409,10 @@ export function RegulaminEn() {
 
       <h2 id="par11">§ 11. Running code</h2>
       <ol className="legal-items">
-        <li>Code notes can be run on the device (a built-in Python interpreter) or on the server, if the Administrator has enabled that.</li>
-        <li>Code run on the server works inside a container cut off from the network, with limited running time, memory and privileges, and has no access to other Users' data.</li>
+        <li>Code from notes runs <strong>on the Kajet server only</strong> and requires signing in to an Account. The application has no interpreter of its own — to run a program it sends its content to the server.</li>
+        <li>Code run on the server works inside a container cut off from the network, with limited running time, memory and privileges, and has no access to other Users' data. The content of the program that was run, and its output, are deleted together with the container as soon as it finishes.</li>
         <li>It is forbidden to run code meant to bypass those limits, to load the server, to mine cryptocurrency, to attack other systems or to reach other people's data.</li>
-        <li>The Administrator may withdraw the right to run code from a single Account, or switch the feature off for everyone, in particular when it burdens the server. The rest of Kajet keeps working. <strong>As of the last update of these terms, running code on the server is switched off</strong> and code runs on the device only.</li>
+        <li>The Administrator may withdraw the right to run code from a single Account, or switch the feature off for everyone, in particular when it burdens the server. The rest of Kajet keeps working. <strong>As of the last update of these terms, running code on the server is switched on.</strong> When the feature is off, code cannot be run at all — writing and saving code notes works as usual.</li>
       </ol>
 
       <h2 id="par11a">§ 11a. The KajetAI assistant</h2>

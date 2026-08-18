@@ -125,7 +125,7 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
           <h1 style={{ marginBottom: 4 }}>{note.title || words.untitled}</h1>
           <p className="small" style={{ margin: 0 }}>
             {words.changedWord} {note.updatedAt.toLocaleString(words.locale)} ·{" "}
-            {words.versionWord} {note.version} · {humanSize(note.sizeBytes)}
+            {humanSize(note.sizeBytes)}
             {note.favorite ? ` · ${words.favoriteWord}` : ""}
           </p>
         </div>
@@ -454,7 +454,7 @@ function TrashedNoteView({
           <p className="small" style={{ margin: 0 }}>
             {words.trashedWord}{" "}
             {(note.deletedAt ?? note.updatedAt).toLocaleString(words.locale)} ·{" "}
-            {words.versionWord} {note.version} · {humanSize(note.sizeBytes)}
+            {humanSize(note.sizeBytes)}
           </p>
         </div>
         <div className="row">

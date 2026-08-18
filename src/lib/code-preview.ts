@@ -8,6 +8,13 @@
   zamiast strony. W aplikacji na tablecie taki odnośnik wychodzi na wierzch, do
   przeglądarki, więc tutaj robimy to samo: odnośnik do innej strony otwiera się
   w nowej karcie, a podgląd zostaje tam, gdzie był.
+
+  Drugie zadanie wstrzykiwanego skryptu to konsola. `console.log` z podglądu
+  szedł dotąd do konsoli przeglądarki, czyli w miejsce, do którego na tablecie
+  nikt nie zajrzy - a to właśnie w notatce HTML pisze się szkolny JavaScript,
+  bo w notatce „JavaScript" stoi Node i nie ma tam ani `document`, ani `alert`.
+  Skrypt przechwytuje więc `console.*` oraz błędy i wypycha je do strony
+  `postMessage`-em, a panel pokazuje je pod podglądem.
 */
 
 /**
@@ -17,15 +24,82 @@
  */
 export const FULL_ADDRESS = /^(https?:)?\/\//i;
 
+/**
+ * Znak rozpoznawczy wiadomości z podglądu.
+ *
+ * Ramka ma własne, obce pochodzenie (sandbox bez `allow-same-origin`), więc
+ * `event.origin` przychodzi jako "null" i nie da się po nim niczego poznać.
+ * Panel sprawdza `event.source` - czy wiadomość przyszła z JEGO ramki - a ten
+ * napis jest drugim sitem, na wypadek gdyby ramka wpuściła cudzy skrypt.
+ */
+export const PREVIEW_MESSAGE = "kajet-podglad-konsola";
+
+/** Początek dokumentu: `<!DOCTYPE html>`, jeśli autor go napisał. */
+const DOCTYPE = /^(\s*<!doctype[^>]*>)/i;
+
 /*
-  Skrypt idzie NA KOŃCU kodu, nie na początku: przed `<!DOCTYPE html>` nie wolno
-  postawić niczego, bo przeglądarka wrzuciłaby podgląd w tryb zgodności i strona
-  wyglądałaby inaczej niż naprawdę. Nasłuch zakładamy w fazie przechwytywania,
-  żeby zadziałał także wtedy, gdy autor podglądu sam obsługuje kliknięcia.
+  Skrypt wchodzi ZARAZ ZA `<!DOCTYPE html>`, a nie na końcu dokumentu.
+
+  Przed doctype nie wolno postawić niczego, bo przeglądarka wrzuciłaby podgląd
+  w tryb zgodności i strona wyglądałaby inaczej niż naprawdę. Ale i koniec
+  dokumentu jest za późno: skrypty autora zdążyły już wtedy wykonać się do
+  końca, więc `console.log` z pierwszego wiersza strony nie miałby kto złapać.
+  Zaraz za doctype spełnia oba warunki naraz.
+
+  Nasłuch kliknięć zakładamy w fazie przechwytywania, żeby zadziałał także
+  wtedy, gdy autor podglądu sam obsługuje kliknięcia.
 */
-const OPEN_IN_NEW_TAB = `
+const WSTRZYKNIETY = `
 <script>
 (function () {
+  var ZNAK = ${JSON.stringify(PREVIEW_MESSAGE)};
+
+  function slowo(wartosc) {
+    if (typeof wartosc === "string") return wartosc;
+    if (wartosc instanceof Error) return wartosc.name + ": " + wartosc.message;
+    try {
+      var tekst = JSON.stringify(wartosc);
+      return typeof tekst === "string" ? tekst : String(wartosc);
+    } catch (klopot) {
+      return String(wartosc);
+    }
+  }
+
+  function wyslij(rodzaj, tekst) {
+    try {
+      window.parent.postMessage({ zrodlo: ZNAK, rodzaj: rodzaj, tekst: tekst }, "*");
+    } catch (klopot) {
+      // Strona nadrzedna moze nie chciec sluchac. Podglad ma dzialac dalej.
+    }
+  }
+
+  // Panel czysci spis przy kazdym wczytaniu podgladu. Podglad odswieza sie po
+  // kazdej literze, wiec bez tego wpisy z poprzedniego brzmienia strony
+  // zostawalyby na ekranie i mieszaly sie z nowymi.
+  wyslij("start", "");
+
+  var rodzaje = ["log", "info", "warn", "error", "debug"];
+  for (var i = 0; i < rodzaje.length; i++) {
+    (function (rodzaj) {
+      var wlasny = console[rodzaj];
+      console[rodzaj] = function () {
+        var czesci = [];
+        for (var j = 0; j < arguments.length; j++) czesci.push(slowo(arguments[j]));
+        wyslij(rodzaj, czesci.join(" "));
+        if (typeof wlasny === "function") wlasny.apply(console, arguments);
+      };
+    })(rodzaje[i]);
+  }
+
+  window.addEventListener("error", function (zdarzenie) {
+    var gdzie = zdarzenie.lineno ? " (wiersz " + zdarzenie.lineno + ")" : "";
+    wyslij("error", (zdarzenie.message || "Błąd w skrypcie") + gdzie);
+  });
+
+  window.addEventListener("unhandledrejection", function (zdarzenie) {
+    wyslij("error", "Nieobsłużona obietnica: " + slowo(zdarzenie.reason));
+  });
+
   document.addEventListener("click", function (event) {
     var node = event.target;
     while (node && String(node.nodeName).toUpperCase() !== "A") node = node.parentElement;
@@ -44,5 +118,9 @@ const OPEN_IN_NEW_TAB = `
 
 /** Kod z notatki, gotowy do wstawienia w ramkę podglądu. */
 export function previewDocument(source: string): string {
-  return source + OPEN_IN_NEW_TAB;
+  const doctype = source.match(DOCTYPE);
+  if (!doctype) return WSTRZYKNIETY + source;
+
+  const poczatek = doctype[1];
+  return poczatek + WSTRZYKNIETY + source.slice(poczatek.length);
 }
