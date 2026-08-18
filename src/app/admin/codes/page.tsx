@@ -73,7 +73,6 @@ export default async function CodesPage() {
               {!mailWorks() ? (
                 <p className="small" style={{ marginTop: 4 }}>
                   {words.mailNotSetCodes}
-                  niżej.
                 </p>
               ) : null}
             </div>

@@ -250,7 +250,7 @@ export default async function AccountsPage({
                   </ActionForm>
 
                   <p className="eyebrow" style={{ marginTop: 14 }}>
-                    E-mail
+                    {words.emailAddressEyebrow}
                   </p>
                   <ActionForm
                     action={changeEmail}

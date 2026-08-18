@@ -14,56 +14,64 @@ import {
   bulkMovedMsg,
   bulkPartlyFailedMsg,
   bulkTrashedMsg,
+  folderCreatedMsg,
   folderDeletedMsg,
+  folderRenamedMsg,
+  trashEmptiedMsg,
+  trashEmptiedPartlyMsg,
 } from "@/lib/i18n";
 
 export type Result = { error?: string; success?: string };
 
 export async function trashNoteFromLibrary(_previous: Result, data: FormData): Promise<Result> {
   const user = await currentUser();
-  if (!user) return { error: (await currentWords()).apiMustSignIn };
+  const words = await currentWords();
+  if (!user) return { error: words.apiMustSignIn };
   const noteId = String(data.get("noteId") ?? "");
-  if (!noteId) return { error: "Brak identyfikatora." };
+  if (!noteId) return { error: words.actMissingId };
 
   const outcome = await setNoteDeletedForUser(user.id, noteId, true);
   if (outcome.status === "error") return { error: outcome.message };
 
   revalidatePath("/library");
   revalidatePath("/library/trash");
-  return { success: "Notatka w koszu." };
+  return { success: words.actNoteInTrash };
 }
 
 export async function restoreNoteFromTrash(_previous: Result, data: FormData): Promise<Result> {
   const user = await currentUser();
-  if (!user) return { error: (await currentWords()).apiMustSignIn };
+  const words = await currentWords();
+  if (!user) return { error: words.apiMustSignIn };
   const noteId = String(data.get("noteId") ?? "");
-  if (!noteId) return { error: "Brak identyfikatora." };
+  if (!noteId) return { error: words.actMissingId };
 
   const outcome = await setNoteDeletedForUser(user.id, noteId, false);
   if (outcome.status === "error") return { error: outcome.message };
 
   revalidatePath("/library");
   revalidatePath("/library/trash");
-  return { success: (await currentWords()).actRestored };
+  return { success: words.actRestored };
 }
 
 export async function purgeNoteFromTrash(_previous: Result, data: FormData): Promise<Result> {
   const user = await currentUser();
-  if (!user) return { error: (await currentWords()).apiMustSignIn };
+  const words = await currentWords();
+  if (!user) return { error: words.apiMustSignIn };
   const noteId = String(data.get("noteId") ?? "");
-  if (!noteId) return { error: "Brak identyfikatora." };
+  if (!noteId) return { error: words.actMissingId };
 
   const outcome = await purgeNoteForUser(user.id, noteId);
   if (outcome.status === "error") return { error: outcome.message };
 
   revalidatePath("/library");
   revalidatePath("/library/trash");
-  return { success: (await currentWords()).actDeletedForGood };
+  return { success: words.actDeletedForGood };
 }
 
 export async function emptyTrash(_previous: Result, _data: FormData): Promise<Result> {
   const user = await currentUser();
-  if (!user) return { error: (await currentWords()).apiMustSignIn };
+  const words = await currentWords();
+  if (!user) return { error: words.apiMustSignIn };
 
   const trashed = await prisma.note.findMany({
     where: { ownerId: user.id, deletedAt: { not: null } },
@@ -79,13 +87,13 @@ export async function emptyTrash(_previous: Result, _data: FormData): Promise<Re
   revalidatePath("/library");
   revalidatePath("/library/trash");
 
-  if (trashed.length === 0) return { error: "Kosz jest pusty." };
+  if (trashed.length === 0) return { error: words.actTrashEmpty };
   if (failed > 0) {
     return {
-      error: `Opróżniono częściowo: ${trashed.length - failed} skasowanych, ${failed} nie udało się.`,
+      error: trashEmptiedPartlyMsg(words, trashed.length - failed, failed),
     };
   }
-  return { success: `Opróżniono kosz (${trashed.length}).` };
+  return { success: trashEmptiedMsg(words, trashed.length) };
 }
 
 export async function toggleFavoriteFromLibrary(
@@ -93,10 +101,11 @@ export async function toggleFavoriteFromLibrary(
   data: FormData,
 ): Promise<Result> {
   const user = await currentUser();
-  if (!user) return { error: (await currentWords()).apiMustSignIn };
+  const words = await currentWords();
+  if (!user) return { error: words.apiMustSignIn };
   const noteId = String(data.get("noteId") ?? "");
   const next = String(data.get("favorite") ?? "") === "1";
-  if (!noteId) return { error: "Brak identyfikatora." };
+  if (!noteId) return { error: words.actMissingId };
 
   const outcome = await setNoteFavoriteForUser(user.id, noteId, next);
   if (outcome.status === "error") return { error: outcome.message };
@@ -110,19 +119,20 @@ export async function toggleFavoriteFromLibrary(
 
 export async function moveNoteToFolder(_previous: Result, data: FormData): Promise<Result> {
   const user = await currentUser();
-  if (!user) return { error: (await currentWords()).apiMustSignIn };
+  const words = await currentWords();
+  if (!user) return { error: words.apiMustSignIn };
 
   const noteId = String(data.get("noteId") ?? "");
   const folderRaw = String(data.get("folderId") ?? "");
   const folderId = folderRaw === "" || folderRaw === "__none" ? null : folderRaw;
-  if (!noteId) return { error: "Brak identyfikatora." };
+  if (!noteId) return { error: words.actMissingId };
 
   const note = await prisma.note.findUnique({
     where: { id: noteId },
     select: { id: true, ownerId: true, deletedAt: true },
   });
-  if (!note || note.deletedAt) return { error: "Nie ma takiej notatki." };
-  if (note.ownerId !== user.id) return { error: "To nie jest Twoja notatka." };
+  if (!note || note.deletedAt) return { error: words.actNoSuchNote };
+  if (note.ownerId !== user.id) return { error: words.actNotYourNote };
 
   if (folderId) {
     const folder = await prisma.folder.findUnique({
@@ -130,7 +140,7 @@ export async function moveNoteToFolder(_previous: Result, data: FormData): Promi
       select: { ownerId: true },
     });
     if (!folder || folder.ownerId !== user.id) {
-      return { error: "Nie ma takiego folderu." };
+      return { error: words.actNoSuchFolder };
     }
   }
 
@@ -141,7 +151,7 @@ export async function moveNoteToFolder(_previous: Result, data: FormData): Promi
 
   revalidatePath("/library");
   revalidatePath(`/note/${noteId}`);
-  return { success: folderId ? (await currentWords()).actMovedToFolder : (await currentWords()).actTakenOutOfFolder };
+  return { success: folderId ? words.actMovedToFolder : words.actTakenOutOfFolder };
 }
 
 /**
@@ -166,7 +176,7 @@ export async function bulkNotesFromLibrary(_previous: Result, data: FormData): P
   if (noteIds.length === 0) return { error: words.bulkNothingPicked };
 
   const what = String(data.get("what") ?? "");
-  if (what !== "trash" && what !== "move") return { error: "Nieznane działanie." };
+  if (what !== "trash" && what !== "move") return { error: words.actUnknownAction };
 
   // Cudzych notatek nie ruszamy i nie mówimy o nich ani słowa więcej, niż
   // trzeba: dla zaznaczającego wyglądają tak samo jak te, których nie ma.
@@ -199,7 +209,7 @@ export async function bulkNotesFromLibrary(_previous: Result, data: FormData): P
       where: { id: folderId },
       select: { ownerId: true, name: true },
     });
-    if (!folder || folder.ownerId !== user.id) return { error: "Nie ma takiego folderu." };
+    if (!folder || folder.ownerId !== user.id) return { error: words.actNoSuchFolder };
     folderName = folder.name;
   }
 
@@ -218,11 +228,12 @@ export async function bulkNotesFromLibrary(_previous: Result, data: FormData): P
 
 export async function createFolder(_previous: Result, data: FormData): Promise<Result> {
   const user = await currentUser();
-  if (!user) return { error: (await currentWords()).apiMustSignIn };
+  const words = await currentWords();
+  if (!user) return { error: words.apiMustSignIn };
 
   const name = String(data.get("name") ?? "").trim();
-  if (!name) return { error: (await currentWords()).actGiveFolderName };
-  if (name.length > 120) return { error: (await currentWords()).actFolderNameTooLong };
+  if (!name) return { error: words.actGiveFolderName };
+  if (name.length > 120) return { error: words.actFolderNameTooLong };
 
   await prisma.folder.create({
     data: {
@@ -235,7 +246,7 @@ export async function createFolder(_previous: Result, data: FormData): Promise<R
   });
 
   revalidatePath("/library");
-  return { success: `Folder „${name}" utworzony.` };
+  return { success: folderCreatedMsg(words, name) };
 }
 
 /** Barwa i ikona muszą być ze spisu - inaczej tablet nie wiedziałby, co narysować. */
@@ -262,26 +273,28 @@ async function ownFolder(userId: string, folderId: string) {
 
 export async function renameFolder(_previous: Result, data: FormData): Promise<Result> {
   const user = await currentUser();
-  if (!user) return { error: (await currentWords()).apiMustSignIn };
+  const words = await currentWords();
+  if (!user) return { error: words.apiMustSignIn };
 
   const folder = await ownFolder(user.id, String(data.get("folderId") ?? ""));
-  if (!folder) return { error: "Nie ma takiego folderu." };
+  if (!folder) return { error: words.actNoSuchFolder };
 
   const name = String(data.get("name") ?? "").trim();
-  if (!name) return { error: (await currentWords()).actGiveFolderName };
-  if (name.length > 120) return { error: (await currentWords()).actFolderNameTooLong };
+  if (!name) return { error: words.actGiveFolderName };
+  if (name.length > 120) return { error: words.actFolderNameTooLong };
 
   await prisma.folder.update({ where: { id: folder.id }, data: { name } });
   revalidatePath("/library");
-  return { success: `Nazwa zmieniona na „${name}".` };
+  return { success: folderRenamedMsg(words, name) };
 }
 
 export async function setFolderLook(_previous: Result, data: FormData): Promise<Result> {
   const user = await currentUser();
-  if (!user) return { error: (await currentWords()).apiMustSignIn };
+  const words = await currentWords();
+  if (!user) return { error: words.apiMustSignIn };
 
   const folder = await ownFolder(user.id, String(data.get("folderId") ?? ""));
-  if (!folder) return { error: "Nie ma takiego folderu." };
+  if (!folder) return { error: words.actNoSuchFolder };
 
   await prisma.folder.update({
     where: { id: folder.id },
@@ -292,7 +305,7 @@ export async function setFolderLook(_previous: Result, data: FormData): Promise<
   });
 
   revalidatePath("/library");
-  return { success: (await currentWords()).actLookChanged };
+  return { success: words.actLookChanged };
 }
 
 /**
@@ -305,10 +318,11 @@ export async function setFolderLook(_previous: Result, data: FormData): Promise<
  */
 export async function deleteFolder(_previous: Result, data: FormData): Promise<Result> {
   const user = await currentUser();
-  if (!user) return { error: (await currentWords()).apiMustSignIn };
+  const words = await currentWords();
+  if (!user) return { error: words.apiMustSignIn };
 
   const folder = await ownFolder(user.id, String(data.get("folderId") ?? ""));
-  if (!folder) return { error: "Nie ma takiego folderu." };
+  if (!folder) return { error: words.actNoSuchFolder };
 
   const [inside, subfolders] = await Promise.all([
     prisma.note.count({ where: { ownerId: user.id, folderId: folder.id } }),
@@ -319,6 +333,6 @@ export async function deleteFolder(_previous: Result, data: FormData): Promise<R
 
   revalidatePath("/library");
   return {
-    success: folderDeletedMsg(await currentWords(), folder.name, inside, subfolders),
+    success: folderDeletedMsg(words, folder.name, inside, subfolders),
   };
 }

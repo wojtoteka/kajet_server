@@ -1024,6 +1024,13 @@ export type Words = {
   actGiveFolderName: string;
   actFolderNameTooLong: string;
   actLookChanged: string;
+  actMissingId: string;
+  actNoteInTrash: string;
+  actTrashEmpty: string;
+  actNoSuchNote: string;
+  actNotYourNote: string;
+  actNoSuchFolder: string;
+  actUnknownAction: string;
   actNotAnEmail: string;
   actPasswordMinEight: string;
   actPasswordsDifferTwice: string;
@@ -2309,6 +2316,13 @@ const pl: Words = {
   actGiveFolderName: "Podaj nazwę folderu.",
   actFolderNameTooLong: "Nazwa folderu jest za długa.",
   actLookChanged: "Wygląd zmieniony.",
+  actMissingId: "Brak identyfikatora.",
+  actNoteInTrash: "Notatka w koszu.",
+  actTrashEmpty: "Kosz jest pusty.",
+  actNoSuchNote: "Nie ma takiej notatki.",
+  actNotYourNote: "To nie jest Twoja notatka.",
+  actNoSuchFolder: "Nie ma takiego folderu.",
+  actUnknownAction: "Nieznane działanie.",
   actNotAnEmail: "To nie wygląda na adres e-mail.",
   actPasswordMinEight: "Hasło musi mieć co najmniej osiem znaków.",
   actPasswordsDifferTwice: "Hasła się różnią. Wpisz to samo hasło dwa razy.",
@@ -3600,6 +3614,13 @@ const en: Words = {
   actGiveFolderName: "Enter a folder name.",
   actFolderNameTooLong: "The folder name is too long.",
   actLookChanged: "The look has been changed.",
+  actMissingId: "No identifier.",
+  actNoteInTrash: "The note is in the bin.",
+  actTrashEmpty: "The bin is empty.",
+  actNoSuchNote: "There is no such note.",
+  actNotYourNote: "That is not your note.",
+  actNoSuchFolder: "There is no such folder.",
+  actUnknownAction: "Unknown action.",
   actNotAnEmail: "That does not look like an e-mail address.",
   actPasswordMinEight: "The password must be at least eight characters.",
   actPasswordsDifferTwice: "The passwords do not match. Type the same password twice.",
@@ -3853,6 +3874,34 @@ export function bulkPartlyFailedMsg(words: Words, failed: number, total: number)
     return `${total - failed} of ${total} done, ${failed} did not work.`;
   }
   return `Zrobiono ${total - failed} z ${total}, ${failed} się nie udało.`;
+}
+
+export function trashEmptiedMsg(words: Words, count: number): string {
+  if (words.locale === "en-US") {
+    return `Emptied the bin (${count}).`;
+  }
+  return `Opróżniono kosz (${count}).`;
+}
+
+export function trashEmptiedPartlyMsg(words: Words, deleted: number, failed: number): string {
+  if (words.locale === "en-US") {
+    return `Emptied in part: ${deleted} deleted, ${failed} did not work.`;
+  }
+  return `Opróżniono częściowo: ${deleted} skasowanych, ${failed} nie udało się.`;
+}
+
+export function folderCreatedMsg(words: Words, name: string): string {
+  if (words.locale === "en-US") {
+    return `Folder “${name}” created.`;
+  }
+  return `Folder „${name}” utworzony.`;
+}
+
+export function folderRenamedMsg(words: Words, name: string): string {
+  if (words.locale === "en-US") {
+    return `Name changed to “${name}”.`;
+  }
+  return `Nazwa zmieniona na „${name}”.`;
 }
 
 export function attachmentsCount(words: Words, count: number): string {
