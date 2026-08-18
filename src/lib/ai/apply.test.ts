@@ -93,6 +93,27 @@ describe("notatka tekstowa", () => {
     expect(after.text!.font).toBe("mono");
   });
 
+  it("przywraca rozmiar z motywu, gdy model poda fontSize 0", () => {
+    const outcome = applyAiCall({
+      kind: "TEXT",
+      noteId: NOTE_ID,
+      title: "Zakupy",
+      content,
+      toolName: "zmien_tekst",
+      words: PL,
+      args: {
+        markdown: "# Zakupy\n\n- mleko\n\n![paragon|60%](assets/paragon.png)",
+        opis: "Przywrócono rozmiar z motywu.",
+        fontSize: 0,
+      },
+    });
+
+    expect(outcome.kind).toBe("zmiana");
+    if (outcome.kind !== "zmiana") return;
+    const after = readDocument(outcome.content)!;
+    expect(after.text!.fontSize).toBe(0);
+  });
+
   it("odrzuca opis pusty i rozmiar pisma spoza skali", () => {
     const bezOpisu = applyAiCall({
       kind: "TEXT",

@@ -90,12 +90,14 @@ const NARZEDZIE_TEKST: GeminiTool = {
       },
       fontSize: {
         type: "integer",
-        minimum: TEXT_SMALLEST_SIZE,
+        minimum: 0,
         maximum: TEXT_LARGEST_SIZE,
         description:
-          "Rozmiar pisma całej notatki. Podaj tylko wtedy, gdy proszono o zmianę " +
-          "rozmiaru. Nie podawaj 17 jako „normalnego” - pominięcie pola zostawia " +
-          "rozmiar nietknięty.",
+          "Rozmiar pisma całej notatki. 0 = rozmiar z motywu konta; " +
+          `${TEXT_SMALLEST_SIZE}–${TEXT_LARGEST_SIZE}` +
+          " = stały rozmiar. Podaj tylko wtedy, gdy proszono o zmianę rozmiaru. " +
+          "Pominięcie pola zostawia rozmiar nietknięty. Nigdy nie podawaj 17 jako " +
+          "„normalnego” - to podgląd, nie zapis.",
       },
       align: {
         type: "string",

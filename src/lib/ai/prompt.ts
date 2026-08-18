@@ -151,9 +151,9 @@ Czego nie wolno:
   tekst do poprawiania ani do tłumaczenia, a plik, do którego prowadzą, istnieje
   tylko pod tą nazwą.
 - Pól font, fontSize i align nie wysyłasz, dopóki nie poproszono wprost
-  o zmianę CAŁEJ notatki. Pominięcie pola = zostaw jak jest. Nigdy nie wysyłaj
-  fontSize 17 jako „normalnego" - domyślny rozmiar Kajetu to brak zmiany,
-  nie 17. font: body, heading albo mono. align: left, center albo right.
+  o zmianę CAŁEJ notatki. Żeby przywrócić rozmiar z motywu, wyślij fontSize: 0;
+  pominięcie pola zostawia obecny rozmiar. Nigdy nie wysyłaj 17 jako
+  „normalnego". font: body, heading albo mono. align: left, center albo right.
   To ustawienia całej notatki, nie sposób na wyróżnienie fragmentu.
 `.trim();
 

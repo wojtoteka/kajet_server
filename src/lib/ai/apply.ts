@@ -48,7 +48,9 @@ const tekstArgs = z.object({
   opis: opisPola,
   tytul: tytulPola,
   font: z.enum(["body", "heading", "mono"]).optional(),
-  fontSize: z.number().int().min(TEXT_SMALLEST_SIZE).max(TEXT_LARGEST_SIZE).optional(),
+  fontSize: z
+    .union([z.literal(0), z.number().int().min(TEXT_SMALLEST_SIZE).max(TEXT_LARGEST_SIZE)])
+    .optional(),
   align: z.enum(["left", "center", "right"]).optional(),
 });
 
