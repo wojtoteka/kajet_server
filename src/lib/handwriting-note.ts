@@ -22,6 +22,22 @@ export const DEFAULT_INK_COLOR = argbColor(35, 33, 29);
 /** Its dark-theme counterpart (#e8e4da) - the same pair as defaultInk in the app. */
 export const DARK_INK_COLOR = argbColor(232, 228, 218);
 
+/**
+ * Page width/height pick the tablet card (A4 vs one long sheet). The web
+ * canvas may grow for drawing, but a save must not rewrite those numbers
+ * from ink — there is no page-size control on the website.
+ */
+export function preservePageDimensions(pages: Page[], existing?: NoteDocument | null): Page[] {
+  const previous = existing?.handwriting?.pages ?? [];
+  if (previous.length === 0) return pages;
+  const byId = new Map(previous.map((page) => [page.id, page]));
+  return pages.map((page) => {
+    const was = byId.get(page.id);
+    if (!was) return page;
+    return { ...page, width: was.width, height: was.height };
+  });
+}
+
 /** Build content.json for a HANDWRITTEN note matching FORMAT.md. */
 export function buildHandwritingNoteContent(options: {
   id: string;
@@ -46,7 +62,7 @@ export function buildHandwritingNoteContent(options: {
     handwriting: {
       pageMode: options.pageMode ?? existing?.handwriting?.pageMode ?? "a4",
       background: options.background ?? existing?.handwriting?.background ?? "lined",
-      pages: options.pages,
+      pages: preservePageDimensions(options.pages, existing),
     },
   });
 }

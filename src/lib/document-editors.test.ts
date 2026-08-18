@@ -18,11 +18,13 @@ import {
 } from "./mindmap-note";
 import {
   buildHandwritingNoteContent,
+  parseExistingHandwritingDocument,
   parseHandwritingNote,
   beginStroke,
   appendStrokePoint,
   defaultHandwritingSeed,
   emptyPage,
+  preservePageDimensions,
 } from "./handwriting-note";
 import {
   buildTextNoteContent,
@@ -185,6 +187,51 @@ describe("handwriting-note", () => {
 
   it("świeża strona ma spis kształtów, więc jest gdzie je dopisać", () => {
     expect(emptyPage().shapes).toEqual([]);
+  });
+
+  /*
+    Tablet rozróżnia kartkę A4 od jednej długiej strony po wysokości w
+    content.json. Edytor WWW doliczał wysokość z atramentu i wpisywał ją
+    z powrotem — krótka notatka na długiej kartce stawała się A4.
+  */
+  it("zapis ze strony nie przepisuje wysokości kartki z tabletu", () => {
+    const fromTablet = JSON.stringify({
+      format: 1,
+      id: "hw3",
+      kind: "handwritten",
+      title: "Długa",
+      handwriting: {
+        pageMode: "scroll",
+        background: "lined",
+        pages: [
+          {
+            id: "s1",
+            width: 595,
+            height: 1684,
+            strokes: [],
+          },
+        ],
+      },
+    });
+
+    const existing = parseExistingHandwritingDocument(fromTablet);
+    const parsed = parseHandwritingNote(fromTablet);
+    const refitted = parsed!.pages.map((entry) => ({ ...entry, height: 960 }));
+
+    expect(preservePageDimensions(refitted, existing)[0].height).toBe(1684);
+
+    const saved = buildHandwritingNoteContent({
+      id: "hw3",
+      title: "Długa",
+      pages: refitted,
+      pageMode: parsed!.pageMode,
+      background: parsed!.background,
+      existing,
+    });
+    const body = JSON.parse(saved).handwriting;
+    expect(body.pageMode).toBe("scroll");
+    expect(body.pages[0].width).toBe(595);
+    expect(body.pages[0].height).toBe(1684);
   });
 });
 

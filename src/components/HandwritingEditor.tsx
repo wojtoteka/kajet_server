@@ -14,6 +14,7 @@ import {
   beginStroke,
   DARK_INK_COLOR,
   DEFAULT_INK_COLOR,
+  emptyPage,
   type HandwritingBody,
 } from "@/lib/handwriting-note";
 import {
@@ -196,10 +197,10 @@ function pageContentBottom(entry: Page, draft?: Stroke | null): number {
 }
 
 /**
- * Wysokość strony liczona z zawartości, nie z pozycji kursora. Wcześniej
+ * Zapas wysokości płótna z zawartości, nie z pozycji kursora. Wcześniej
  * strona rosła przy każdym ruchu wskaźnika nad dolną krawędzią — samo
  * zjeżdżanie w dół do przycisku „Zapisz" wydłużało ją w nieskończoność
- * i przycisk uciekał.
+ * i przycisk uciekał. Ta liczba zostaje w edytorze; do content.json nie idzie.
  */
 function fittedPageHeight(entry: Page, draft?: Stroke | null): number {
   const needed = pageContentBottom(entry, draft) + PAGE_GROW_MARGIN;
@@ -314,18 +315,20 @@ export function HandwritingEditor({
 
   const page = pages[pageIndex] ?? pages[0];
   const width = page?.width ?? 595;
-  // Wysokość bierze się z zawartości (razem z kreską w trakcie rysowania) —
-  // pisanie przy dolnej krawędzi dokłada miejsce, samo wodzenie kursorem nie.
-  const height = page ? fittedPageHeight(page, draft) : MIN_PAGE_HEIGHT;
+  // Płótno może urosnąć przy pisaniu przy krawędzi, ale nie kurczy kartki
+  // zapisanej na tablecie (długa strona ma zostać długa).
+  const height = page
+    ? Math.max(page.height ?? MIN_PAGE_HEIGHT, fittedPageHeight(page, draft))
+    : MIN_PAGE_HEIGHT;
 
   const payload = useMemo(
     () =>
       JSON.stringify({
         pageMode: initial.pageMode,
         background,
-        // Do zapisu idzie wysokość dopasowana do zawartości, więc strony
-        // rozdmuchane starym zachowaniem kurczą się przy najbliższym zapisie.
-        pages: pages.map((entry) => ({ ...entry, height: fittedPageHeight(entry) })),
+        // Wymiary strony zostają z dokumentu. Dopasowanie do atramentu jest
+        // tylko na płótnie — inaczej tablet dostawałby inną kartkę.
+        pages,
       }),
     [initial.pageMode, background, pages],
   );
@@ -855,21 +858,16 @@ export function HandwritingEditor({
   }
 
   function addPage() {
-    setPages((list) => [
-      ...list,
-      {
-        id:
-          typeof crypto !== "undefined" && "randomUUID" in crypto
-            ? crypto.randomUUID()
-            : `page-${Date.now()}`,
-        width: 595,
-        height: MIN_PAGE_HEIGHT,
-        strokes: [],
-        texts: [],
-        images: [],
-        recognized: [],
-      },
-    ]);
+    setPages((list) => {
+      const last = list[list.length - 1];
+      return [
+        ...list,
+        emptyPage({
+          width: last?.width,
+          height: last?.height,
+        }),
+      ];
+    });
     setPageIndex(pages.length);
   }
 
