@@ -65,6 +65,26 @@ describe("tablet contract", () => {
       existing: parseExistingTextDocument(content),
     });
     expect(JSON.parse(resaved).text.textColor).toBe(-10079710);
+    expect(JSON.parse(resaved).text.fontSize).toBe(0);
+  });
+
+  it("keeps fontSize 0 when the web resaves a tablet note at theme default", () => {
+    const content =
+      '{"format":1,"id":"n1","kind":"text","title":"Tekst",' +
+      '"createdAt":1,"updatedAt":2,"tags":[],"favorite":false,' +
+      '"text":{"markdown":"abc","drawings":[],"font":"body","fontSize":0,' +
+      '"textColor":0,"align":"left"}}';
+
+    expect(textAppearanceFromContent(content).fontSize).toBe(0);
+
+    const resaved = buildTextNoteContent({
+      id: "n1",
+      title: "Tekst",
+      markdown: "abcd",
+      appearance: { fontSize: 0 },
+      existing: parseExistingTextDocument(content),
+    });
+    expect(JSON.parse(resaved).text.fontSize).toBe(0);
   });
 
   it("keeps CODE outside the legacy GET kinds but accepts it on PUT", () => {

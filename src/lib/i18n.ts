@@ -352,6 +352,7 @@ export type Words = {
   wholeNoteFont: string;
   wholeNoteSize: string;
   wholeNoteColour: string;
+  defaultSize: string;
   defaultColour: string;
   alignLeft: string;
   alignCentre: string;
@@ -1492,6 +1493,7 @@ const pl: Words = {
   wholeNoteFont: "Krój pisma całej notatki",
   wholeNoteSize: "Rozmiar pisma całej notatki",
   wholeNoteColour: "Kolor pisma całej notatki",
+  defaultSize: "Domyślna",
   defaultColour: "Kolor domyślny",
   alignLeft: "Do lewej",
   alignCentre: "Do środka",
@@ -2801,6 +2803,7 @@ const en: Words = {
   wholeNoteFont: "Typeface for the whole note",
   wholeNoteSize: "Text size for the whole note",
   wholeNoteColour: "Text color for the whole note",
+  defaultSize: "Default",
   defaultColour: "Default color",
   alignLeft: "Align left",
   alignCentre: "Align center",

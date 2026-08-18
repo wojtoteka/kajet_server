@@ -27,10 +27,15 @@ import {
   preservePageDimensions,
 } from "./handwriting-note";
 import {
+  TEXT_DEFAULT_SIZE,
+  TEXT_LARGEST_SIZE,
+  TEXT_SMALLEST_SIZE,
   buildTextNoteContent,
   joinTextBlocks,
+  persistFontSize,
   readImageAlt,
   splitTextBlocks,
+  storedFontSize,
   textAppearanceFromContent,
   textMarkdownFromContent,
 } from "./text-note";
@@ -309,6 +314,44 @@ describe("text-note still builds markdown", () => {
       existing,
     });
     expect(JSON.parse(resaved).text.textColor).toBe(-10079710);
+  });
+
+  it("keeps fontSize 0 (theme default) when the web resaves it", () => {
+    const existing = JSON.parse(
+      buildTextNoteContent({
+        id: "t1",
+        title: "Tekst",
+        markdown: "abc",
+        appearance: { fontSize: 0 },
+      }),
+    );
+    expect(existing.text.fontSize).toBe(0);
+    const resaved = JSON.parse(
+      buildTextNoteContent({
+        id: "t1",
+        title: "Tekst",
+        markdown: "abcd",
+        appearance: { fontSize: 0 },
+        existing,
+      }),
+    );
+    expect(resaved.text.fontSize).toBe(0);
+  });
+
+  it("does not persist preview 17 when stored size is still the theme default", () => {
+    expect(storedFontSize(0)).toBe(0);
+    expect(storedFontSize(-1)).toBe(0);
+    expect(storedFontSize(TEXT_SMALLEST_SIZE)).toBe(TEXT_SMALLEST_SIZE);
+    expect(storedFontSize(TEXT_DEFAULT_SIZE)).toBe(TEXT_DEFAULT_SIZE);
+    expect(storedFontSize(TEXT_LARGEST_SIZE)).toBe(TEXT_LARGEST_SIZE);
+    expect(storedFontSize(9)).toBe(TEXT_SMALLEST_SIZE);
+    expect(storedFontSize(49)).toBe(TEXT_LARGEST_SIZE);
+
+    expect(persistFontSize(0, TEXT_DEFAULT_SIZE)).toBe(0);
+    expect(persistFontSize(0, 18)).toBe(18);
+    expect(persistFontSize(0, 16)).toBe(16);
+    expect(persistFontSize(16, TEXT_DEFAULT_SIZE)).toBe(TEXT_DEFAULT_SIZE);
+    expect(persistFontSize(20, 0)).toBe(0);
   });
 
 });

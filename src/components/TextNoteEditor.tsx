@@ -58,6 +58,7 @@ import {
   TEXT_SMALLEST_SIZE,
   clampImageWidth,
   joinTextBlocks,
+  persistFontSize,
   splitTextBlocks,
   type TextAppearance,
   type TextBlock,
@@ -664,11 +665,19 @@ export function TextNoteEditor({
             max={TEXT_LARGEST_SIZE}
             value={shownSize}
             onChange={(event) => {
-              const value = Number(event.target.value);
-              if (Number.isFinite(value)) setFontSize(value);
+              setFontSize(persistFontSize(fontSize, Number(event.target.value)));
             }}
             style={{ width: 64, minHeight: 36, padding: "4px 8px" }}
           />
+          <button
+            type="button"
+            className="compact"
+            title={words.defaultSize}
+            aria-label={words.defaultSize}
+            onClick={() => setFontSize(0)}
+          >
+            {words.defaultSize}
+          </button>
         </span>
         {/* Barwa pisma całej notatki - jak na tablecie. Kolorowanie jednego
             słowa robi się przyciskiem przy pogrubieniu, nie tutaj. */}

@@ -22,6 +22,28 @@ export const TEXT_DEFAULT_SIZE = 17;
 export const TEXT_SMALLEST_SIZE = 10;
 export const TEXT_LARGEST_SIZE = 48;
 
+/**
+ * Size to write into content.json. Zero stays the theme default — the same
+ * rule as TextContent.storedFontSize on the tablet. A chosen size is 10–48.
+ */
+export function storedFontSize(points: number): number {
+  if (!Number.isFinite(points) || points <= 0) return 0;
+  return Math.min(TEXT_LARGEST_SIZE, Math.max(TEXT_SMALLEST_SIZE, Math.round(points)));
+}
+
+/**
+ * Size after the visible control reports `picked`. While stored is 0 the
+ * field shows TEXT_DEFAULT_SIZE as a preview; echoing that 17 must not
+ * persist, or a tap on the control freezes the note at 17 after sync.
+ * Choosing any other 10–48 (or 17 once the stored size is already a pick)
+ * writes a real size. 0 goes back to the theme default.
+ */
+export function persistFontSize(stored: number, picked: number): number {
+  if (!Number.isFinite(picked)) return stored;
+  if (stored <= 0 && Math.round(picked) === TEXT_DEFAULT_SIZE) return 0;
+  return storedFontSize(picked);
+}
+
 /** Build content.json for a TEXT note in the shape the tablet expects. */
 export function buildTextNoteContent(options: {
   id: string;
