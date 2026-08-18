@@ -958,15 +958,29 @@ button.on,
 
 /* --- Note editors --- */
 
+/*
+  Pasek narzędzi edytora: jeden rząd. Gdy przyciski nie mieszczą się
+  (telefon, drugi pasek z kółkami farby), jedzie w bok w samej ramce -
+  jak tabela w .table-scroll - zamiast zawijać się na kartkę.
+  Dzieci się nie kurczą, żeby palec trafiał w ten sam cel co na szerokim
+  ekranie. Pasek przewijania bierze barwy motywu z reguł wyżej.
+*/
 .editor-toolbar {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 6px;
   padding: 8px 10px;
   background: var(--desk);
   border: var(--hairline) solid var(--rule);
   border-radius: var(--radius);
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.editor-toolbar > * {
+  flex-shrink: 0;
 }
 
 /* Pole w pasku narzÄ™dzi (krĂłj, rozmiar) - zamiast podpisu ma ikonÄ™, wiÄ™c
