@@ -283,12 +283,16 @@ a:hover {
   Kolumna treści wewnątrz ramki.
 
   Pasek ze znakiem ma sięgać obu krawędzi ramki, ale wiersz tekstu szeroki na
-  całą ramkę czyta się źle - więc treść stoi w węższej kolumnie przy lewej
-  krawędzi, tak samo jak na stronie tytułowej i w kontakcie. Dokumenty mają
+  całą ramkę czyta się źle - więc treść stoi w węższej kolumnie. Wyśrodkowana,
+  nie przy lewej krawędzi: tamte strony nie mają obrazka ani formularza po
+  prawej, jak strona tytułowa czy kontakt, więc kolumna przyklejona do lewej
+  zostawiała pod znakiem krzywą, martwą pustkę z prawej. Wyśrodkowanie czyta
+  się jak zwykła kartka pod nagłówkiem na całą szerokość. Dokumenty mają
   własną, jeszcze węższą (patrz `.legal > .page-column`).
 */
 .page-column {
   max-width: 860px;
+  margin-inline: auto;
 }
 
 .row {
