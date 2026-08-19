@@ -62,7 +62,7 @@ export default async function AccountPage() {
 
   return (
     <main className="page site-frame">
-      <KajetMark caption={user.login} />
+      <KajetMark home="/library" caption={user.login} />
 
       {/* Wszystko poniżej paska ze znakiem w jednej kolumnie: arkusze konta
           mają zostać przy czytelnej szerokości, a nie rozciągać się na całą

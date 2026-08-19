@@ -40,7 +40,7 @@ export default async function NewCodeNotePage() {
 
   return (
     <main className="page wide">
-      <KajetMark caption={user.login} />
+      <KajetMark home="/library" caption={user.login} />
 
       <div className="row-spread" style={{ marginBottom: 18 }}>
         <div>

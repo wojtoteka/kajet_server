@@ -31,7 +31,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <main className="page wide">
-      <KajetMark caption={words.adminCaption} />
+      <KajetMark home="/library" caption={words.adminCaption} />
 
       <nav className="row admin-nav">
         <Link className="button compact" href="/admin">

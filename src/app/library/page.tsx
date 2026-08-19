@@ -188,7 +188,7 @@ export default async function LibraryPage({
 
   return (
     <main className="page wide">
-      <KajetMark caption={user.login} />
+      <KajetMark home="/library" caption={user.login} />
 
       {/* Tytuł i licznik miejsca stoją w jednym rzędzie na każdej szerokości -
           układ siedzi w .library-head (globals.css), bo na telefonie wymaga

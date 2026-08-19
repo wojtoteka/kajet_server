@@ -117,7 +117,7 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
 
   return (
     <main className="page wide">
-      <KajetMark />
+      <KajetMark home="/library" />
 
       <div className="row-spread" style={{ marginBottom: 18 }}>
         <div>
@@ -444,7 +444,7 @@ function TrashedNoteView({
 }) {
   return (
     <main className="page wide">
-      <KajetMark />
+      <KajetMark home="/library" />
       <div className="row-spread" style={{ marginBottom: 18 }}>
         <div>
           <p className="eyebrow">

@@ -73,7 +73,7 @@ export default async function TrashPage({
 
   return (
     <main className="page wide">
-      <KajetMark caption={user.login} />
+      <KajetMark home="/library" caption={user.login} />
 
       <div className="row-spread" style={{ marginBottom: 20 }}>
         <div>

@@ -19,7 +19,7 @@ export default async function NoteNotFound() {
 
   return (
     <main className="page" style={{ maxWidth: 620 }}>
-      <KajetMark />
+      <KajetMark home="/library" />
 
       <div className="sheet-ruled" style={{ paddingBlock: 32, paddingInlineEnd: 28 }}>
         <p className="eyebrow">{words.error404}</p>
