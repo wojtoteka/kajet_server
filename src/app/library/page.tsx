@@ -234,7 +234,13 @@ export default async function LibraryPage({
         </div>
       </div>
 
-      <div className="row-spread" style={{ marginBottom: 20 }}>
+      {/*
+        Pasek zaznaczonych nakłada się na rząd „nowa notatka / kosz / konto”,
+        zamiast wchodzić nad tabelę i wypychać spis. Przy zerze jest hidden
+        (zero wysokości). Formularz stoi tu, a kwadraciki w wierszach i tak
+        wskazują go atrybutem form - patrz BulkNotesForm.
+      */}
+      <div className="row-spread library-toolbar" style={{ marginBottom: 20 }}>
         <div className="row library-actions" style={{ flexWrap: "wrap" }}>
           <Link className="button compact primary" href="/note/new">
             <Icon name="post_add" size={18} />
@@ -274,6 +280,7 @@ export default async function LibraryPage({
             </Link>
           ) : null}
         </div>
+        <BulkNotesForm folders={folderChoices} action={bulkNotesFromLibrary} />
       </div>
 
       <section className="sheet" style={{ padding: "16px 18px", marginBottom: 16 }}>
@@ -406,13 +413,6 @@ export default async function LibraryPage({
               </div>
             </div>
           ) : (
-            <>
-            {/*
-              Pasek zaznaczonych stoi NAD tabelą, a zaznaczenia siedzą w jej
-              wierszach - patrz BulkNotesForm - bo formularza nie da się
-              zagnieździć w formularzu, a każdy wiersz swój już ma.
-            */}
-            <BulkNotesForm folders={folderChoices} action={bulkNotesFromLibrary} />
             <div className="sheet table-scroll">
               <table className="notes-table">
                 <thead>
@@ -530,7 +530,6 @@ export default async function LibraryPage({
                 </tbody>
               </table>
             </div>
-            </>
           )}
 
           {pages > 1 ? (

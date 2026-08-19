@@ -66,8 +66,8 @@ export default async function AppReleasesPage() {
               {releases.map((release) => (
                 <tr key={release.id}>
                   <td>
-                    <span className="row" style={{ gap: 8 }}>
-                      <span className="mono">{release.version}</span>
+                    <span className="row release-version-row" style={{ gap: 8 }}>
+                      <span className="mono release-version">{release.version}</span>
                       {release.current ? <span className="tag accent">{words.tagDownloadable}</span> : null}
                     </span>
                     <p className="small" style={{ margin: "4px 0 0 0" }}>

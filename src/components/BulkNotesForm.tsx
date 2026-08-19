@@ -82,8 +82,11 @@ export function BulkNotesForm({
     bo kwadraciki w wierszach wskazują go atrybutem `form` — bez niego
     zaznaczenie nie miałoby do kogo należeć.
 
-    hidden=true przy zerze: CSS `.bulk-bar { display: flex }` przebija zwykły
+    hidden=true przy zerze: klasa `.row` ustawia display:flex i przebija zwykły
     atrybut hidden, więc w arkuszu jest osobna reguła `.bulk-bar[hidden]`.
+    Przy zaznaczeniu pasek jest pozycją absolutną na rzędzie narzędzi biblioteki
+    (`.library-toolbar`), więc spis notatek nie jedzie w dół. Wygląd jak tamten
+    rząd: te same `.button.compact`, ten sam odstęp co `.row`.
   */
 
   return (
@@ -91,7 +94,7 @@ export function BulkNotesForm({
       id={BULK_FORM_ID}
       ref={form}
       action={submit}
-      className="bulk-bar"
+      className="row bulk-bar"
       hidden={count === 0}
       aria-label={words.bulkBarLabel}
       onSubmit={(event) => {
@@ -127,11 +130,11 @@ export function BulkNotesForm({
 
       <span className="bulk-count">{selectedNotes(words, count)}</span>
 
-      <button type="button" className="compact" onClick={() => setAll(true)}>
+      <button type="button" className="button compact on" onClick={() => setAll(true)}>
         <Icon name="select_all" size={18} />
         {words.bulkSelectAll}
       </button>
-      <button type="button" className="compact" onClick={() => setAll(false)}>
+      <button type="button" className="button compact" onClick={() => setAll(false)}>
         {words.bulkClear}
       </button>
 
@@ -139,7 +142,13 @@ export function BulkNotesForm({
         <label htmlFor="bulk-folder" className="visually-hidden">
           {words.bulkPickTarget}
         </label>
-        <select id="bulk-folder" name="folderId" defaultValue="__none" disabled={busy}>
+        <select
+          id="bulk-folder"
+          name="folderId"
+          className="toolbar-select"
+          defaultValue="__none"
+          disabled={busy}
+        >
           <option value="__none">{words.noFolder}</option>
           {folders.map((folder) => (
             <option key={folder.id} value={folder.id}>
@@ -151,7 +160,7 @@ export function BulkNotesForm({
           type="submit"
           name="what"
           value="move"
-          className="compact"
+          className="button compact"
           disabled={busy}
         >
           <Icon name={busy ? "hourglass_top" : "drive_file_move"} size={18} />
@@ -163,7 +172,7 @@ export function BulkNotesForm({
         type="submit"
         name="what"
         value="trash"
-        className="compact danger"
+        className="button compact danger"
         disabled={busy}
       >
         <Icon name={busy ? "hourglass_top" : "delete"} size={18} />
