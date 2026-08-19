@@ -47,7 +47,11 @@ export default async function AppReleasesPage() {
         </div>
       ) : (
         <div className="sheet table-scroll">
-          <table>
+          {/*
+            Własna klasa, bo changelog bywa długi. Domyślne wyrównanie do
+            środka wieszało wersję i przyciski w połowie wysokości wiersza.
+          */}
+          <table className="releases-table">
             <thead>
               <tr>
                 <th>{words.columnVersion}</th>
@@ -86,9 +90,11 @@ export default async function AppReleasesPage() {
                       {release.uploadedBy ? `${words.publishedByWord} ${release.uploadedBy.login}` : "-"}
                     </p>
                   </td>
-                  <td style={{ maxWidth: 280, whiteSpace: "pre-wrap" }}>{release.notes ?? "-"}</td>
                   <td>
-                    <div className="row" style={{ gap: 8 }}>
+                    <div className="release-notes">{release.notes ?? "-"}</div>
+                  </td>
+                  <td className="cell-actions">
+                    <div className="row" style={{ gap: 8, justifyContent: "flex-end" }}>
                       <a
                         className="button compact"
                         href={`/download/file?release=${release.id}`}

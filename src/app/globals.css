@@ -1435,6 +1435,27 @@ tbody tr:last-child td {
   vertical-align: top;
 }
 
+/*
+  Spis wystawionych wydań: komórki od GÓRY, a changelog w ramce.
+
+  Długa lista „co się zmieniło" rozpychała cały wiersz. Wersja, plik i
+  przyciski wisiały wtedy na środku wysokości, jakby nie należały do tej
+  samej pozycji. Przy wyrównaniu do góry i przewijaniu notatki w komórce
+  wiersz zostaje zwyczajnej wysokości, a pełny opis nadal jest pod ręką.
+*/
+.releases-table td {
+  vertical-align: top;
+}
+
+.release-notes {
+  max-width: 36em;
+  max-height: 10rem;
+  overflow: auto;
+  overscroll-behavior: contain;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 /* DziaĹ‚ania trzymajÄ… siÄ™ prawej krawÄ™dzi, ĹĽeby staĹ‚y w rĂłwnej kolumnie. */
 .cell-actions {
   text-align: right;
