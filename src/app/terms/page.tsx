@@ -19,10 +19,14 @@ export default async function TermsPage() {
   const language = await currentLanguage();
 
   return (
-    <main className="page legal">
+    <main className="page site-frame legal">
       <KajetMark />
       <BackToKajet />
-      {language === "en" ? <RegulaminEn /> : <RegulaminPl />}
+      {/* Sam dokument w węższej kolumnie: pasek ze znakiem trzyma szerokość
+          serwisu, a wiersz tekstu zostaje przy czytelnej długości. */}
+      <div className="page-column">
+        {language === "en" ? <RegulaminEn /> : <RegulaminPl />}
+      </div>
     </main>
   );
 }

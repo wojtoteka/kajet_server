@@ -16,10 +16,14 @@ export default async function PrivacyPage() {
   const language = await currentLanguage();
 
   return (
-    <main className="page legal">
+    <main className="page site-frame legal">
       <KajetMark />
       <BackToKajet />
-      {language === "en" ? <PolitykaEn /> : <PolitykaPl />}
+      {/* Tak jak w regulaminie: pasek ze znakiem na szerokość serwisu, sam
+          dokument w węższej kolumnie. */}
+      <div className="page-column">
+        {language === "en" ? <PolitykaEn /> : <PolitykaPl />}
+      </div>
     </main>
   );
 }

@@ -260,6 +260,37 @@ a:hover {
   max-width: 1180px;
 }
 
+/*
+  Ramka serwisu.
+
+  Pasek na stronie tytułowej, formularz kontaktu i stopka stoją w kolumnie
+  szerokiej na 1120 px z 22 px marginesu z boku - i wszystkie zaczynają się w
+  tej samej linii. Strony pisane na wąską kolumnę - regulamin, polityka,
+  pobieranie, konto - siedziały dotąd po środku ekranu, więc znak „Kajet"
+  razem z przełącznikami stał wyraźnie węziej niż reszta serwisu, a cała
+  strona wyglądała na ciaśniejszą niż wszystko dookoła. Ta klasa sadza je w
+  tej samej ramce; szerokość samej treści zwęża potem `.page-column`.
+
+  Na telefonie nic się nie zmienia: 1120 px i tak się nie mieści, a ciaśniejsze
+  marginesy wpisuje blok telefonowy niżej.
+*/
+.site-frame {
+  max-width: 1120px;
+  padding-inline: 22px;
+}
+
+/*
+  Kolumna treści wewnątrz ramki.
+
+  Pasek ze znakiem ma sięgać obu krawędzi ramki, ale wiersz tekstu szeroki na
+  całą ramkę czyta się źle - więc treść stoi w węższej kolumnie przy lewej
+  krawędzi, tak samo jak na stronie tytułowej i w kontakcie. Dokumenty mają
+  własną, jeszcze węższą (patrz `.legal > .page-column`).
+*/
+.page-column {
+  max-width: 860px;
+}
+
 .row {
   display: flex;
   align-items: center;
@@ -1436,24 +1467,76 @@ tbody tr:last-child td {
 }
 
 /*
-  Spis wystawionych wydań: komórki od GÓRY, a changelog w ramce.
+  Spis wystawionych wydań: zwykła, zbita tabela, nie rzadki wysoki wiersz.
 
-  Długa lista „co się zmieniło" rozpychała cały wiersz. Wersja, plik i
-  przyciski wisiały wtedy na środku wysokości, jakby nie należały do tej
-  samej pozycji. Przy wyrównaniu do góry i przewijaniu notatki w komórce
-  wiersz zostaje zwyczajnej wysokości, a pełny opis nadal jest pod ręką.
+  Changelog bywa długi. Bez klamry rozpychał wiersz, a wersja z przyciskami
+  wisiała na środku wysokości. Samo wyrównanie do góry i max-height: 10rem
+  zostawiało pustkę pod WERSJĄ/PLIKIEM, a numer wersji pękał w pół - klasa
+  .mono łamie w dowolnym miejscu, a rząd z plakietką „do pobrania” ściskał
+  ten numer. Kolumny mają więc własne szerokości (changelog nie zabiera
+  wszystkiego, wersja się nie zwija), numer zostaje w jednej linii, a notatka
+  mieści się w niższej ramce z przewijaniem.
 */
+.table-scroll .releases-table {
+  table-layout: fixed;
+  min-width: 880px;
+}
+
+.releases-table th:nth-child(1) {
+  width: 11rem;
+}
+
+.releases-table th:nth-child(2) {
+  width: 11rem;
+}
+
+.releases-table th:nth-child(3) {
+  width: 6.5rem;
+}
+
+.releases-table th:nth-child(4) {
+  width: 8.5rem;
+}
+
+.releases-table th:nth-child(6) {
+  width: 12rem;
+}
+
 .releases-table td {
   vertical-align: top;
 }
 
-.release-notes {
-  max-width: 36em;
-  max-height: 10rem;
+.releases-table td:nth-child(2) {
+  overflow-wrap: anywhere;
+}
+
+.releases-table td:nth-child(5) {
+  min-width: 0;
+}
+
+.releases-table .release-version-row {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+
+.releases-table .release-version {
+  white-space: nowrap;
+  word-break: keep-all;
+  overflow-wrap: normal;
+  flex-shrink: 0;
+}
+
+.releases-table .release-notes {
+  max-height: 7rem;
   overflow: auto;
   overscroll-behavior: contain;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.releases-table .cell-actions .row {
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 /* DziaĹ‚ania trzymajÄ… siÄ™ prawej krawÄ™dzi, ĹĽeby staĹ‚y w rĂłwnej kolumnie. */
@@ -1727,47 +1810,98 @@ tbody tr:last-child td {
 /*
   Zaznaczanie wielu notatek naraz.
 
-  Pasek stoi nad spisem, a same zaznaczenia siedzÄ… przy tytuĹ‚ach w wierszach -
-  formularza nie da siÄ™ zagnieĹşdziÄ‡ w formularzu, a kaĹĽdy wiersz swĂłj juĹĽ ma
-  (gwiazdka, kosz, wybĂłr folderu). Pola wskazujÄ… ten formularz atrybutem
-  â€žform" i naleĹĽÄ… do niego mimo odlegĹ‚oĹ›ci w drzewie strony.
+  Pasek nakłada się na rząd narzędzi biblioteki (.library-toolbar), a same
+  zaznaczenia siedzą przy tytułach w wierszach - formularza nie da się
+  zagnieździć w formularzu, a każdy wiersz swój już ma (gwiazdka, kosz,
+  wybór folderu). Pola wskazują ten formularz atrybutem „form".
 
-  Zawijanie nie jest ozdobÄ…: przy 360 px licznik, dwa przyciski, lista
-  folderĂłw i kosz nie majÄ… jak stanÄ…Ä‡ w jednym rzÄ™dzie.
+  Nie stoi w układzie nad tabelą: pierwsze zaznaczenie nie wypychałoby spisu,
+  a schowanie nie zostawiałoby dziury. Przy zerze jest [hidden] / display:none.
+  Przy zaznaczeniu position:absolute na istniejącym rzędzie przycisków.
+
+  To nie jest druga belka na wierzchu. Tło biurka przykrywa „Nowa notatka”
+  / „Kosz” / „Moje konto”, a działania na zaznaczonych stoją w tym samym
+  miejscu, tym samym krojem: klasa .row (odstęp, wyrównanie) i .button.compact
+  (36 px, 12 px paddingu, włoskowata ramka). Zawijanie zostaje: przy 360 px
+  licznik, przyciski, lista folderów i kosz nie mają jak stanąć w jednym rzędzie.
 */
-.bulk-bar {
+.library-toolbar {
   position: relative;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-  padding: 10px 14px;
-  background: var(--accent-haze);
-  border: var(--hairline) solid var(--rule);
-  border-radius: var(--radius);
 }
 
-/* display: flex powyżej przebija atrybut hidden z arkusza przeglądarki. */
+.bulk-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  /* .row nie zawija na biurku; ten rząd ma więcej pozycji niż „nowa notatka”. */
+  flex-wrap: wrap;
+  align-content: flex-start;
+  margin: 0;
+  min-height: 100%;
+  padding: 0;
+  background: var(--desk);
+}
+
+/* .row { display: flex } przebija atrybut hidden z arkusza przeglądarki. */
 .bulk-bar[hidden] {
   display: none;
 }
 
-/* Licznik odpycha resztÄ™ do prawej krawÄ™dzi paska. */
 .bulk-count {
-  margin-right: auto;
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 500;
   color: var(--text-muted);
+  line-height: 1.25;
 }
 
 .bulk-move {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: inherit;
+  min-width: 0;
 }
 
-.bulk-move select {
+/*
+  Lista folderów brała style pól formularza (15 px, 11 px paddingu, szerokość
+  100 %), więc „Bez folderu” rosło jak osobna karta. Teraz to ta sama rodzina
+  co .button.compact i select.toolbar-select z paska edytora.
+*/
+.bulk-bar .toolbar-select {
+  width: auto;
+  min-width: 0;
   max-width: 180px;
+  min-height: 36px;
+  padding: 0 28px 0 12px;
+  font-size: 12px;
+  line-height: 1.2;
+  background-color: transparent;
+  background-position: right 10px center;
+  background-size: 10px 7px;
+}
+
+.bulk-bar .toolbar-select:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+@media (max-width: 600px) {
+  .bulk-bar {
+    gap: 8px;
+  }
+
+  .bulk-bar button.compact,
+  .bulk-bar .button.compact {
+    padding: 0 6px;
+    font-size: 12px;
+    text-align: center;
+    line-height: 1.25;
+  }
+
+  .bulk-bar .toolbar-select {
+    min-height: 34px;
+    padding: 0 28px 0 6px;
+  }
 }
 
 /* OdpowiedĹş serwera pod paskiem, a nie w jego Ĺ›rodku - inaczej rozpychaĹ‚aby
@@ -2753,6 +2887,15 @@ code,
   pod jednÄ… klasÄ… `legal`. Wszystko poza nimi - arkusze, tabele, wielkoĹ›ci pisma
   - jest wspĂłlne z resztÄ… stron.
 */
+
+/*
+  Dokument stoi w węższej kolumnie niż reszta stron w ramce serwisu: to
+  kilkadziesiąt ekranów samego tekstu, a wiersz szeroki na 860 px czyta się
+  już źle - oko gubi początek następnej linijki.
+*/
+.legal > .page-column {
+  max-width: var(--reading-width);
+}
 
 .legal h2 {
   margin: var(--space-6) 0 var(--space-3) 0;
