@@ -4,7 +4,7 @@ import { currentWords } from "@/lib/language";
 /*
   Awarie aplikacji na Androida.
 
-  Nie jest to lista wszystkiego po kolei — ta sama usterka potrafi przyjść
+  Nie jest to lista wszystkiego po kolei - ta sama usterka potrafi przyjść
   dwadzieścia razy z rzędu i przykryć resztę. Wiersz to jeden odcisk awarii
   (rodzaj wyjątku plus miejsce), z liczbą powtórzeń i najnowszym raportem do
   rozwinięcia.
@@ -25,7 +25,7 @@ export default async function CrashesPage() {
     take: 100,
   });
 
-  // Do rozwinięcia bierzemy najnowszy raport z każdej grupy — starsze niosą
+  // Do rozwinięcia bierzemy najnowszy raport z każdej grupy - starsze niosą
   // ten sam ślad wywołań, więc nic by nie dodały.
   const newestIds = groups.map((group) => group._max.id).filter((id) => id !== null);
   const newest = await prisma.crashReport.findMany({

@@ -85,7 +85,7 @@ async function czytajDysk() {
 }
 
 async function main() {
-  console.log(`\nPliki Kajetu — porównanie dysku z bazą\n`);
+  console.log(`\nPliki Kajetu - porównanie dysku z bazą\n`);
   console.log(`Katalog: ${root}`);
 
   const dysk = await czytajDysk();
@@ -163,7 +163,7 @@ async function main() {
   console.log(`\nBraki (w bazie, bez pliku na dysku): ${braki.length}`);
   for (const brak of braki.slice(0, 10)) {
     const notatka = notatkiWBazie.get(brak.noteId);
-    console.log(`      ${brak.name} — notatka „${notatka?.title ?? brak.noteId}"`);
+    console.log(`      ${brak.name} - notatka „${notatka?.title ?? brak.noteId}"`);
   }
   if (braki.length > 10) console.log(`      ...i jeszcze ${braki.length - 10}`);
 
@@ -181,7 +181,7 @@ async function main() {
   console.log(`\nW koszu: ${wKoszu.length} notatek, w tym załączników ${zalacznikiWKoszu.length} (${rozmiar(bajtyWKoszu)})`);
   if (najstarsza) {
     console.log(`      najstarsza leży od ${najstarsza.toISOString().slice(0, 10)} (${dni(najstarsza)} dni)`);
-    console.log(`      to NIE są sieroty — znikną przy opróżnieniu kosza`);
+    console.log(`      to NIE są sieroty - znikną przy opróżnieniu kosza`);
   }
 
   // --- Sprzątanie ---

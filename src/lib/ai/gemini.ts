@@ -218,7 +218,7 @@ function buildInput({ title, material, instruction, history, titleIsOwn }: AskIn
   parts.push(
     titleIsOwn
       ? `TYTUŁ NOTATKI:\n${title}`
-      : `TYTUŁ NOTATKI:\n${title}\n(notatka nie ma jeszcze własnego tytułu — ten jest ` +
+      : `TYTUŁ NOTATKI:\n${title}\n(notatka nie ma jeszcze własnego tytułu - ten jest ` +
           `zastępczy albo wzięty z pierwszego wiersza treści; możesz podać lepszy ` +
           `w polu „tytul")`,
   );

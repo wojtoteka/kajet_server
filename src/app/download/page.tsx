@@ -63,7 +63,7 @@ export default async function DownloadPage() {
                   {words.downloadWord} {release.fileName}
                 </a>
               </div>
-              {/* Co to za plik — system, rozmiar i data — w osobnej linijce
+              {/* Co to za plik - system, rozmiar i data - w osobnej linijce
                   pod przyciskami, a nie wciśnięte obok nich. */}
               <p className="small" style={{ margin: "10px 0 0 0" }}>
                 Android · {humanSize(release.sizeBytes)} · {words.publishedWord}{" "}

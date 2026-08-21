@@ -80,7 +80,7 @@ describe("licznik", () => {
   });
 
   it("sama interpunkcja nie jest słowem", () => {
-    expect(tally("— … ***").words).toBe(0);
+    expect(tally("- … ***").words).toBe(0);
   });
 
   it("liczy akapity po pustym wierszu", () => {

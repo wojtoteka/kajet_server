@@ -113,7 +113,7 @@ export default async function AccountsPage({
         {users.map((user) => {
           const quota = Number(user.quotaBytes);
           const used = Number(user.usedBytes);
-          // Ujemny limit to „bez ograniczeń", zerowy to zero miejsca — a przy
+          // Ujemny limit to „bez ograniczeń", zerowy to zero miejsca - a przy
           // zerze pasek ma być pełny, nie pusty.
           const unlimited = quota < 0;
           const percent = unlimited ? 0 : quota > 0 ? Math.min(100, Math.round((used / quota) * 100)) : 100;

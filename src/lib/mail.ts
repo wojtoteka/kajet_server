@@ -233,7 +233,7 @@ export function inviteMail(address: string, link: string, fromWhom: string): Mes
     subject: "Zaproszenie do Kajetu",
     heading: "Masz zaproszenie do Kajetu",
     body: [
-      `${fromWhom} zaprasza Cię do Kajetu – notatnika na pismo odręczne, tekst i mapy myśli.`,
+      `${fromWhom} zaprasza Cię do Kajetu - notatnika na pismo odręczne, tekst i mapy myśli.`,
       "Kod zaproszenia jest już wpisany w odnośniku. Wystarczy podać adres i hasło.",
     ],
     button: { label: "Załóż konto", url: link },

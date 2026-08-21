@@ -8,7 +8,7 @@ import { KEEP_DAYS, KEEP_NEWEST, LONGEST_REPORT } from "./crash-limits";
  * Obowiązkowy jest tylko `report`. Reszta to wygoda: aplikacja wyciąga te pola
  * z nagłówka raportu, ale starszy plik może ich nie mieć, a raport i tak ma
  * dojść. Schemat siedzi tutaj, a nie w route.ts, bo Next.js pilnuje, co wolno
- * eksportować z tras — a test kontraktu musi mieć do niego dostęp.
+ * eksportować z tras - a test kontraktu musi mieć do niego dostęp.
  */
 export const crashBody = z.object({
   report: z.string().min(1).max(LONGEST_REPORT),
@@ -33,7 +33,7 @@ export const crashBody = z.object({
       ...
 */
 
-/** Odcisk nie może rozsadzić kolumny — w bazie stoi VarChar(200). */
+/** Odcisk nie może rozsadzić kolumny - w bazie stoi VarChar(200). */
 export const LONGEST_FINGERPRINT = 200;
 
 /**

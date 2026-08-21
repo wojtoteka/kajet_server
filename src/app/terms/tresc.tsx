@@ -51,10 +51,10 @@ export function RegulaminPl() {
         <li>Usługodawcą jest <strong>Wojciech Szaliński</strong>, działający pod nazwą <strong>Wojtoteka</strong>, osoba fizyczna nieprowadząca działalności gospodarczej, adres poczty elektronicznej: <a href="mailto:kontakt@wojtoteka.ovh">kontakt@wojtoteka.ovh</a>. W dalszej części regulaminu nazywany „Administratorem”.</li>
         <li>Ilekroć w regulaminie mowa o:
           <ul>
-            <li><strong>Kajecie</strong> — rozumie się przez to łącznie stronę internetową pod adresem <a href="https://kajet.wojtoteka.ovh">kajet.wojtoteka.ovh</a> oraz aplikację Kajet na system Android,</li>
-            <li><strong>Użytkowniku</strong> — osobę korzystającą z Kajetu,</li>
-            <li><strong>Koncie</strong> — zbiór danych i zasobów Użytkownika na serwerze Kajetu,</li>
-            <li><strong>Notatce</strong> — dokument utworzony w Kajecie: pismo odręczne, tekst, mapa myśli albo kod, wraz z załącznikami.</li>
+            <li><strong>Kajecie</strong> - rozumie się przez to łącznie stronę internetową pod adresem <a href="https://kajet.wojtoteka.ovh">kajet.wojtoteka.ovh</a> oraz aplikację Kajet na system Android,</li>
+            <li><strong>Użytkowniku</strong> - osobę korzystającą z Kajetu,</li>
+            <li><strong>Koncie</strong> - zbiór danych i zasobów Użytkownika na serwerze Kajetu,</li>
+            <li><strong>Notatce</strong> - dokument utworzony w Kajecie: pismo odręczne, tekst, mapa myśli albo kod, wraz z załącznikami.</li>
           </ul>
         </li>
         <li>Kontakt z Administratorem odbywa się pocztą elektroniczną, pod adresem podanym w ust. 2.</li>
@@ -82,8 +82,8 @@ export function RegulaminPl() {
 
       <h2 id="par4">§ 4. Zakładanie konta</h2>
       <ol className="legal-items">
-        <li>Kajet jest serwisem <strong>na zaproszenie</strong>. Założenie Konta wymaga ważnego kodu zaproszenia wydanego przez Administratora. Bez kodu Konta założyć się nie da — także przez Google.</li>
-        <li>Konto zakłada się na stronie, podając kod zaproszenia, adres e-mail i hasło (co najmniej 8 znaków), albo wybierając logowanie przez konto Google. W aplikacji Konta się nie zakłada — aplikacja służy do zalogowania się na Konto już istniejące.</li>
+        <li>Kajet jest serwisem <strong>na zaproszenie</strong>. Założenie Konta wymaga ważnego kodu zaproszenia wydanego przez Administratora. Bez kodu Konta założyć się nie da - także przez Google.</li>
+        <li>Konto zakłada się na stronie, podając kod zaproszenia, adres e-mail i hasło (co najmniej 8 znaków), albo wybierając logowanie przez konto Google. W aplikacji Konta się nie zakłada - aplikacja służy do zalogowania się na Konto już istniejące.</li>
         <li>Przy zakładaniu Konta Użytkownik przyjmuje regulamin i zapoznaje się z polityką prywatności. Bez tego Konto nie powstaje.</li>
         <li>Na podany adres e-mail wysyłana jest wiadomość z odnośnikiem potwierdzającym adres. Odnośnik jest ważny przez dobę.</li>
         <li>Konto może założyć osoba, która <strong>ukończyła 13 lat</strong>. Osoba niepełnoletnia korzysta z Kajetu za wiedzą i zgodą rodzica lub opiekuna prawnego.</li>
@@ -102,7 +102,7 @@ export function RegulaminPl() {
 
       <h2 id="par6">§ 6. Miejsce na dane</h2>
       <ol className="legal-items">
-        <li>Każde Konto ma limit miejsca na serwerze. Miejsce przyznaje Administrator – przy kodzie zaproszenia albo później – i może przyznać limit dowolnej wielkości, nieograniczony albo czasowy. Konto, któremu miejsca nie przyznano, ma <strong>0 MB</strong> i nie zapisze na serwerze żadnej Notatki; na samym urządzeniu Kajet działa wtedy bez zmian.</li>
+        <li>Każde Konto ma limit miejsca na serwerze. Miejsce przyznaje Administrator - przy kodzie zaproszenia albo później - i może przyznać limit dowolnej wielkości, nieograniczony albo czasowy. Konto, któremu miejsca nie przyznano, ma <strong>0 MB</strong> i nie zapisze na serwerze żadnej Notatki; na samym urządzeniu Kajet działa wtedy bez zmian.</li>
         <li>Pojedynczy załącznik może ważyć najwyżej <strong>25 MB</strong>. Przyjmowane są obrazy (PNG, JPEG, WebP, GIF, SVG) oraz pliki JSON.</li>
         <li>Po wyczerpaniu limitu Kajet odmawia zapisania nowych danych na serwerze. Notatki już zapisane pozostają dostępne, a pisanie na samym urządzeniu działa dalej. Miejsce zwalnia się, kasując notatki i opróżniając kosz.</li>
         <li>Aktualny stan zajętości Użytkownik widzi w ustawieniach Konta na stronie oraz w aplikacji.</li>
@@ -133,7 +133,7 @@ export function RegulaminPl() {
 
       <h2 id="par9">§ 9. Notatki należą do użytkownika</h2>
       <ol className="legal-items">
-        <li><strong>Wszelkie prawa do treści notatek pozostają przy Użytkowniku.</strong> Administrator nie nabywa do nich żadnych praw — ani majątkowych praw autorskich, ani licencji wykraczającej poza to, co opisano w ust. 2.</li>
+        <li><strong>Wszelkie prawa do treści notatek pozostają przy Użytkowniku.</strong> Administrator nie nabywa do nich żadnych praw - ani majątkowych praw autorskich, ani licencji wykraczającej poza to, co opisano w ust. 2.</li>
         <li>Administrator przechowuje i przetwarza notatki wyłącznie w zakresie technicznie niezbędnym do świadczenia usługi: zapisania ich na serwerze, przesłania na urządzenia Użytkownika, pokazania w przeglądarce, udostępnienia osobom wskazanym przez Użytkownika, wykonania kopii zapasowej i usunięcia na żądanie.</li>
         <li>Notatki nie są wykorzystywane w żadnym innym celu. W szczególności nie są <strong>czytane, analizowane, publikowane ani wykorzystywane do uczenia modeli sztucznej inteligencji</strong>. Jedyny wyjątek to KajetAI: notatka, przy której Użytkownik sam o to poprosi, jest wysyłana do Google na zasadach opisanych w § 11a.</li>
         <li>Treść notatek przechowywanych na serwerze <strong>nie jest szyfrowana</strong> w sposób uniemożliwiający jej odczytanie przez Administratora. Kajet nie stosuje szyfrowania end-to-end. Użytkownik, który chce mieć pewność, że danej notatki nie odczyta nikt poza nim, powinien trzymać ją wyłącznie na swoim urządzeniu, bez synchronizacji.</li>
@@ -142,7 +142,7 @@ export function RegulaminPl() {
 
       <h2 id="par10">§ 10. Udostępnianie notatek</h2>
       <ol className="legal-items">
-        <li>Użytkownik może udostępnić notatkę, tworząc odnośnik do czytania albo do wspólnego pisania. Odnośnik może być otwarty dla każdego, kto go zna, albo imienny — przypisany do wskazanego adresu e-mail.</li>
+        <li>Użytkownik może udostępnić notatkę, tworząc odnośnik do czytania albo do wspólnego pisania. Odnośnik może być otwarty dla każdego, kto go zna, albo imienny - przypisany do wskazanego adresu e-mail.</li>
         <li><strong>Odnośnik otwarty działa dla każdego, kto go otrzyma</strong>, także dla osoby bez Konta. Za to, komu odnośnik zostanie przekazany, odpowiada Użytkownik.</li>
         <li>Udostępnieniu można nadać termin ważności. Dostęp można cofnąć w każdej chwili, kasując odnośnik.</li>
         <li>Przy udostępnieniu imiennym na wskazany adres wysyłana jest wiadomość zawierająca login udostępniającego i tytuł notatki. Użytkownik powinien podawać wyłącznie adresy osób, które życzą sobie takiej wiadomości.</li>
@@ -151,15 +151,15 @@ export function RegulaminPl() {
 
       <h2 id="par11">§ 11. Uruchamianie kodu</h2>
       <ol className="legal-items">
-        <li>Kod z notatek uruchamia się <strong>wyłącznie na serwerze Kajetu</strong> i wymaga zalogowania na Konto. Aplikacja nie ma własnego tłumacza języków — żeby uruchomić program, wysyła jego treść na serwer.</li>
+        <li>Kod z notatek uruchamia się <strong>wyłącznie na serwerze Kajetu</strong> i wymaga zalogowania na Konto. Aplikacja nie ma własnego tłumacza języków - żeby uruchomić program, wysyła jego treść na serwer.</li>
         <li>Kod uruchamiany na serwerze działa w odciętym od sieci kontenerze, z ograniczonym czasem działania, pamięcią i uprawnieniami, i nie ma dostępu do danych innych Użytkowników. Treść uruchomionego programu i jego wynik kasują się razem z kontenerem, zaraz po zakończeniu pracy.</li>
         <li>Zabronione jest uruchamianie kodu, którego celem jest obejście tych ograniczeń, obciążenie serwera, wydobywanie kryptowalut, atak na inne systemy albo dostęp do cudzych danych.</li>
-        <li>Administrator może odebrać prawo uruchamiania kodu pojedynczemu Kontu albo wyłączyć tę funkcję dla wszystkich, w szczególności gdy obciąża ona serwer. Pozostałe funkcje Kajetu działają wtedy bez zmian. <strong>W chwili ostatniej aktualizacji regulaminu uruchamianie kodu na serwerze jest włączone.</strong> Gdy funkcja jest wyłączona, kodu nie da się uruchomić w ogóle — pisanie i zapisywanie notatek z kodem działa jak zwykle.</li>
+        <li>Administrator może odebrać prawo uruchamiania kodu pojedynczemu Kontu albo wyłączyć tę funkcję dla wszystkich, w szczególności gdy obciąża ona serwer. Pozostałe funkcje Kajetu działają wtedy bez zmian. <strong>W chwili ostatniej aktualizacji regulaminu uruchamianie kodu na serwerze jest włączone.</strong> Gdy funkcja jest wyłączona, kodu nie da się uruchomić w ogóle - pisanie i zapisywanie notatek z kodem działa jak zwykle.</li>
       </ol>
 
       <h2 id="par11a">§ 11a. Asystent KajetAI</h2>
       <ol className="legal-items">
-        <li>Kajet udostępnia KajetAI — asystenta, który na polecenie Użytkownika zmienia treść notatki tekstowej, mapy myśli albo pliku z kodem. Przy notatkach odręcznych KajetAI nie działa.</li>
+        <li>Kajet udostępnia KajetAI - asystenta, który na polecenie Użytkownika zmienia treść notatki tekstowej, mapy myśli albo pliku z kodem. Przy notatkach odręcznych KajetAI nie działa.</li>
         <li>Funkcja jest <strong>opcjonalna i domyślnie niedostępna</strong>. Prawo do korzystania z niej nadaje pojedynczemu Kontu Administrator i może je w każdej chwili odebrać. Pozostałe funkcje Kajetu działają wtedy bez zmian.</li>
         <li>Skorzystanie z KajetAI oznacza, że <strong>treść notatki jest wysyłana do Google LLC</strong>, którego model językowy wprowadza zmianę. Model jest darmowy, więc Google może wykorzystać wysłaną treść do uczenia swoich modeli. Szczegóły opisuje punkt 3.9 <a href="/privacy#sek3-9">Polityki prywatności</a>.</li>
         <li>Przed pierwszym użyciem Użytkownik potwierdza zgodę na wysyłanie treści notatek do Google. <strong>Bez zgody KajetAI nie działa.</strong> Zgodę można wycofać w każdej chwili w ustawieniach konta.</li>
@@ -184,9 +184,9 @@ export function RegulaminPl() {
         <li>Usunięcie Konta wymaga potwierdzenia kodem wysłanym na adres e-mail przypisany do Konta. Kod jest ważny godzinę i działa jeden raz. Po jego wpisaniu Konto jest kasowane natychmiast. Jeżeli wiadomość z kodem nie dojdzie, żądanie usunięcia Konta można też wysłać na adres <a href="mailto:kontakt@wojtoteka.ovh">kontakt@wojtoteka.ovh</a> z adresu e-mail przypisanego do Konta.</li>
         <li>Usunięcie Konta kasuje nieodwracalnie: wszystkie notatki wraz z treścią, wszystkie załączniki, foldery, wszystkie udostępnione odnośniki oraz tokeny zalogowanych urządzeń. Danych nie da się po tym odzyskać. <strong>Przed usunięciem Konta Użytkownik powinien wyeksportować to, co chce zachować.</strong></li>
         <li>Notatka wyrzucona do kosza jest kasowana na zawsze po <strong>30 dniach</strong>. Do tego czasu można ją przywrócić.</li>
-        <li><strong>Konto, z którego nikt nie korzysta, jest kasowane automatycznie.</strong> Po 365 dniach bez logowania, synchronizacji i zapisania notatki na adres e-mail Konta wysyłane jest ostrzeżenie. Jeżeli przez kolejne 30 dni nadal nic się nie wydarzy, Konto jest kasowane razem ze wszystkimi danymi, w sposób opisany w ust. 3. Wystarczy zalogować się w tym czasie, żeby Konto zostało — licznik rusza wtedy od nowa.</li>
+        <li><strong>Konto, z którego nikt nie korzysta, jest kasowane automatycznie.</strong> Po 365 dniach bez logowania, synchronizacji i zapisania notatki na adres e-mail Konta wysyłane jest ostrzeżenie. Jeżeli przez kolejne 30 dni nadal nic się nie wydarzy, Konto jest kasowane razem ze wszystkimi danymi, w sposób opisany w ust. 3. Wystarczy zalogować się w tym czasie, żeby Konto zostało - licznik rusza wtedy od nowa.</li>
         <li>Administrator może wypowiedzieć umowę o świadczenie usług z zachowaniem 30-dniowego okresu wypowiedzenia, w szczególności gdy zdecyduje o zakończeniu działania Kajetu. Zawiadomienie wysyłane jest pocztą elektroniczną, a Użytkownik ma do końca okresu wypowiedzenia czas na pobranie swoich danych.</li>
-        <li>Użytkownik będący konsumentem, który zawarł umowę na odległość, może odstąpić od niej w terminie <strong>14 dni</strong> od założenia Konta, bez podania przyczyny. Odstąpienie następuje przez usunięcie Konta w sposób opisany w ust. 1–3 albo przez oświadczenie wysłane na adres podany w ust. 2; skutek jest ten sam, opisany w ust. 3. Ponieważ usługa jest bezpłatna, z odstąpieniem nie wiążą się żadne rozliczenia.</li>
+        <li>Użytkownik będący konsumentem, który zawarł umowę na odległość, może odstąpić od niej w terminie <strong>14 dni</strong> od założenia Konta, bez podania przyczyny. Odstąpienie następuje przez usunięcie Konta w sposób opisany w ust. 1-3 albo przez oświadczenie wysłane na adres podany w ust. 2; skutek jest ten sam, opisany w ust. 3. Ponieważ usługa jest bezpłatna, z odstąpieniem nie wiążą się żadne rozliczenia.</li>
       </ol>
 
       <h2 id="par14">§ 14. Etap rozwojowy i ryzyko utraty danych</h2>
@@ -197,11 +197,11 @@ export function RegulaminPl() {
 
       <ol className="legal-items">
         <li>Kajet jest <strong>oprogramowaniem we wczesnym etapie rozwoju</strong>, tworzonym i utrzymywanym przez jedną osobę, na małą skalę, dla wąskiego grona zaproszonych osób. Nie jest usługą komercyjną i nie ma zaplecza, jakim dysponują usługi tego rodzaju prowadzone przez przedsiębiorstwa.</li>
-        <li>Oznacza to realne ryzyka, których Administrator nie ukrywa: <strong>awaria serwera, błąd w programie, pomyłka przy aktualizacji albo uszkodzenie bazy danych mogą doprowadzić do utraty notatek — także wszystkich naraz i bez ostrzeżenia.</strong></li>
+        <li>Oznacza to realne ryzyka, których Administrator nie ukrywa: <strong>awaria serwera, błąd w programie, pomyłka przy aktualizacji albo uszkodzenie bazy danych mogą doprowadzić do utraty notatek - także wszystkich naraz i bez ostrzeżenia.</strong></li>
         <li>Kopie zapasowe wykonywane są przez dostawcę hostingu dla całego serwera i przechowywane przez <strong>3 dni</strong>. Nie są usługą odtwarzania pojedynczej notatki na życzenie i nie stanowią gwarancji odzyskania danych. Administrator nie zobowiązuje się do przywrócenia utraconych treści.</li>
         <li><strong>Użytkownik powinien prowadzić własne kopie tego, co jest dla niego ważne.</strong> Kajet to ułatwia i nie stawia temu żadnych przeszkód:
           <ul>
-            <li>notatki w aplikacji leżą jako zwykłe pliki w folderze wskazanym przez Użytkownika — wystarczy skopiować ten folder,</li>
+            <li>notatki w aplikacji leżą jako zwykłe pliki w folderze wskazanym przez Użytkownika - wystarczy skopiować ten folder,</li>
             <li>każdą notatkę można wyeksportować do PDF, DOCX albo Markdown,</li>
             <li>notatki zsynchronizowane są w dwóch miejscach naraz: na urządzeniu i na serwerze.</li>
           </ul>
@@ -230,7 +230,7 @@ export function RegulaminPl() {
       <h2 id="par16">§ 16. Reklamacje</h2>
       <ol className="legal-items">
         <li>Reklamacje dotyczące działania Kajetu składa się pocztą elektroniczną na adres <a href="mailto:kontakt@wojtoteka.ovh">kontakt@wojtoteka.ovh</a>.</li>
-        <li>Reklamacja powinna zawierać: login lub adres e-mail Konta, opis tego, co nie działa, datę i przybliżoną godzinę zdarzenia oraz — jeżeli to możliwe — nazwę urządzenia i wersję aplikacji. Im więcej szczegółów, tym większa szansa na szybkie ustalenie przyczyny.</li>
+        <li>Reklamacja powinna zawierać: login lub adres e-mail Konta, opis tego, co nie działa, datę i przybliżoną godzinę zdarzenia oraz - jeżeli to możliwe - nazwę urządzenia i wersję aplikacji. Im więcej szczegółów, tym większa szansa na szybkie ustalenie przyczyny.</li>
         <li>Administrator rozpatruje reklamację i odpowiada na nią <strong>w terminie 14 dni</strong> od jej otrzymania, na adres e-mail, z którego reklamacja została wysłana.</li>
         <li>Brak odpowiedzi w terminie wskazanym w ust. 3 oznacza uznanie reklamacji.</li>
       </ol>
@@ -240,14 +240,14 @@ export function RegulaminPl() {
         <li>Administrator może zmienić regulamin w razie zmiany przepisów, zmiany sposobu działania Kajetu, dodania albo wycofania funkcji, zmiany zasad bezpieczeństwa albo zmiany danych Administratora.</li>
         <li>O zmianie regulaminu Użytkownicy posiadający Konto zawiadamiani są pocztą elektroniczną albo komunikatem na stronie, z co najmniej <strong>14-dniowym wyprzedzeniem</strong>. Nowa wersja publikowana jest pod tym samym adresem, z datą ostatniej aktualizacji na górze.</li>
         <li>Użytkownik, który nie zgadza się na zmianę, może przed jej wejściem w życie usunąć Konto na zasadach z § 13. Korzystanie z Kajetu po wejściu zmian w życie oznacza ich przyjęcie.</li>
-        <li>Zmiany, które nie wpływają na prawa i obowiązki Użytkownika — poprawienie omyłki pisarskiej, uściślenie sformułowania, zmiana układu dokumentu — wchodzą w życie z chwilą publikacji.</li>
+        <li>Zmiany, które nie wpływają na prawa i obowiązki Użytkownika - poprawienie omyłki pisarskiej, uściślenie sformułowania, zmiana układu dokumentu - wchodzą w życie z chwilą publikacji.</li>
       </ol>
 
       <h2 id="par18">§ 18. Prawo właściwe i spory</h2>
       <ol className="legal-items">
         <li>W sprawach nieuregulowanych regulaminem stosuje się <strong>prawo polskie</strong>, w szczególności Kodeks cywilny, ustawę o świadczeniu usług drogą elektroniczną, ustawę o prawach konsumenta oraz przepisy o ochronie danych osobowych.</li>
         <li>Wybór prawa polskiego nie pozbawia Użytkownika będącego konsumentem ochrony wynikającej z bezwzględnie obowiązujących przepisów prawa państwa jego zwykłego pobytu.</li>
-        <li>Spory rozstrzyga sąd właściwy według przepisów ogólnych. <strong>Wobec konsumenta nie stosuje się żadnego umownego zastrzeżenia sądu</strong> — pozostaje sąd właściwy zgodnie z Kodeksem postępowania cywilnego.</li>
+        <li>Spory rozstrzyga sąd właściwy według przepisów ogólnych. <strong>Wobec konsumenta nie stosuje się żadnego umownego zastrzeżenia sądu</strong> - pozostaje sąd właściwy zgodnie z Kodeksem postępowania cywilnego.</li>
         <li>Użytkownik będący konsumentem może skorzystać z pozasądowych sposobów rozpatrywania reklamacji i dochodzenia roszczeń, w szczególności z pomocy powiatowego (miejskiego) rzecznika konsumentów, z mediacji prowadzonej przez wojewódzkiego inspektora Inspekcji Handlowej oraz z bezpłatnej infolinii konsumenckiej Urzędu Ochrony Konkurencji i Konsumentów. Szczegółowe informacje dostępne są na stronie <a href="https://uokik.gov.pl">uokik.gov.pl</a>. Skorzystanie z tych sposobów jest dobrowolne dla obu stron.</li>
       </ol>
 
@@ -340,8 +340,8 @@ export function RegulaminEn() {
 
       <h2 id="par4">§ 4. Creating an account</h2>
       <ol className="legal-items">
-        <li>Kajet is <strong>invite-only</strong>. Creating an Account requires a valid invite code issued by the Administrator. Without a code no Account can be created — not even through Google.</li>
-        <li>An Account is created on the website by giving an invite code, an e-mail address and a password (at least 8 characters), or by choosing to sign in with a Google account. Accounts are not created in the application — the application signs you in to an Account that already exists.</li>
+        <li>Kajet is <strong>invite-only</strong>. Creating an Account requires a valid invite code issued by the Administrator. Without a code no Account can be created - not even through Google.</li>
+        <li>An Account is created on the website by giving an invite code, an e-mail address and a password (at least 8 characters), or by choosing to sign in with a Google account. Accounts are not created in the application - the application signs you in to an Account that already exists.</li>
         <li>When creating an Account the User accepts these terms and reads the privacy policy. Without that no Account is created.</li>
         <li>A message with a link confirming the address is sent to the e-mail address given. The link is valid for 24 hours.</li>
         <li>An Account may be created by a person who is <strong>at least 13 years old</strong>. A minor uses Kajet with the knowledge and consent of a parent or legal guardian.</li>
@@ -360,7 +360,7 @@ export function RegulaminEn() {
 
       <h2 id="par6">§ 6. Storage space</h2>
       <ol className="legal-items">
-        <li>Every Account has a storage limit on the server. The Administrator grants the space – with the invite code or later – and may grant an allowance of any size, unlimited or temporary. An Account that has been granted none has <strong>0 MB</strong> and will save no Note on the server; on the device itself Kajet keeps working as before.</li>
+        <li>Every Account has a storage limit on the server. The Administrator grants the space - with the invite code or later - and may grant an allowance of any size, unlimited or temporary. An Account that has been granted none has <strong>0 MB</strong> and will save no Note on the server; on the device itself Kajet keeps working as before.</li>
         <li>A single attachment may weigh at most <strong>25 MB</strong>. Images (PNG, JPEG, WebP, GIF, SVG) and JSON files are accepted.</li>
         <li>Once the limit is used up, Kajet refuses to save new data on the server. Notes already saved stay available, and writing on the device itself keeps working. Space is freed by deleting notes and emptying the bin.</li>
         <li>The User can see how much space is used in the Account settings on the website and in the application.</li>
@@ -391,7 +391,7 @@ export function RegulaminEn() {
 
       <h2 id="par9">§ 9. Your notes are yours</h2>
       <ol className="legal-items">
-        <li><strong>All rights to the content of notes remain with the User.</strong> The Administrator acquires no rights to them — neither economic copyright nor any licence beyond what paragraph 2 describes.</li>
+        <li><strong>All rights to the content of notes remain with the User.</strong> The Administrator acquires no rights to them - neither economic copyright nor any licence beyond what paragraph 2 describes.</li>
         <li>The Administrator stores and processes notes only as far as is technically necessary to provide the service: saving them on the server, sending them to the User's devices, showing them in a browser, sharing them with people the User chooses, making a backup and deleting them on request.</li>
         <li>Notes are used for no other purpose. In particular they are <strong>not read, analysed, published or used to train artificial intelligence models</strong>. The only exception is KajetAI: a note the User asks about themselves is sent to Google on the terms described in § 11a.</li>
         <li>The content of notes stored on the server <strong>is not encrypted</strong> in a way that would prevent the Administrator from reading it. Kajet does not use end-to-end encryption. A User who wants to be certain that nobody else can read a particular note should keep it on their own device only, without synchronisation.</li>
@@ -400,7 +400,7 @@ export function RegulaminEn() {
 
       <h2 id="par10">§ 10. Sharing notes</h2>
       <ol className="legal-items">
-        <li>The User may share a note by creating a link for reading or for writing together. The link can be open to anyone who knows it, or personal — tied to a given e-mail address.</li>
+        <li>The User may share a note by creating a link for reading or for writing together. The link can be open to anyone who knows it, or personal - tied to a given e-mail address.</li>
         <li><strong>An open link works for anyone who receives it</strong>, including people without an Account. The User is responsible for who the link is passed to.</li>
         <li>A share can be given an expiry date. Access can be withdrawn at any time by deleting the link.</li>
         <li>For a personal share, a message containing the sharer's login and the note's title is sent to the address given. The User should only enter addresses of people who want such a message.</li>
@@ -409,15 +409,15 @@ export function RegulaminEn() {
 
       <h2 id="par11">§ 11. Running code</h2>
       <ol className="legal-items">
-        <li>Code from notes runs <strong>on the Kajet server only</strong> and requires signing in to an Account. The application has no interpreter of its own — to run a program it sends its content to the server.</li>
+        <li>Code from notes runs <strong>on the Kajet server only</strong> and requires signing in to an Account. The application has no interpreter of its own - to run a program it sends its content to the server.</li>
         <li>Code run on the server works inside a container cut off from the network, with limited running time, memory and privileges, and has no access to other Users' data. The content of the program that was run, and its output, are deleted together with the container as soon as it finishes.</li>
         <li>It is forbidden to run code meant to bypass those limits, to load the server, to mine cryptocurrency, to attack other systems or to reach other people's data.</li>
-        <li>The Administrator may withdraw the right to run code from a single Account, or switch the feature off for everyone, in particular when it burdens the server. The rest of Kajet keeps working. <strong>As of the last update of these terms, running code on the server is switched on.</strong> When the feature is off, code cannot be run at all — writing and saving code notes works as usual.</li>
+        <li>The Administrator may withdraw the right to run code from a single Account, or switch the feature off for everyone, in particular when it burdens the server. The rest of Kajet keeps working. <strong>As of the last update of these terms, running code on the server is switched on.</strong> When the feature is off, code cannot be run at all - writing and saving code notes works as usual.</li>
       </ol>
 
       <h2 id="par11a">§ 11a. The KajetAI assistant</h2>
       <ol className="legal-items">
-        <li>Kajet offers KajetAI — an assistant that, on the User's instruction, changes the content of a text note, a mind map or a code file. KajetAI does not work on handwritten notes.</li>
+        <li>Kajet offers KajetAI - an assistant that, on the User's instruction, changes the content of a text note, a mind map or a code file. KajetAI does not work on handwritten notes.</li>
         <li>The feature is <strong>optional and unavailable by default</strong>. The right to use it is granted to a single Account by the Administrator, who may withdraw it at any time. The rest of Kajet keeps working.</li>
         <li>Using KajetAI means that <strong>the content of the note is sent to Google LLC</strong>, whose language model makes the change. The model is free, so Google may use what is sent to train its models. The details are in section 3.9 of the <a href="/privacy#sek3-9">Privacy Policy</a>.</li>
         <li>Before first use the User confirms consent to sending note content to Google. <strong>Without consent KajetAI does not work.</strong> The consent can be withdrawn at any time in account settings.</li>
@@ -442,9 +442,9 @@ export function RegulaminEn() {
         <li>Deleting the Account requires confirmation with a code sent to the e-mail address tied to the Account. The code is valid for one hour and works once. Once it is entered, the Account is deleted immediately. If the message with the code does not arrive, a deletion request can also be sent to <a href="mailto:kontakt@wojtoteka.ovh">kontakt@wojtoteka.ovh</a> from the e-mail address tied to the Account.</li>
         <li>Deleting the Account irreversibly erases: every note with its content, every attachment, folders, every shared link and the tokens of signed-in devices. The data cannot be recovered afterwards. <strong>Before deleting the Account, the User should export whatever they want to keep.</strong></li>
         <li>A note thrown into the bin is deleted for good after <strong>30 days</strong>. Until then it can be restored.</li>
-        <li><strong>An Account nobody uses is deleted automatically.</strong> After 365 days without signing in, synchronising or saving a note, a warning is sent to the Account's e-mail address. If nothing happens for another 30 days, the Account is deleted with all its data, as described in paragraph 3. Simply signing in during that time keeps the Account — the count then starts again.</li>
+        <li><strong>An Account nobody uses is deleted automatically.</strong> After 365 days without signing in, synchronising or saving a note, a warning is sent to the Account's e-mail address. If nothing happens for another 30 days, the Account is deleted with all its data, as described in paragraph 3. Simply signing in during that time keeps the Account - the count then starts again.</li>
         <li>The Administrator may terminate the contract with 30 days' notice, in particular on deciding to shut Kajet down. Notice is sent by e-mail, and the User has until the end of the notice period to download their data.</li>
-        <li>A User who is a consumer and concluded the contract at a distance may withdraw from it within <strong>14 days</strong> of creating the Account, without giving a reason. Withdrawal is done by deleting the Account as described in paragraphs 1–3, or by a statement sent to the address given in paragraph 2; the effect is the same one described in paragraph 3. As the service is free of charge, no settlement follows from withdrawal.</li>
+        <li>A User who is a consumer and concluded the contract at a distance may withdraw from it within <strong>14 days</strong> of creating the Account, without giving a reason. Withdrawal is done by deleting the Account as described in paragraphs 1-3, or by a statement sent to the address given in paragraph 2; the effect is the same one described in paragraph 3. As the service is free of charge, no settlement follows from withdrawal.</li>
       </ol>
 
       <h2 id="par14">§ 14. Early development and the risk of losing data</h2>
@@ -455,11 +455,11 @@ export function RegulaminEn() {
 
       <ol className="legal-items">
         <li>Kajet is <strong>software at an early stage of development</strong>, written and maintained by one person, on a small scale, for a narrow circle of invited people. It is not a commercial service and has none of the backing that services of this kind run by companies have.</li>
-        <li>That means real risks, which the Administrator does not hide: <strong>a server failure, a bug, a mistake during an update or a damaged database may lead to notes being lost — including all of them at once and without warning.</strong></li>
+        <li>That means real risks, which the Administrator does not hide: <strong>a server failure, a bug, a mistake during an update or a damaged database may lead to notes being lost - including all of them at once and without warning.</strong></li>
         <li>Backups are made by the hosting provider for the whole server and kept for <strong>3 days</strong>. They are not a service for restoring a single note on request and they are no guarantee that data can be recovered. The Administrator does not undertake to restore lost content.</li>
         <li><strong>The User should keep their own copies of whatever matters to them.</strong> Kajet makes this easy and puts nothing in the way:
           <ul>
-            <li>notes in the application sit as ordinary files in a folder the User chose — copying that folder is enough,</li>
+            <li>notes in the application sit as ordinary files in a folder the User chose - copying that folder is enough,</li>
             <li>every note can be exported to PDF, DOCX or Markdown,</li>
             <li>synchronised notes exist in two places at once: on the device and on the server.</li>
           </ul>
@@ -488,7 +488,7 @@ export function RegulaminEn() {
       <h2 id="par16">§ 16. Complaints</h2>
       <ol className="legal-items">
         <li>Complaints about how Kajet works are made by e-mail to <a href="mailto:kontakt@wojtoteka.ovh">kontakt@wojtoteka.ovh</a>.</li>
-        <li>A complaint should contain: the login or e-mail address of the Account, a description of what is not working, the date and rough time it happened and — if possible — the name of the device and the version of the application. The more detail, the better the chance of finding the cause quickly.</li>
+        <li>A complaint should contain: the login or e-mail address of the Account, a description of what is not working, the date and rough time it happened and - if possible - the name of the device and the version of the application. The more detail, the better the chance of finding the cause quickly.</li>
         <li>The Administrator considers the complaint and answers it <strong>within 14 days</strong> of receiving it, to the e-mail address the complaint was sent from.</li>
         <li>No answer within the period given in paragraph 3 means the complaint is upheld.</li>
       </ol>
@@ -498,14 +498,14 @@ export function RegulaminEn() {
         <li>The Administrator may change these terms when the law changes, when the way Kajet works changes, when a feature is added or withdrawn, when security rules change or when the Administrator's details change.</li>
         <li>Users with an Account are notified of a change by e-mail or by a message on the website, at least <strong>14 days in advance</strong>. The new version is published at the same address, with the date of the last update at the top.</li>
         <li>A User who does not agree to a change may delete their Account under § 13 before it takes effect. Using Kajet after the change takes effect means accepting it.</li>
-        <li>Changes that do not affect the rights and duties of the User — correcting a typo, clarifying wording, rearranging the document — take effect on publication.</li>
+        <li>Changes that do not affect the rights and duties of the User - correcting a typo, clarifying wording, rearranging the document - take effect on publication.</li>
       </ol>
 
       <h2 id="par18">§ 18. Governing law and disputes</h2>
       <ol className="legal-items">
         <li>Matters not covered by these terms are governed by <strong>Polish law</strong>, in particular the Civil Code, the Act on the provision of services by electronic means, the Consumer Rights Act and data protection law.</li>
         <li>The choice of Polish law does not deprive a User who is a consumer of the protection afforded by mandatory provisions of the law of their country of habitual residence.</li>
-        <li>Disputes are settled by the court having jurisdiction under general rules. <strong>No contractual choice of court applies to a consumer</strong> — the court is the one determined by the Polish Code of Civil Procedure.</li>
+        <li>Disputes are settled by the court having jurisdiction under general rules. <strong>No contractual choice of court applies to a consumer</strong> - the court is the one determined by the Polish Code of Civil Procedure.</li>
         <li>A User who is a consumer may use out-of-court means of handling complaints and pursuing claims, in particular the help of a district (municipal) consumer ombudsman, mediation by the provincial inspector of the Trade Inspection and the free consumer helpline of the Office of Competition and Consumer Protection. Details are at <a href="https://uokik.gov.pl">uokik.gov.pl</a>. Using these means is voluntary for both sides.</li>
       </ol>
 

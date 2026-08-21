@@ -162,7 +162,7 @@ export async function moveNoteToFolder(_previous: Result, data: FormData): Promi
  * należy właśnie kliknięty przycisk. Co zrobić, mówi przycisk (`what`).
  *
  * Notatka, której nie da się ruszyć (cudza, skasowana w międzyczasie), nie
- * zatrzymuje reszty — zdanie na końcu mówi, ile takich było.
+ * zatrzymuje reszty - zdanie na końcu mówi, ile takich było.
  */
 export async function bulkNotesFromLibrary(_previous: Result, data: FormData): Promise<Result> {
   const user = await currentUser();

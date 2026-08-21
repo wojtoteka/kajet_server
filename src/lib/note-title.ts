@@ -1,7 +1,7 @@
 /*
   Tytuł podpowiedziany z treści.
 
-  Notatka bez wpisanego tytułu nazywała się „Bez nazwy" — i przy kilkunastu
+  Notatka bez wpisanego tytułu nazywała się „Bez nazwy" - i przy kilkunastu
   takich notatkach spis przestawał cokolwiek mówić. Zamiast tego bierzemy
   pierwszy wiersz treści, tak jak robi to Notion czy Keep: to prawie zawsze
   jest nagłówek albo pierwsze zdanie, czyli dokładnie to, czym notatka jest.
@@ -50,11 +50,11 @@ function shorten(text: string): string {
 }
 
 /**
- * Najdłuższy tytuł, jaki przyjmujemy — także wpisany ręcznie.
+ * Najdłuższy tytuł, jaki przyjmujemy - także wpisany ręcznie.
  *
  * Do tej pory bramki przepuszczały trzysta znaków, a kolumna `Note.title`
  * w bazie to zwykły `String`, czyli VARCHAR(191) w MySQL. Tytuł między tymi
- * liczbami nie zapisywał się WCALE — wywracał zapis błędem bazy danych.
+ * liczbami nie zapisywał się WCALE - wywracał zapis błędem bazy danych.
  *
  * Sto dwadzieścia mieści się w kolumnie z zapasem i zgadza się z limitem
  * nazwy folderu.
@@ -68,7 +68,7 @@ export const TITLE_LIMIT = 120;
  * wpis w kolejce wysyłki wracałby z błędem przy każdej próbie i utknąłby tam
  * na dobre. Przycięcie jest niemiłe, ale przechodzi.
  *
- * Wielokropka tu nie dodajemy — to tytuł napisany przez człowieka, a nie
+ * Wielokropka tu nie dodajemy - to tytuł napisany przez człowieka, a nie
  * podpowiedź z treści.
  */
 export function fitTitle(title: string): string {
@@ -103,13 +103,13 @@ const DEFAULT_CODE_NAME = /^(program|kod|code|plik|file|main|nowy|new)\.[a-z0-9]
  *
  * KLUCZOWE dla asystenta: własnego tytułu nie wolno mu ruszyć, a „Bez nazwy"
  * i tytuł podpowiedziany z treści może zastąpić. Informacji „ten tytuł wpisał
- * człowiek" nie ma NIGDZIE — ani w bazie, ani w pliku notatki — więc trzeba
+ * człowiek" nie ma NIGDZIE - ani w bazie, ani w pliku notatki - więc trzeba
  * ją odgadnąć.
  *
  * `derived` to tytuł, jaki dałaby DZISIEJSZA treść notatki. Gdy tytuł jest
  * dokładnie nim, prawie na pewno stamtąd pochodzi.
  *
- * To heurystyka, nie pewnik — ale myli się w bezpieczną stronę. Gdy człowiek
+ * To heurystyka, nie pewnik - ale myli się w bezpieczną stronę. Gdy człowiek
  * poprawił pierwszy wiersz po podpowiedzi, porównanie już nie zagra, tytuł
  * uchodzi za wpisany ręcznie i asystent go NIE tknie.
  */
@@ -148,7 +148,7 @@ function withoutMarkers(line: string): string {
 }
 
 /**
- * Tytuł z treści notatki tekstowej. Null, gdy nie ma z czego go zrobić —
+ * Tytuł z treści notatki tekstowej. Null, gdy nie ma z czego go zrobić -
  * wtedy zostaje dotychczasowe „Bez nazwy".
  */
 export function titleFromMarkdown(markdown: string): string | null {

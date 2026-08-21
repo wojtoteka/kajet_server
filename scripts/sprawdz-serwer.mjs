@@ -19,7 +19,7 @@ let problems = 0;
 
 function say(ok, name, detail) {
   if (!ok) problems += 1;
-  console.log(`${ok ? "  ok  " : " ŹLE "} ${name}${detail ? ` — ${detail}` : ""}`);
+  console.log(`${ok ? "  ok  " : " ŹLE "} ${name}${detail ? ` - ${detail}` : ""}`);
 }
 
 async function ask(path, options = {}) {
@@ -48,13 +48,13 @@ console.log(`\nSprawdzam ${address}\n`);
 const home = await ask("/");
 say(home.status === 200, "strona główna", home.status ? `HTTP ${home.status}` : home.text);
 
-// 2. Katalog public/ — logo bierze się właśnie stamtąd.
+// 2. Katalog public/ - logo bierze się właśnie stamtąd.
 const logo = await ask("/logo.svg");
 say(
   logo.status === 200,
   "pliki z katalogu public/ (logo.svg)",
   logo.status === 404
-    ? "404 — katalog public/ nie pojechał na serwer przy wdrożeniu"
+    ? "404 - katalog public/ nie pojechał na serwer przy wdrożeniu"
     : `HTTP ${logo.status}`,
 );
 
@@ -69,7 +69,7 @@ say(
     : `HTTP ${notes.status} ${notes.body?.message ?? ""}`,
 );
 
-// 4. Logowanie przez przeglądarkę — tu najczęściej siedzi brakująca tabela.
+// 4. Logowanie przez przeglądarkę - tu najczęściej siedzi brakująca tabela.
 const device = await ask("/api/v1/signin/device", {
   method: "POST",
   headers: { "content-type": "application/json" },
@@ -80,7 +80,7 @@ say(
   device.status === 200 && Boolean(device.body?.code),
   "POST /api/v1/signin/device (logowanie Google i przez stronę)",
   missingTable
-    ? "baza jest starsza niż program — na serwerze brakuje „npm run db:apply”"
+    ? "baza jest starsza niż program - na serwerze brakuje „npm run db:apply”"
     : device.status === 200
       ? "kod logowania wydany"
       : `HTTP ${device.status} ${device.body?.message ?? device.text.slice(0, 160)}`,
@@ -95,7 +95,7 @@ say(
   contact.status === 200 && !contactOff,
   "formularz kontaktowy (/contact)",
   contactOff
-    ? "w .env na serwerze brakuje CONTACT_API_KEY — dopisz (wartość jest w lokalnym .env) i przeładuj usługę"
+    ? "w .env na serwerze brakuje CONTACT_API_KEY - dopisz (wartość jest w lokalnym .env) i przeładuj usługę"
     : contact.status === 200
       ? "formularz jest podłączony"
       : `HTTP ${contact.status}`,

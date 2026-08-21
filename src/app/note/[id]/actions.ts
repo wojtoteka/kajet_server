@@ -53,12 +53,12 @@ export type Result = {
   error?: string;
   success?: string;
   copyable?: { value: string; label?: string };
-  /** Wersja po zapisie — autozapis wysyła ją jako baseVersion kolejnego. */
+  /** Wersja po zapisie - autozapis wysyła ją jako baseVersion kolejnego. */
   version?: number;
   /**
    * Identyfikator notatki założonej przez autozapis. Ręczny zapis nowej
    * notatki kończy się przekierowaniem, ale autozapis nie może wyrzucić
-   * człowieka ze środka pisania — dostaje więc identyfikator i od tej pory
+   * człowieka ze środka pisania - dostaje więc identyfikator i od tej pory
    * dopisuje do tej samej notatki (adres w pasku podmienia sama strona).
    */
   noteId?: string;
@@ -203,7 +203,7 @@ export async function saveTextNote(_previous: Result, data: FormData): Promise<R
       outcome.status === "unchanged"
         ? (await currentWords()).actNothingChanged
         : (await currentWords()).actSavedNote,
-    // Autozapis podaje tę wersję jako baseVersion następnego zapisu —
+    // Autozapis podaje tę wersję jako baseVersion następnego zapisu -
     // bez tego drugi zapis z rzędu wpadałby w konflikt sam ze sobą.
     version: outcome.version,
     noteId: existingId ? undefined : noteId,
@@ -344,7 +344,7 @@ export async function saveMindMapNote(_previous: Result, data: FormData): Promis
       outcome.status === "unchanged"
         ? (await currentWords()).actNothingChanged
         : (await currentWords()).actSavedNote,
-    // Autozapis podaje tę wersję jako baseVersion następnego zapisu —
+    // Autozapis podaje tę wersję jako baseVersion następnego zapisu -
     // bez tego drugi zapis z rzędu wpadałby w konflikt sam ze sobą.
     version: outcome.version,
     noteId: existingId ? undefined : noteId,
@@ -473,7 +473,7 @@ export async function saveHandwritingNote(_previous: Result, data: FormData): Pr
       outcome.status === "unchanged"
         ? (await currentWords()).actNothingChanged
         : (await currentWords()).actSavedNote,
-    // Autozapis podaje tę wersję jako baseVersion następnego zapisu —
+    // Autozapis podaje tę wersję jako baseVersion następnego zapisu -
     // bez tego drugi zapis z rzędu wpadałby w konflikt sam ze sobą.
     version: outcome.version,
     noteId: existingId ? undefined : noteId,
@@ -593,7 +593,7 @@ export async function saveCodeNote(_previous: Result, data: FormData): Promise<R
       outcome.status === "unchanged"
         ? (await currentWords()).actNothingChanged
         : (await currentWords()).actSavedNote,
-    // Autozapis podaje tę wersję jako baseVersion następnego zapisu —
+    // Autozapis podaje tę wersję jako baseVersion następnego zapisu -
     // bez tego drugi zapis z rzędu wpadałby w konflikt sam ze sobą.
     version: outcome.version,
     noteId: existingId ? undefined : noteId,

@@ -164,7 +164,7 @@ export default async function CodesPage() {
                         <span className="tag accent">{words.tagFree}</span>
                       )}
                       <p className="small" style={{ margin: "4px 0 0 0" }}>
-                        {/* „0 z bez limitu" nie jest zdaniem — kod bez
+                        {/* „0 z bez limitu" nie jest zdaniem - kod bez
                             ograniczeń mówi tylko, ile razy go użyto. */}
                         {seatsUsed(words, code.usedSeats, code.seats)}
                         {code.usedBy ? `, ${words.usedByWord} ${code.usedBy.login}` : ""}

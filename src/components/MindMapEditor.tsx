@@ -127,7 +127,7 @@ export function MindMapEditor({
   const boxRef = useRef<HTMLDivElement | null>(null);
   const editingRef = useRef<HTMLTextAreaElement | null>(null);
   /*
-    Plansza ma tyle pikseli, ile naprawdę zajmuje kartka — nie sztywne 960×540.
+    Plansza ma tyle pikseli, ile naprawdę zajmuje kartka - nie sztywne 960×540.
     Tamten kadr był znaczkiem pocztowym: przybliżanie i przesuwanie liczyły się
     do innego prostokąta niż ten na ekranie, więc mapa na WWW rozjeżdżała się
     względem tabletu (ten sam rodzaj usterki co zoom kontra pismo na Androidzie).

@@ -23,8 +23,8 @@ export const TEXT_SMALLEST_SIZE = 10;
 export const TEXT_LARGEST_SIZE = 48;
 
 /**
- * Size to write into content.json. Zero stays the theme default — the same
- * rule as TextContent.storedFontSize on the tablet. A chosen size is 10–48.
+ * Size to write into content.json. Zero stays the theme default - the same
+ * rule as TextContent.storedFontSize on the tablet. A chosen size is 10-48.
  */
 export function storedFontSize(points: number): number {
   if (!Number.isFinite(points) || points <= 0) return 0;
@@ -35,7 +35,7 @@ export function storedFontSize(points: number): number {
  * Size after the visible control reports `picked`. While stored is 0 the
  * field shows TEXT_DEFAULT_SIZE as a preview; echoing that 17 must not
  * persist, or a tap on the control freezes the note at 17 after sync.
- * Choosing any other 10–48 (or 17 once the stored size is already a pick)
+ * Choosing any other 10-48 (or 17 once the stored size is already a pick)
  * writes a real size. 0 goes back to the theme default.
  */
 export function persistFontSize(stored: number, picked: number): number {
@@ -120,7 +120,7 @@ const IMAGE_LINE = /^!\[([^\]]*)\]\((.+)\)\s*$/;
   tekst, a zdjęcie rosło na całą szerokość.
 
   Z pliku czytamy, co stoi (także 10% ze starego suwaka w aplikacji). Przy
-  zapisie ściągamy do 20–100%, bo taki próg ma strona i nowy suwak.
+  zapisie ściągamy do 20-100%, bo taki próg ma strona i nowy suwak.
 */
 const ALT_WIDTH = /^(.*?)\s*\|\s*(\d{1,3})\s*%$/;
 const TITLE_WIDTH = /^(\d{1,3})%$/;

@@ -460,7 +460,7 @@ const HEADING_MAX = 3;
 
 /**
  * Długość kratek na początku wiersza - także poskładanych
- * („## # Tytuł"). Zero, gdy wiersz nie jest nagłówkiem H1–H3.
+ * („## # Tytuł"). Zero, gdy wiersz nie jest nagłówkiem H1-H3.
  */
 export function headingPrefixLength(line: string): number {
   let i = 0;
@@ -485,7 +485,7 @@ export function headingPrefixLength(line: string): number {
   return consumed;
 }
 
-/** Nagłówek H1–H3; poziom bierze się z pierwszej grupy kratek. */
+/** Nagłówek H1-H3; poziom bierze się z pierwszej grupy kratek. */
 export function headingLine(line: string): { level: number; body: string } | null {
   const prefix = headingPrefixLength(line);
   if (prefix === 0) return null;
@@ -512,7 +512,7 @@ export function lineMarkupLength(line: string): number {
 }
 
 /**
- * Wklejony zwykły tekst na HTML pola. Wiersz nagłówka staje się `<h1>`–`<h3>`
+ * Wklejony zwykły tekst na HTML pola. Wiersz nagłówka staje się `<h1>`-`<h3>`
  * z jedną kratką, żeby późniejsze przełączenie z paska nie dokleiło drugiej.
  */
 export function plainTextToPasteHtml(text: string): string {

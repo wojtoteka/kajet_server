@@ -19,8 +19,8 @@ function grunwald(): { nodes: MindNode[]; edges: MindEdge[] } {
   const galezie = ["Data i miejsce", "Strony konfliktu", "Główni dowódcy", "Skutki"];
   galezie.forEach((tekst, at) => {
     dodaj(`g${at}`, tekst, "korzen");
-    dodaj(`g${at}a`, `${tekst} — raz`, `g${at}`);
-    dodaj(`g${at}b`, `${tekst} — dwa`, `g${at}`);
+    dodaj(`g${at}a`, `${tekst} - raz`, `g${at}`);
+    dodaj(`g${at}b`, `${tekst} - dwa`, `g${at}`);
   });
 
   return { nodes, edges };

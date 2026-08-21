@@ -245,7 +245,7 @@ describe("droga tam i z powrotem", () => {
 });
 
 describe("kratki nagłówka", () => {
-  it("liczy też poskładane znaczniki H1–H3", () => {
+  it("liczy też poskładane znaczniki H1-H3", () => {
     expect(headingPrefixLength("# Tytuł")).toBe(2);
     expect(headingPrefixLength("## Tytuł")).toBe(3);
     expect(headingPrefixLength("## # Tytuł")).toBe(5);

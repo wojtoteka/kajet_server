@@ -25,7 +25,7 @@ export const DARK_INK_COLOR = argbColor(232, 228, 218);
 /**
  * Page width/height pick the tablet card (A4 vs one long sheet). The web
  * canvas may grow for drawing, but a save must not rewrite those numbers
- * from ink — there is no page-size control on the website.
+ * from ink - there is no page-size control on the website.
  */
 export function preservePageDimensions(pages: Page[], existing?: NoteDocument | null): Page[] {
   const previous = existing?.handwriting?.pages ?? [];

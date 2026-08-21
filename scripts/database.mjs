@@ -3,7 +3,7 @@
  *
  * The .env file holds the ordinary pieces (host, port, user, password, database
  * name), while Prisma wants a single URL. We glue it together here. The same
- * job for the app itself is done by databaseUrl in src/lib/settings.ts — both
+ * job for the app itself is done by databaseUrl in src/lib/settings.ts - both
  * versions must produce the same result.
  *
  * There is no .env library here, because only this much is needed: a

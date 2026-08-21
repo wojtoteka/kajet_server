@@ -198,7 +198,7 @@ function pageContentBottom(entry: Page, draft?: Stroke | null): number {
 
 /**
  * Zapas wysokości płótna z zawartości, nie z pozycji kursora. Wcześniej
- * strona rosła przy każdym ruchu wskaźnika nad dolną krawędzią — samo
+ * strona rosła przy każdym ruchu wskaźnika nad dolną krawędzią - samo
  * zjeżdżanie w dół do przycisku „Zapisz" wydłużało ją w nieskończoność
  * i przycisk uciekał. Ta liczba zostaje w edytorze; do content.json nie idzie.
  */
@@ -327,7 +327,7 @@ export function HandwritingEditor({
         pageMode: initial.pageMode,
         background,
         // Wymiary strony zostają z dokumentu. Dopasowanie do atramentu jest
-        // tylko na płótnie — inaczej tablet dostawałby inną kartkę.
+        // tylko na płótnie - inaczej tablet dostawałby inną kartkę.
         pages,
       }),
     [initial.pageMode, background, pages],

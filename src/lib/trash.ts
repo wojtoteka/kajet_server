@@ -35,7 +35,7 @@ export type SweepResult = {
  * Ta sama arytmetyka co w aplikacji (Housekeeping.daysLeft): zaokrąglenie
  * w górę, bo dopóki został choćby kawałek dnia, jest to jeszcze „jeden
  * dzień". Zero znaczy: zniknie przy najbliższym przebiegu sprzątania.
- * Strona kosza pokazuje z tego napis „Zniknie za X dni" — liczbę i napis
+ * Strona kosza pokazuje z tego napis „Zniknie za X dni" - liczbę i napis
  * liczy jedno miejsce, żeby odliczanie i kasowanie nie mogły się rozjechać.
  */
 export function trashDaysLeft(

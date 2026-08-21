@@ -93,7 +93,7 @@ model User {
   inactiveWarnedAt DateTime?
 
   /// Moment wylogowania ze wszystkich urządzeń. Sesje strony to podpisane
-  /// ciasteczka (JWT), więc nie da się ich skasować w bazie — zamiast tego
+  /// ciasteczka (JWT), więc nie da się ich skasować w bazie - zamiast tego
   /// odrzucamy każdą wydaną wcześniej niż ten znacznik. Ustawia się przy
   /// „Wyloguj wszędzie" i przy zmianie hasła.
   sessionsRevokedAt DateTime?
@@ -320,7 +320,7 @@ model Note {
 ///
 /// Trwałe kasowanie usuwa wiersz notatki, więc przyrostowe pobieranie („co się
 /// zmieniło od tej pory") nie ma jak powiedzieć urządzeniu, że notatka
-/// zniknęła — wiersza po prostu nie ma i nie ma czego oddać. Zostaje po niej
+/// zniknęła - wiersza po prostu nie ma i nie ma czego oddać. Zostaje po niej
 /// ten wpis: sam identyfikator i data. Aplikacja pyta o nagrobki od swojego
 /// znacznika czasu i kasuje u siebie dokładnie to, co serwer zgłosił, zamiast
 /// zgadywać z brakującej pozycji na liście.
@@ -329,7 +329,7 @@ model Note {
 /// każdy termin oznaczałby, że urządzenie milczące dłużej niż on nigdy nie
 /// dowie się tą drogą o skasowaniu. Nagrobki znikają razem z kontem.
 model DeletedNote {
-  /// Identyfikator skasowanej notatki. Bez klucza obcego — wiersza notatki
+  /// Identyfikator skasowanej notatki. Bez klucza obcego - wiersza notatki
   /// już nie ma, po to jest ten wpis.
   noteId    String   @id
   ownerId   String
@@ -424,7 +424,7 @@ model LiveChange {
 /// One release of the mobile application, put up by an administrator.
 ///
 /// The APK itself lies on disk, in the directory set by APP_DIR, under a name
-/// made from its hash — the same idea as with attachments, so the database
+/// made from its hash - the same idea as with attachments, so the database
 /// does not swell up with tens of megabytes. Exactly one release is `current`:
 /// that is the one the download page hands out and the one the application
 /// compares itself against.

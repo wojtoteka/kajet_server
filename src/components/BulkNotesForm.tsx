@@ -16,7 +16,7 @@ export const BULK_FORM_ID = "bulk-notes";
 /**
  * Pasek działań na zaznaczonych notatkach.
  *
- * Zaznaczenia stoją w komórkach tabeli, a ten formularz nad nią — HTML nie
+ * Zaznaczenia stoją w komórkach tabeli, a ten formularz nad nią - HTML nie
  * pozwala zagnieżdżać formularzy, a w każdym wierszu jeden już jest (gwiazdka,
  * kosz, wybór folderu). Dlatego pola wskazują swój formularz atrybutem `form`
  * i należą do niego mimo odległości w drzewie strony. Dzięki temu spis notatek
@@ -69,7 +69,7 @@ export function BulkNotesForm({
     Po udanym działaniu zaznaczenia schodzą.
 
     Wyrzucone notatki znikają ze spisu razem ze swoimi kwadracikami, ale
-    przeniesione zostają — i zostawały zaznaczone, bo to zwykłe pola HTML,
+    przeniesione zostają - i zostawały zaznaczone, bo to zwykłe pola HTML,
     których odświeżenie strony nie rusza. Pasek mówiłby wtedy „zaznaczono 3"
     nad robotą, która się właśnie skończyła.
   */
@@ -79,7 +79,7 @@ export function BulkNotesForm({
 
   /*
     Pasek schodzi z ekranu, gdy nic nie wskazano. Formularz zostaje w drzewie,
-    bo kwadraciki w wierszach wskazują go atrybutem `form` — bez niego
+    bo kwadraciki w wierszach wskazują go atrybutem `form` - bez niego
     zaznaczenie nie miałoby do kogo należeć.
 
     hidden=true przy zerze: klasa `.row` ustawia display:flex i przebija zwykły

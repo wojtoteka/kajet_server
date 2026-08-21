@@ -23,7 +23,7 @@ export const settings = {
 
   /**
    * Strefa czasowa serwera. Ustawia ją instrumentation.ts przy podnoszeniu
-   * procesu — patrz tam po powód.
+   * procesu - patrz tam po powód.
    *
    * W skrócie: „północ" musi znaczyć północ u nas, a nie na maszynie. Limit
    * asystenta zeruje się o północy i tak jest napisane w komunikacie; na
@@ -32,7 +32,7 @@ export const settings = {
    * termin kodu zaproszenia, godziny w dzienniku).
    *
    * Do zmiany służy KAJET_TZ, a NIE zwykłe TZ. Rozróżnienie jest tu po coś:
-   * TZ bywa ustawione na maszynie przypadkiem — pm2, systemd czy obraz
+   * TZ bywa ustawione na maszynie przypadkiem - pm2, systemd czy obraz
    * kontenera wpisują tam UTC, nikogo nie pytając. Gdyby wygrywało, ta cała
    * nastawa cicho nic by nie robiła dokładnie na tych serwerach, dla których
    * powstała. KAJET_TZ nie weźmie się znikąd: wpisuje je ten, kto naprawdę

@@ -90,7 +90,7 @@ const codeForm = z.object({
   email: z.string().trim().toLowerCase().email().optional().or(z.literal("")),
   /*
     Ile razy dziennie konto z tego kodu może poprosić asystenta. Zero znaczy
-    „bez asystenta" — jedna liczba zamiast znacznika „daj dostęp" obok pola
+    „bez asystenta" - jedna liczba zamiast znacznika „daj dostęp" obok pola
     „ile", bo dostęp bez limitu i limit bez dostępu to dwa stany, których nikt
     nie potrzebuje, a dało się je nastawić.
   */

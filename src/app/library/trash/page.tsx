@@ -143,7 +143,7 @@ export default async function TrashPage({
             </thead>
             <tbody>
               {notes.map((note) => {
-                // Odliczanie do samoczynnego opróżnienia — jak w aplikacji.
+                // Odliczanie do samoczynnego opróżnienia - jak w aplikacji.
                 // Ostatnie dni na czerwono: wtedy warto się pospieszyć.
                 const daysLeft =
                   settings.trash.days > 0 && note.deletedAt

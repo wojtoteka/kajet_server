@@ -1,13 +1,13 @@
 /*
   Zapora na punkcie przyjmującym awarie.
 
-  `POST /api/v1/crash` nie wymaga tokenu — awaria trafia się także przed
+  `POST /api/v1/crash` nie wymaga tokenu - awaria trafia się także przed
   zalogowaniem i wtedy najbardziej trzeba o niej wiedzieć. Cena jest taka, że
   wpisać tam coś może każdy, kto zna adres. Stąd trzy granice: ile raportów z
   jednego adresu na godzinę, jak duży może być jeden raport i ile ich w ogóle
   zostaje w bazie.
 
-  Licznik siedzi w pamięci procesu — tak samo jak zapora logowania
+  Licznik siedzi w pamięci procesu - tak samo jak zapora logowania
   (signin-limits.ts) i limit uruchomień kodu (run-limits.ts). Kajet chodzi
   jako jeden serwer, a restart co najwyżej wyzeruje licznik komuś, kto i tak
   musiałby zacząć od nowa.
@@ -44,8 +44,8 @@ let sinceCleanup = 0;
 export type CrashGate = { allowed: true } | { allowed: false; retryInSeconds: number };
 
 /**
- * Czy wolno przyjąć raport z tego adresu. Od razu dolicza próbę, bo tu — w
- * odróżnieniu od logowania — liczy się każdy raport, nie tylko nieudany.
+ * Czy wolno przyjąć raport z tego adresu. Od razu dolicza próbę, bo tu - w
+ * odróżnieniu od logowania - liczy się każdy raport, nie tylko nieudany.
  *
  * Zapytanie bez rozpoznanego adresu (brak nagłówków od pośrednika) idzie na
  * wspólny licznik: lepiej wspólny niż żaden.

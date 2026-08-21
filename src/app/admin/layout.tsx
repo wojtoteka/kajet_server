@@ -12,12 +12,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   /*
     Dwa różne „nie wolno", dwie różne odpowiedzi.
 
-    Niezalogowany idzie do logowania i wraca tutaj — to ma sens, bo po
+    Niezalogowany idzie do logowania i wraca tutaj - to ma sens, bo po
     zalogowaniu może się okazać, że wolno mu wejść.
 
     Zalogowany bez uprawnień dostaje to samo co pod adresem, którego nie ma.
     Dwa powody. Po pierwsze, odmowa nie ma prawa zdradzać, że panel w ogóle
-    istnieje — ta sama zasada co przy asystencie (lib/ai/access.ts). Po
+    istnieje - ta sama zasada co przy asystencie (lib/ai/access.ts). Po
     drugie, odesłanie go do logowania robiło PĘTLĘ: strona logowania widziała
     ważną sesję i odsyłała pod `next`, czyli z powrotem tutaj, a tutaj znowu
     brakowało uprawnień. Przeglądarka pokazywała „zbyt wiele przekierowań"

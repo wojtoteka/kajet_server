@@ -75,7 +75,7 @@ const NARZEDZIE_TEKST: GeminiTool = {
       markdown: {
         type: "string",
         description:
-          "Cała treść notatki po zmianie, w markdownie Kajetu (nagłówki tylko #–###). " +
+          "Cała treść notatki po zmianie, w markdownie Kajetu (nagłówki tylko #-###). " +
           "Zapisy zdjęć ![opis|60%](assets/plik.png) przepisz bez zmian, razem z dopiskiem " +
           "szerokości - to nie jest tekst do poprawiania. Starszy zapis z tytułem " +
           '![opis](assets/plik.png "60%") też zostawiasz.',
@@ -95,7 +95,7 @@ const NARZEDZIE_TEKST: GeminiTool = {
         maximum: TEXT_LARGEST_SIZE,
         description:
           "Rozmiar pisma całej notatki. 0 = rozmiar z motywu konta; " +
-          `${TEXT_SMALLEST_SIZE}–${TEXT_LARGEST_SIZE}` +
+          `${TEXT_SMALLEST_SIZE}-${TEXT_LARGEST_SIZE}` +
           " = stały rozmiar. Podaj tylko wtedy, gdy proszono o zmianę rozmiaru. " +
           "Pominięcie pola zostawia rozmiar nietknięty. Nigdy nie podawaj 17 jako " +
           "„normalnego” - to podgląd, nie zapis.",

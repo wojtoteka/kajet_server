@@ -295,7 +295,7 @@ export async function upsertNoteForUser(
       select: { version: true, updatedAt: true },
     });
 
-    // Notatka powstała na nowo pod starym identyfikatorem — nagrobek po niej
+    // Notatka powstała na nowo pod starym identyfikatorem - nagrobek po niej
     // przestaje obowiązywać.
     if (!existing) await forgetTombstone(note.id);
 
@@ -317,7 +317,7 @@ export async function upsertNoteForUser(
  * Zdarza się to po wylogowaniu i ponownym zalogowaniu: urządzenie zapomina
  * wtedy zapamiętane wersje i odsyła notatkę, którą wciąż ma u siebie, jako
  * nieznaną serwerowi. Notatka znowu istnieje, więc stary nagrobek jest
- * nieprawdą — zostawiony kazałby urządzeniom skasować żywą notatkę.
+ * nieprawdą - zostawiony kazałby urządzeniom skasować żywą notatkę.
  */
 async function forgetTombstone(noteId: string): Promise<void> {
   await prisma.deletedNote.deleteMany({ where: { noteId } });

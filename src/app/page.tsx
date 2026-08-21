@@ -314,19 +314,19 @@ export default async function HomePage() {
         {/*
           Asystent stoi PO wyborze konta, bo bez konta go nie ma. Do tej pory
           jedynym miejscem na stronie, gdzie w ogóle padało słowo KajetAI, była
-          polityka prywatności — czyli tam, gdzie zagląda się na końcu, i to
+          polityka prywatności - czyli tam, gdzie zagląda się na końcu, i to
           nie po to, żeby się o czymś dowiedzieć.
 
-          Zdania mają pokrycie w kodzie: co asystent umie zmienić — lib/ai/tools.ts
-          (tekst, kod, mapa myśli i dopytanie), kogo wpuszcza — lib/ai/access.ts
-          (uprawnienie przy koncie plus zgoda), cofanie — components/AiPanel.tsx.
+          Zdania mają pokrycie w kodzie: co asystent umie zmienić - lib/ai/tools.ts
+          (tekst, kod, mapa myśli i dopytanie), kogo wpuszcza - lib/ai/access.ts
+          (uprawnienie przy koncie plus zgoda), cofanie - components/AiPanel.tsx.
         */}
         <section className={`${styles.rzad} ${styles.asystent}`}>
           <div className={styles.pasmoAsystent}>
             {/*
               Kartka w trakcie poprawiania: środkowa linijka skreślona, nad nią
               dopisana nowa z daszkiem wstawki. Iskry obok są jedynym znakiem,
-              że robi to maszyna — cała reszta jest z tej samej ręki co domek
+              że robi to maszyna - cała reszta jest z tej samej ręki co domek
               przy piśmie odręcznym.
             */}
             <figure>

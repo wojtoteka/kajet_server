@@ -7,12 +7,12 @@ import { useNoteSync } from "@/components/NoteSync";
  * Trzyma to, co o notatce wie serwer: jej identyfikator i ostatnią wersję.
  *
  * Nowa notatka nie ma jeszcze identyfikatora. Pierwszy autozapis ją zakłada
- * i oddaje `noteId` — od tej chwili edytor dopisuje do tej samej notatki
+ * i oddaje `noteId` - od tej chwili edytor dopisuje do tej samej notatki
  * zamiast zakładać kolejną, a adres w pasku podmieniamy na `/note/<id>`
  * (bez przeładowania, żeby nie przerwać pisania). Odświeżenie strony trafia
  * już w notatkę, nie w pusty formularz.
  *
- * Wersja z odpowiedzi jedzie jako `baseVersion` następnego zapisu — bez tego
+ * Wersja z odpowiedzi jedzie jako `baseVersion` następnego zapisu - bez tego
  * drugi zapis z rzędu wpadałby w konflikt sam ze sobą.
  */
 export function useSavedNote({

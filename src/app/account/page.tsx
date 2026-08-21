@@ -278,7 +278,7 @@ export default async function AccountPage() {
                   defaultValue={writing.fontSize}
                 />
                 <p className="small" style={{ marginTop: 4 }}>
-                  {words.zeroMeansDefault} ({TEXT_DEFAULT_SIZE}). {TEXT_SMALLEST_SIZE}–
+                  {words.zeroMeansDefault} ({TEXT_DEFAULT_SIZE}). {TEXT_SMALLEST_SIZE}-
                   {TEXT_LARGEST_SIZE}.
                 </p>
               </div>

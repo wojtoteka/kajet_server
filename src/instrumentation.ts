@@ -13,7 +13,7 @@ export async function register() {
   /*
     Strefa czasowa, zanim cokolwiek policzy jakąkolwiek datę.
 
-    Bez tego „północ" znaczyła tyle, ile pokazuje zegar maszyny — a serwery
+    Bez tego „północ" znaczyła tyle, ile pokazuje zegar maszyny - a serwery
     stoją domyślnie na UTC. Limit KajetAI zeruje się o północy i tak mówi
     komunikat; na UTC zerowałby się latem o drugiej w nocy, czyli komunikat
     kłamałby o dwie godziny. Tą samą strefą idą też daty widoczne na stronie:

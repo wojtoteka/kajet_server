@@ -13,7 +13,7 @@ const BREAK = String.fromCharCode(1);
  * akcję zapisu.
  *
  * Celowo NIE wysyła formularza (requestSubmit): prawdziwe wysłanie resetuje
- * pola i zabiera fokus — pisanie stawało się niemożliwe, a rysowanie ginęło.
+ * pola i zabiera fokus - pisanie stawało się niemożliwe, a rysowanie ginęło.
  * Zamiast tego zbiera FormData i przekazuje je prosto do akcji z
  * useActionState, więc strona zachowuje się, jakby nic się nie działo.
  *
@@ -23,7 +23,7 @@ const BREAK = String.fromCharCode(1);
  * nie kończy przekierowaniem, tylko oddaje jej identyfikator.
  *
  * Poza zegarem zapis leci też, gdy karta schodzi w tło albo okno traci
- * skupienie — czyli wtedy, kiedy człowiek najczęściej „wychodzi” z notatki.
+ * skupienie - czyli wtedy, kiedy człowiek najczęściej „wychodzi” z notatki.
  * Gdy mimo wszystko zostają zmiany niezapisane, przeglądarka pyta przed
  * zamknięciem karty.
  *
@@ -50,7 +50,7 @@ export function useAutosave({
   /** Ustawienie konta: czy zapis ma iść sam z siebie. */
   auto?: boolean;
   busy: boolean;
-  /** Akcja zapisu — dispatch z useActionState, owinięty w startTransition. */
+  /** Akcja zapisu - dispatch z useActionState, owinięty w startTransition. */
   save: (data: FormData) => void;
   /** Co ile sprawdzamy formularz. */
   tickMs?: number;
@@ -72,7 +72,7 @@ export function useAutosave({
   markSent: () => void;
 } {
   // Migawka wysłana na serwer, migawka z poprzedniego sprawdzenia i licznik
-  // spokojnych sprawdzeń. Referencje, nie stan — zmiana nie ma czego
+  // spokojnych sprawdzeń. Referencje, nie stan - zmiana nie ma czego
   // przerysowywać.
   const lastSent = useRef<string | null>(null);
   const lastSeen = useRef<string | null>(null);
@@ -89,7 +89,7 @@ export function useAutosave({
   autoNow.current = auto;
 
   // Ostatni znany formularz. Przy odmontowaniu React zeruje formRef, a my
-  // chcemy wtedy jeszcze dosłać zmiany — na odczepionym od strony formularzu
+  // chcemy wtedy jeszcze dosłać zmiany - na odczepionym od strony formularzu
   // FormData działa tak samo dobrze.
   const lastForm = useRef<HTMLFormElement | null>(null);
   const readForm = useCallback(
@@ -106,7 +106,7 @@ export function useAutosave({
     data.forEach((value, key) => {
       // Pliki (załączniki) mają własny formularz; tu liczy się sam tekst.
       // baseVersion rośnie po każdym zapisie, a noteId pojawia się po
-      // założeniu nowej notatki — same z siebie wyglądałyby jak kolejna
+      // założeniu nowej notatki - same z siebie wyglądałyby jak kolejna
       // zmiana do zapisania.
       if (key === "baseVersion" || key === "noteId" || key === "autosave") return;
       if (typeof value === "string") parts.push(key + SEP + value);
@@ -171,11 +171,11 @@ export function useAutosave({
       // Autozapis wyłączony w ustawieniach: znamy stan („Zmiany niezapisane"),
       // ale nic nie wysyłamy.
       if (!autoNow.current) return;
-      // Zapis w locie — poczekajmy na odpowiedź, żeby nie wysłać dwóch naraz
+      // Zapis w locie - poczekajmy na odpowiedź, żeby nie wysłać dwóch naraz
       // (przy nowej notatce zrobiłoby to dwie notatki zamiast jednej).
       if (busyNow.current) return;
       if (now !== lastSeen.current) {
-        // Coś się zmieniło, ale pisanie może trwać — czekamy jeszcze chwilę.
+        // Coś się zmieniło, ale pisanie może trwać - czekamy jeszcze chwilę.
         lastSeen.current = now;
         quietTicks.current = 0;
         return;
@@ -189,7 +189,7 @@ export function useAutosave({
 
   // Koniec pisania to nie tylko cisza na zegarze. Zejście karty w tło,
   // przełączenie okna i kliknięcie poza notatkę (na przykład w „Wróć do
-  // listy") też nim są — wtedy zapis leci od razu, bez czekania.
+  // listy") też nim są - wtedy zapis leci od razu, bez czekania.
   useEffect(() => {
     if (!enabled) return;
     const onHidden = () => {
@@ -224,7 +224,7 @@ export function useAutosave({
   }, [enabled, flush, formRef]);
 
   // Wyjście z notatki w obrębie strony („Wróć do listy") nie odpala żadnego
-  // zdarzenia okna — dlatego przy odmontowaniu dosyłamy to, co zostało.
+  // zdarzenia okna - dlatego przy odmontowaniu dosyłamy to, co zostało.
   const flushRef = useRef(flush);
   flushRef.current = flush;
   useEffect(

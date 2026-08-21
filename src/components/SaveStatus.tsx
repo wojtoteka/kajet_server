@@ -6,7 +6,7 @@ import { useWords } from "@/components/LanguageProvider";
  * Napis „Zapisane / Zapisuję / Zmiany niezapisane" przy przycisku zapisu.
  *
  * Odpowiedź serwera po autozapisie leciała wcześniej zieloną ramką na górze
- * formularza — w długim edytorze (mapa, kartka odręczna) nikt jej tam nie
+ * formularza - w długim edytorze (mapa, kartka odręczna) nikt jej tam nie
  * widział, więc autozapis wyglądał jak wyłączony i wszyscy klikali „Zapisz".
  * Tutaj stan stoi tuż obok przycisku, czyli tam, gdzie się patrzy.
  */

@@ -2,7 +2,7 @@
   Ile w notatce słów i znaków.
 
   Liczymy TO, CO WIDAĆ na kartce, a nie zapis. Do tej pory pod edytorem stało
-  `body.length` — czyli długość surowego markdownu, razem z gwiazdkami
+  `body.length` - czyli długość surowego markdownu, razem z gwiazdkami
   pogrubienia, znacznikami barwy (trzydzieści dziewięć znaków narzutu na jedno
   pokolorowane słowo), kwadracikami zadań, kreskami tabeli i całym zapisem
   zdjęcia. Liczba nie miała nic wspólnego z tym, co człowiek napisał.
@@ -12,7 +12,7 @@
   a nie tylko zaklęte w kodzie:
 
    - Słowo to kawałek między białymi znakami, w którym jest choć jedna litera
-     albo cyfra. Sam myślnik, sama kropka i samo „—" słowem nie są.
+     albo cyfra. Sam myślnik, sama kropka i samo „-" słowem nie są.
    - Znaki liczymy razem ze spacjami, ale bez złamań wiersza: końca wiersza
      nikt na kartce nie widzi.
    - Liczymy PUNKTY KODOWE, nie jednostki UTF-16. Bez tego jedna emotikona

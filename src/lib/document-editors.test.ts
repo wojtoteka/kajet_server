@@ -198,7 +198,7 @@ describe("handwriting-note", () => {
   /*
     Tablet rozróżnia kartkę A4 od jednej długiej strony po wysokości w
     content.json. Edytor WWW doliczał wysokość z atramentu i wpisywał ją
-    z powrotem — krótka notatka na długiej kartce stawała się A4.
+    z powrotem - krótka notatka na długiej kartce stawała się A4.
   */
   it("zapis ze strony nie przepisuje wysokości kartki z tabletu", () => {
     const fromTablet = JSON.stringify({
