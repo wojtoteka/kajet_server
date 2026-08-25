@@ -56,13 +56,19 @@ import {
   TEXT_FONTS,
   TEXT_LARGEST_SIZE,
   TEXT_SMALLEST_SIZE,
+  canStandBeside,
   clampImageWidth,
   joinTextBlocks,
+  nudgePhoto,
   persistFontSize,
+  setPhotoBeside,
   sideBySideWidths,
   splitTextBlocks,
+  standsInRow,
   textBlockRows,
   type ImageAlign,
+  type PhotoMove,
+  type PhotoNudge,
   type TextAppearance,
   type TextBlock,
 } from "@/lib/text-note";
@@ -72,6 +78,12 @@ type PhotoBlock = Extract<TextBlock, { kind: "image" }>;
 
 /** Odstęp między zdjęciami stojącymi obok siebie, w procentach szerokości. */
 const PHOTO_GAP_SHARE = 2;
+
+/**
+ * Ile pikseli trzeba przeciągnąć zdjęcie, żeby poszło o jedno miejsce dalej.
+ * Mniej znaczyłoby, że zdjęcie ucieka przy samym kliknięciu.
+ */
+const NUDGE_STEP = 44;
 
 type ActionResult = {
   error?: string;
@@ -270,6 +282,7 @@ export function TextNoteEditor({
     const next = splitTextBlocks(joinTextBlocks(blocks));
     if (next.length === blocks.length) return;
     setBlocks(next);
+    setChosenPhoto(null);
     setRevision((count) => count + 1);
   }
 
@@ -277,6 +290,7 @@ export function TextNoteEditor({
     // Po wyjęciu zdjęcia sąsiednie kawałki tekstu mają się zejść w jeden -
     // dlatego składamy treść i dzielimy ją od nowa.
     setBlocks(splitTextBlocks(joinTextBlocks(blocks.filter((_, i) => i !== index))));
+    setChosenPhoto(null);
     setRevision((count) => count + 1);
   }
 
@@ -297,40 +311,151 @@ export function TextNoteEditor({
   }
 
   /**
-   * Zdjęcie wchodzi obok poprzedniego. Ułożenie ma cały wiersz, więc bierze
-   * je od sąsiada, obok którego staje.
+   * Zdjęcie wchodzi obok poprzedniego albo schodzi do własnego wiersza.
+   * Samą przeprowadzkę robi lib/text-note.ts - tak samo jak w aplikacji,
+   * żeby notatka układała się tu i tam jednakowo.
    */
-  function standBeside(index: number) {
-    setBlocks((current) => {
-      const block = current[index];
-      const before = current[index - 1];
-      if (block?.kind !== "image" || before?.kind !== "image") return current;
-      return current.map((other, i) =>
-        i === index && other.kind === "image"
-          ? { ...other, beside: true, align: before.align }
-          : other,
-      );
-    });
+  function setBeside(index: number, beside: boolean) {
+    takeMove(setPhotoBeside(blocksNow.current, index, beside));
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Wybrane zdjęcie                                                      */
+  /* ------------------------------------------------------------------ */
+
+  /*
+    Zdjęcie wybiera się kliknięciem - dopiero wtedy dostaje obwódkę i pasek
+    z przyciskami pod wierszem. Bez tego notatka złożona ze zdjęć składała się
+    w połowie z rzędów przycisków. Tak samo działa zdjęcie w aplikacji
+    (editor/text/BlockEditor.kt), więc obsługuje się je tak samo tu i tam.
+  */
+  const [chosenPhoto, setChosenPhoto] = useState<number | null>(null);
+
+  /*
+    Przeciąganie zdjęcia. Zdjęcie idzie za kursorem, a po minięciu progu
+    przeskakuje o jedno miejsce i wraca pod kursor. Nasłuch siedzi na oknie,
+    a nie na samym zdjęciu: po przeskoku zdjęcie stoi już w innym miejscu
+    spisu bloków i nasłuch na nim urwałby się w połowie ruchu.
+  */
+  const drag = useRef<{ index: number; x: number; y: number; moved: boolean } | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const [shift, setShift] = useState<{ index: number; x: number; y: number } | null>(null);
+
+  // Bloki widziane przez nasłuch okna. Bez tego drugi przeskok w jednym ruchu
+  // liczyłby się od układu notatki sprzed pierwszego.
+  const blocksNow = useRef(blocks);
+  useEffect(() => {
+    blocksNow.current = blocks;
+  }, [blocks]);
+
+  /**
+   * Notatka po przeprowadzce zdjęcia. Oddaje jego nowe miejsce w spisie
+   * bloków - po przeprowadzce numery bloków się przesuwają, a wybór zdjęcia
+   * ma zostać przy tym samym zdjęciu.
+   */
+  function takeMove(next: PhotoMove): number {
+    if (next.blocks === blocksNow.current) return next.index;
+    blocksNow.current = next.blocks;
+    setBlocks(next.blocks);
+    setChosenPhoto(next.index);
+    // Zdjęcie mogło przeskoczyć nad akapit, więc pola do pisania stoją teraz
+    // pod innymi numerami i muszą przeczytać swoją treść od nowa.
+    setRevision((count) => count + 1);
+    return next.index;
   }
 
   /**
-   * Zdjęcie schodzi do własnego wiersza.
-   *
-   * Zdjęcie stojące obok poprzedniego po prostu z wiersza wychodzi. Kiedy to
-   * ono wiersz zaczyna, wychodzi to, co stoi za nim - inaczej pierwszego
-   * zdjęcia w wierszu nie dałoby się odsunąć od reszty.
+   * Zdjęcie o jedno miejsce dalej - przeciągnięte, strzałką z paska albo
+   * strzałką z klawiatury.
    */
-  function ownLine(index: number) {
-    setBlocks((current) => {
-      const block = current[index];
-      if (block?.kind !== "image") return current;
-      const at = block.beside ? index : index + 1;
-      const target = current[at];
-      if (target?.kind !== "image" || !target.beside) return current;
-      return current.map((other, i) =>
-        i === at && other.kind === "image" ? { ...other, beside: false } : other,
+  function movePhoto(index: number, nudge: PhotoNudge): number {
+    return takeMove(nudgePhoto(blocksNow.current, index, nudge));
+  }
+
+  /** Czy przesunięcie w tę stronę ma co zmienić - po tym gasną strzałki. */
+  function canMove(index: number, nudge: PhotoNudge): boolean {
+    return nudgePhoto(blocks, index, nudge).blocks !== blocks;
+  }
+
+  function grabPhoto(event: React.PointerEvent<HTMLImageElement>, index: number) {
+    if (event.button !== 0) return;
+    // Bez tego przeglądarka zaczyna własne przeciąganie obrazka.
+    event.preventDefault();
+    drag.current = { index, x: event.clientX, y: event.clientY, moved: false };
+    setDragging(true);
+  }
+
+  useEffect(() => {
+    if (!dragging) return;
+
+    function onMove(event: PointerEvent) {
+      const now = drag.current;
+      if (!now) return;
+      const dx = event.clientX - now.x;
+      const dy = event.clientY - now.y;
+      // Wiersz ze zdjęciami leży w poprzek, a notatka w pionie, więc kierunek
+      // liczy się osobno w bok i osobno w pionie.
+      const sideways = Math.abs(dx) >= Math.abs(dy);
+      const far = sideways ? Math.abs(dx) : Math.abs(dy);
+      if (far < NUDGE_STEP) {
+        if (far > 3) now.moved = true;
+        setShift({ index: now.index, x: dx, y: dy });
+        return;
+      }
+      now.x = event.clientX;
+      now.y = event.clientY;
+      now.moved = true;
+      setShift(null);
+      now.index = movePhoto(
+        now.index,
+        sideways ? (dx > 0 ? "right" : "left") : dy > 0 ? "down" : "up",
       );
-    });
+    }
+
+    function letGo(clicked: boolean) {
+      const now = drag.current;
+      drag.current = null;
+      setDragging(false);
+      setShift(null);
+      // Kliknięcie bez przeciągnięcia wybiera zdjęcie, a drugie je odznacza.
+      if (clicked && now && !now.moved) {
+        setChosenPhoto((chosen) => (chosen === now.index ? null : now.index));
+      }
+    }
+
+    const onUp = () => letGo(true);
+    // Przerwany dotyk to najczęściej przewijanie strony palcem, a nie wybór
+    // zdjęcia - stąd osobne wyjście.
+    const onCancel = () => letGo(false);
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onCancel);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onCancel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dragging]);
+
+  /** Klawiatura: spacja wybiera zdjęcie, strzałki przesuwają wybrane. */
+  function photoKeys(event: React.KeyboardEvent<HTMLImageElement>, index: number) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      setChosenPhoto((chosen) => (chosen === index ? null : index));
+      return;
+    }
+    const ways: Record<string, PhotoNudge> = {
+      ArrowLeft: "left",
+      ArrowRight: "right",
+      ArrowUp: "up",
+      ArrowDown: "down",
+    };
+    const nudge = ways[event.key];
+    if (!nudge || chosenPhoto !== index) return;
+    event.preventDefault();
+    movePhoto(index, nudge);
   }
 
   /** Ułożenie CAŁEGO wiersza, w którym stoi to zdjęcie. */
@@ -454,6 +579,8 @@ export function TextNoteEditor({
     };
     // Kursor dzieli blok na to, co nad zdjęciem, i to, co pod nim.
     const parts = field ? splitAtCaret(field) : null;
+    // Numery bloków się przesuwają, więc wybór zdjęcia zdejmujemy.
+    setChosenPhoto(null);
 
     if (!parts || blocks[index]?.kind !== "text") {
       setBlocks([...blocks, image, { kind: "text", text: "" }]);
@@ -896,6 +1023,8 @@ export function TextNoteEditor({
                 onChange={(text) => setBlockText(index, text)}
                 onFocus={() => {
                   focused.current = index;
+                  // Kursor wrócił do pisania, więc pasek zdjęcia znika.
+                  setChosenPhoto(null);
                   refreshFormats();
                 }}
                 onSelect={refreshFormats}
@@ -918,14 +1047,20 @@ export function TextNoteEditor({
           const photos = row.map((index) => blocks[index] as PhotoBlock);
           const rowAlign = photos[0].align;
           /*
-            Szerokość zdjęcia to ułamek szerokości notatki. Zdjęcia stojące
-            obok siebie schodzą tak, żeby zmieściły się w wierszu - ale
-            w notatce zostaje ta szerokość, którą ktoś wybrał.
+            Szerokość zdjęcia to ułamek szerokości notatki - także wtedy, gdy
+            wynosi 100%. Zdjęcia stojące obok siebie schodzą tak, żeby
+            zmieściły się w wierszu, ale w notatce zostaje ta szerokość,
+            którą ktoś wybrał.
           */
           const shown = sideBySideWidths(
             photos.map((photo) => photo.width),
             photos.length > 1 ? PHOTO_GAP_SHARE * (photos.length - 1) : 0,
           );
+          // Pasek z przyciskami stoi tylko pod tym wierszem, w którym ktoś
+          // wybrał zdjęcie - i tylko przy tym jednym zdjęciu.
+          const seat = chosenPhoto === null ? -1 : row.indexOf(chosenPhoto);
+          const chosen = seat >= 0 ? photos[seat] : null;
+          const index = seat >= 0 ? row[seat] : -1;
 
           return (
             <div key={row[0]}>
@@ -933,134 +1068,166 @@ export function TextNoteEditor({
                 className="note-photo-row"
                 data-align={rowAlign === "left" ? undefined : rowAlign}
               >
-                {photos.map((photo, at) => (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img
-                    key={row[at]}
-                    src={
-                      photo.target.startsWith("assets/")
-                        ? attachmentUrl(
-                            saved.noteId ?? "",
-                            photo.target.slice("assets/".length),
-                            token,
-                          )
-                        : photo.target
-                    }
-                    alt={photo.alt || words.photoInNote}
-                    style={{
-                      width:
-                        shown[at] < IMAGE_FULL_WIDTH
-                          ? `${Math.round(shown[at])}%`
+                {photos.map((photo, spot) => {
+                  const at = row[spot];
+                  const picked = at === chosenPhoto;
+                  // Zdjęcie w trakcie przeciągania idzie za kursorem, dopóki
+                  // nie minie progu i nie przeskoczy o jedno miejsce.
+                  const moving = shift && shift.index === at ? shift : null;
+                  return (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      key={at}
+                      className={picked ? "chosen" : undefined}
+                      src={
+                        photo.target.startsWith("assets/")
+                          ? attachmentUrl(
+                              saved.noteId ?? "",
+                              photo.target.slice("assets/".length),
+                              token,
+                            )
+                          : photo.target
+                      }
+                      alt={photo.alt || words.photoInNote}
+                      draggable={false}
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={picked}
+                      title={picked ? words.photoMove : words.photoChoose}
+                      aria-label={`${photo.alt || words.photoInNote} - ${
+                        picked ? words.photoUnchoose : words.photoChoose
+                      }`}
+                      onPointerDown={(event) => grabPhoto(event, at)}
+                      onKeyDown={(event) => photoKeys(event, at)}
+                      style={{
+                        width: `${Math.round(shown[spot])}%`,
+                        transform: moving
+                          ? `translate(${moving.x}px, ${moving.y}px)`
                           : undefined,
-                    }}
-                  />
-                ))}
+                      }}
+                    />
+                  );
+                })}
               </div>
 
-              {row.map((index, at) => {
-                const photo = photos[at];
-                const before = blocks[index - 1];
-                const after = blocks[index + 1];
-                const inRow =
-                  photo.beside || (after?.kind === "image" && after.beside);
-                return (
-                  <div className="note-photo-bar" key={index}>
-                    {/* Rozmiar zdjęcia zapisuje się w treści notatki, więc taki sam
-                        wjeżdża do podglądu i do odnośnika do udostępnienia. */}
+              {chosen ? (
+                <div className="note-photo-bar">
+                  {/* Rozmiar zdjęcia zapisuje się w treści notatki, więc taki sam
+                      wjeżdża do podglądu i do odnośnika do udostępnienia. */}
+                  <button
+                    type="button"
+                    className="compact icon-only"
+                    title={words.shrinkPhoto}
+                    aria-label={words.shrinkPhoto}
+                    disabled={chosen.width <= IMAGE_SMALLEST_WIDTH}
+                    onClick={() => resizeImage(index, -IMAGE_WIDTH_STEP)}
+                  >
+                    <Icon name="zoom_out" />
+                  </button>
+                  <span className="small" style={{ minWidth: 44, textAlign: "center" }}>
+                    {chosen.width}%
+                  </span>
+                  <button
+                    type="button"
+                    className="compact icon-only"
+                    title={words.growPhoto}
+                    aria-label={words.growPhoto}
+                    disabled={chosen.width >= IMAGE_FULL_WIDTH}
+                    onClick={() => resizeImage(index, IMAGE_WIDTH_STEP)}
+                  >
+                    <Icon name="zoom_in" />
+                  </button>
+
+                  {/* Ułożenie ma cały wiersz, nie pojedyncze zdjęcie. */}
+                  {(
+                    [
+                      { side: "left", icon: "format_align_left", name: words.alignLeft },
+                      {
+                        side: "center",
+                        icon: "format_align_center",
+                        name: words.alignCentre,
+                      },
+                      {
+                        side: "right",
+                        icon: "format_align_right",
+                        name: words.alignRight,
+                      },
+                    ] as const
+                  ).map((choice) => (
+                    <button
+                      key={choice.side}
+                      type="button"
+                      className={`compact icon-only${rowAlign === choice.side ? " on" : ""}`}
+                      title={`${words.photoPlacement}: ${choice.name}`}
+                      aria-label={`${words.photoPlacement}: ${choice.name}`}
+                      aria-pressed={rowAlign === choice.side}
+                      onClick={() => setRowAlign(index, choice.side)}
+                    >
+                      <Icon name={choice.icon} filled={rowAlign === choice.side} />
+                    </button>
+                  ))}
+
+                  {/* Zdjęcie idzie obok tego, które stoi nad nim - i wraca do
+                      swojego wiersza tym samym miejscem. Kiedy nad zdjęciem nie
+                      ma zdjęcia, nie ma też obok czego stanąć. */}
+                  {standsInRow(blocks, index) ? (
                     <button
                       type="button"
-                      className="compact icon-only"
-                      title={words.shrinkPhoto}
-                      aria-label={words.shrinkPhoto}
-                      disabled={photo.width <= IMAGE_SMALLEST_WIDTH}
-                      onClick={() => resizeImage(index, -IMAGE_WIDTH_STEP)}
+                      className="compact"
+                      onClick={() => setBeside(index, false)}
                     >
-                      <Icon name="zoom_out" />
+                      {words.photoOwnLine}
                     </button>
-                    <span className="small" style={{ minWidth: 44, textAlign: "center" }}>
-                      {photo.width}%
-                    </span>
+                  ) : canStandBeside(blocks, index) ? (
                     <button
                       type="button"
-                      className="compact icon-only"
-                      title={words.growPhoto}
-                      aria-label={words.growPhoto}
-                      disabled={photo.width >= IMAGE_FULL_WIDTH}
-                      onClick={() => resizeImage(index, IMAGE_WIDTH_STEP)}
+                      className="compact"
+                      onClick={() => setBeside(index, true)}
                     >
-                      <Icon name="zoom_in" />
+                      {words.photoBeside}
                     </button>
+                  ) : null}
 
-                    {/* Ułożenie ma cały wiersz, więc przyciski stoją raz - przy
-                        pierwszym zdjęciu. */}
-                    {at === 0
-                      ? (
-                          [
-                            { side: "left", icon: "format_align_left", name: words.alignLeft },
-                            {
-                              side: "center",
-                              icon: "format_align_center",
-                              name: words.alignCentre,
-                            },
-                            {
-                              side: "right",
-                              icon: "format_align_right",
-                              name: words.alignRight,
-                            },
-                          ] as const
-                        ).map((choice) => (
-                          <button
-                            key={choice.side}
-                            type="button"
-                            className={`compact icon-only${rowAlign === choice.side ? " on" : ""}`}
-                            title={`${words.photoPlacement}: ${choice.name}`}
-                            aria-label={`${words.photoPlacement}: ${choice.name}`}
-                            aria-pressed={rowAlign === choice.side}
-                            onClick={() => setRowAlign(index, choice.side)}
-                          >
-                            <Icon name={choice.icon} filled={rowAlign === choice.side} />
-                          </button>
-                        ))
-                      : null}
-
-                    {/* Zdjęcie idzie obok tego, które stoi nad nim - i wraca do
-                        swojego wiersza tym samym miejscem. Kiedy nad zdjęciem nie
-                        ma zdjęcia, nie ma też obok czego stanąć. */}
-                    {inRow ? (
-                      <button
-                        type="button"
-                        className="compact"
-                        onClick={() => ownLine(index)}
-                      >
-                        {words.photoOwnLine}
-                      </button>
-                    ) : before?.kind === "image" ? (
-                      <button
-                        type="button"
-                        className="compact"
-                        onClick={() => standBeside(index)}
-                      >
-                        {words.photoBeside}
-                      </button>
-                    ) : null}
-
-                    <span className="small" style={{ flex: 1 }}>
-                      {photo.target.startsWith("assets/")
-                        ? photo.target.slice("assets/".length)
-                        : photo.target}
-                    </span>
+                  {/* To samo co przeciągnięcie zdjęcia, tylko po jednym kroku:
+                      w bok zamienia zdjęcia miejscami w wierszu, w pionie
+                      wyprowadza zdjęcie z wiersza albo przenosi je po notatce. */}
+                  {(
+                    [
+                      { way: "left", icon: "arrow_back", name: words.photoLeft },
+                      { way: "right", icon: "arrow_forward", name: words.photoRight },
+                      { way: "up", icon: "arrow_upward", name: words.photoUp },
+                      { way: "down", icon: "arrow_downward", name: words.photoDown },
+                    ] as const
+                  ).map((choice) => (
                     <button
+                      key={choice.way}
                       type="button"
                       className="compact icon-only"
-                      title={words.removePhotoFromNote}
-                      aria-label={words.removePhotoFromNote}
-                      onClick={() => removeBlock(index)}
+                      title={choice.name}
+                      aria-label={choice.name}
+                      disabled={!canMove(index, choice.way)}
+                      onClick={() => movePhoto(index, choice.way)}
                     >
-                      <Icon name="hide_image" />
+                      <Icon name={choice.icon} />
                     </button>
-                  </div>
-                );
-              })}
+                  ))}
+
+                  <span className="small" style={{ flex: 1 }}>
+                    {chosen.target.startsWith("assets/")
+                      ? chosen.target.slice("assets/".length)
+                      : chosen.target}
+                  </span>
+                  <button
+                    type="button"
+                    className="compact icon-only"
+                    title={words.removePhotoFromNote}
+                    aria-label={words.removePhotoFromNote}
+                    onClick={() => removeBlock(index)}
+                  >
+                    <Icon name="hide_image" />
+                  </button>
+                </div>
+              ) : null}
             </div>
           );
         })}

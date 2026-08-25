@@ -365,6 +365,13 @@ export type Words = {
   photoPlacement: string;
   photoBeside: string;
   photoOwnLine: string;
+  photoChoose: string;
+  photoUnchoose: string;
+  photoMove: string;
+  photoLeft: string;
+  photoRight: string;
+  photoUp: string;
+  photoDown: string;
   autosaveHint: string;
   autosaveOffHint: string;
 
@@ -1509,6 +1516,13 @@ const pl: Words = {
   photoPlacement: "Ułożenie wiersza ze zdjęciami",
   photoBeside: "Obok poprzedniego",
   photoOwnLine: "Od nowego wiersza",
+  photoChoose: "Wybierz zdjęcie",
+  photoUnchoose: "Odznacz zdjęcie",
+  photoMove: "Przeciągnij, żeby przesunąć zdjęcie",
+  photoLeft: "Przesuń zdjęcie w lewo",
+  photoRight: "Przesuń zdjęcie w prawo",
+  photoUp: "Przesuń zdjęcie wyżej",
+  photoDown: "Przesuń zdjęcie niżej",
   autosaveHint: "Notatka zapisuje się sama, kiedy przestaniesz pisać.",
   autosaveOffHint: "Autozapis jest wyłączony. Zapisz przyciskiem albo skrótem Ctrl+S.",
 
@@ -2822,6 +2836,13 @@ const en: Words = {
   photoPlacement: "Placement of the photo row",
   photoBeside: "Next to the one above",
   photoOwnLine: "On a new line",
+  photoChoose: "Choose the photo",
+  photoUnchoose: "Deselect the photo",
+  photoMove: "Drag to move the photo",
+  photoLeft: "Move the photo left",
+  photoRight: "Move the photo right",
+  photoUp: "Move the photo up",
+  photoDown: "Move the photo down",
   autosaveHint: "The note saves itself when you stop writing.",
   autosaveOffHint: "Autosave is off. Save with the button or Ctrl+S.",
 

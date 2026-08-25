@@ -358,6 +358,190 @@ export function textBlockRows(blocks: TextBlock[]): number[][] {
   return rows;
 }
 
+/* ------------------------------------------------------------------ */
+/* Przesuwanie zdjęcia                                                  */
+/* ------------------------------------------------------------------ */
+
+/** Notatka po przesunięciu zdjęcia i nowe miejsce tego zdjęcia. */
+export type PhotoMove = { blocks: TextBlock[]; index: number };
+
+/** Kierunek, w którym zdjęcie idzie od jednego przesunięcia. */
+export type PhotoNudge = "left" | "right" | "up" | "down";
+
+/** Czy to sam kawałek do pisania, bez ani jednego znaku. */
+function isSpacer(block: TextBlock | undefined): boolean {
+  return block?.kind === "text" && block.text === "";
+}
+
+/**
+ * Zdjęcie stojące nad tym - albo -1, gdy nad nim zdjęcia nie ma.
+ *
+ * Przy każdym zdjęciu zostaje kawałek do pisania, także pusty (jest w nim
+ * gdzie kliknąć, żeby dopisać zdanie), więc dwa zdjęcia jedno pod drugim mają
+ * między sobą pusty blok. Dla układania wiersza on się nie liczy.
+ */
+function photoAbove(blocks: TextBlock[], index: number): number {
+  if (blocks[index]?.kind !== "image") return -1;
+  let at = index - 1;
+  while (at >= 0 && isSpacer(blocks[at])) at -= 1;
+  return blocks[at]?.kind === "image" ? at : -1;
+}
+
+/** Czy zdjęcie ma nad sobą inne zdjęcie, obok którego może stanąć. */
+export function canStandBeside(blocks: TextBlock[], index: number): boolean {
+  return photoAbove(blocks, index) >= 0;
+}
+
+/** Czy zdjęcie stoi w wierszu z innymi - czyli czy ma z czego zejść. */
+export function standsInRow(blocks: TextBlock[], index: number): boolean {
+  const block = blocks[index];
+  if (block?.kind !== "image") return false;
+  if (block.beside) return true;
+  const next = blocks[index + 1];
+  return next?.kind === "image" && next.beside;
+}
+
+/**
+ * Stawia zdjęcie obok poprzedniego albo odsuwa je do własnego wiersza.
+ *
+ * Przy dołączeniu zdjęcie bierze ułożenie wiersza, do którego wchodzi -
+ * ułożenie ma cały wiersz, a nie pojedyncze zdjęcie - i przeprowadza się tuż
+ * za sąsiada. Puste kawałki do pisania stojące między nimi przepadają: w tym
+ * samym wierszu nie ma dla nich miejsca.
+ *
+ * Zdjęcie stojące obok poprzedniego po prostu z wiersza wychodzi. Kiedy to ono
+ * wiersz ZACZYNA, z wiersza schodzi to, co stoi za nim - inaczej pierwszego
+ * zdjęcia nie dałoby się odsunąć od reszty, bo znacznik „stoję obok" ma
+ * sąsiad, a nie ono.
+ */
+export function setPhotoBeside(
+  blocks: TextBlock[],
+  index: number,
+  beside: boolean,
+): PhotoMove {
+  const block = blocks[index];
+  const stay = { blocks, index };
+  if (block?.kind !== "image") return stay;
+
+  if (beside) {
+    const above = photoAbove(blocks, index);
+    if (above < 0) return stay;
+    const before = blocks[above];
+    if (before.kind !== "image") return stay;
+    // Między zdjęciami stoją już tylko puste kawałki do pisania - photoAbove
+    // przeszedł przez nie po drodze.
+    const moved = blocks.filter((_, at) => at <= above || at >= index);
+    return {
+      blocks: moved.map((other, at) =>
+        at === above + 1 && other.kind === "image"
+          ? { ...other, beside: true, align: before.align }
+          : other,
+      ),
+      index: above + 1,
+    };
+  }
+
+  const leaving = block.beside ? index : index + 1;
+  const target = blocks[leaving];
+  if (target?.kind !== "image" || !target.beside) return stay;
+  return {
+    blocks: blocks.map((other, at) =>
+      at === leaving && other.kind === "image" ? { ...other, beside: false } : other,
+    ),
+    index,
+  };
+}
+
+/**
+ * Numer wiersza dla każdego bloku - po samym bloku, nie po jego miejscu
+ * w spisie. Po przesunięciu zdjęcia znacznik „stoję obok poprzedniego"
+ * przestaje pasować do nowego sąsiedztwa: pierwsze zdjęcie wiersza mogło
+ * wyjechać wyżej, a to, co po nim zostało, wisiałoby przy akapicie. Numery
+ * zdjęte PRZED zmianą mówią, co naprawdę stało razem.
+ */
+function rowNumbers(blocks: TextBlock[]): Map<TextBlock, number> {
+  const numbers = new Map<TextBlock, number>();
+  let row = 0;
+  blocks.forEach((block, index) => {
+    const together =
+      block.kind === "image" && block.beside && blocks[index - 1]?.kind === "image";
+    if (!together) row += 1;
+    numbers.set(block, row);
+  });
+  return numbers;
+}
+
+/** Znaczniki wiersza dopasowane do nowego sąsiedztwa. */
+function tidyRows(blocks: TextBlock[], rows: Map<TextBlock, number>): TextBlock[] {
+  return blocks.map((block, index) => {
+    if (block.kind !== "image") return block;
+    const before = blocks[index - 1];
+    const together = before?.kind === "image" && rows.get(before) === rows.get(block);
+    return block.beside === together ? block : { ...block, beside: together };
+  });
+}
+
+/**
+ * Zdjęcie o jeden blok wyżej albo niżej, ze znacznikami wiersza po ruchu.
+ * Puste kawałki do pisania zdjęcie przeskakuje: samo przejście nad pustym
+ * blokiem nic by w treści notatki nie zmieniło, więc ruch wyglądałby na
+ * nieudany.
+ */
+function movePhoto(blocks: TextBlock[], from: number, up: boolean): PhotoMove {
+  const step = up ? -1 : 1;
+  let to = from + step;
+  while (to >= 0 && to < blocks.length && isSpacer(blocks[to])) to += step;
+  if (to < 0 || to >= blocks.length) return { blocks, index: from };
+
+  const rows = rowNumbers(blocks);
+  const moved = blocks.slice();
+  const [taken] = moved.splice(from, 1);
+  moved.splice(to, 0, taken);
+  return { blocks: tidyRows(moved, rows), index: to };
+}
+
+/**
+ * Zdjęcie przesunięte o jedno miejsce w podanym kierunku - myszą, strzałką
+ * z paska albo strzałką z klawiatury. To samo robi zdjęcie przeciągnięte
+ * palcem w aplikacji (Blocks.nudgePhoto), więc notatkę układa się tak samo
+ * tu i tam.
+ *
+ * Wiersz ze zdjęciami leży w poprzek, a notatka w pionie, więc kierunek
+ * znaczy w nim co innego:
+ *
+ * - w bok, mając sąsiada w wierszu: zamiana miejscami z tym sąsiadem;
+ * - w prawo, stojąc samo pod zdjęciem: wchodzi do jego wiersza, obok niego;
+ * - w pionie, stojąc w wierszu z innymi: schodzi do własnego wiersza;
+ * - w pionie, stojąc samo: idzie o jeden blok wyżej albo niżej.
+ */
+export function nudgePhoto(
+  blocks: TextBlock[],
+  index: number,
+  nudge: PhotoNudge,
+): PhotoMove {
+  const stay = { blocks, index };
+  if (blocks[index]?.kind !== "image") return stay;
+  const row = textBlockRows(blocks).find((group) => group.includes(index)) ?? [index];
+  const inside = row.indexOf(index);
+  const alone = row.length === 1;
+
+  switch (nudge) {
+    case "left":
+      return inside > 0 ? movePhoto(blocks, index, true) : stay;
+    case "right":
+      if (inside < row.length - 1) return movePhoto(blocks, index, false);
+      return alone ? setPhotoBeside(blocks, index, true) : stay;
+    case "up":
+      return alone ? movePhoto(blocks, index, true) : setPhotoBeside(blocks, index, false);
+    case "down":
+      return alone
+        ? movePhoto(blocks, index, false)
+        : setPhotoBeside(blocks, index, false);
+    default:
+      return stay;
+  }
+}
+
 /**
  * Skleja bloki z powrotem w treść notatki. Puste bloki tekstu przepadają, bo
  * są tylko miejscem do pisania - notatka nie ma przez nie tyć o puste wiersze

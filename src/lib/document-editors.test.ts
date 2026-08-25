@@ -31,10 +31,14 @@ import {
   TEXT_LARGEST_SIZE,
   TEXT_SMALLEST_SIZE,
   buildTextNoteContent,
+  canStandBeside,
   joinTextBlocks,
+  nudgePhoto,
   persistFontSize,
   readImageAlt,
+  setPhotoBeside,
   splitTextBlocks,
+  standsInRow,
   writeImageAlt,
   storedFontSize,
   textAppearanceFromContent,
@@ -472,6 +476,99 @@ describe("bloki treści tekstowej", () => {
       { kind: "text", text: "" },
     ]);
     expect(joined).toBe("![zdjęcie](assets/kot.gif)");
+  });
+});
+
+/*
+  Przesuwanie zdjęcia. To samo robi zdjęcie przeciągnięte palcem w aplikacji
+  (Blocks.nudgePhoto i BlocksTest), więc jedno i drugie musi układać notatkę
+  tak samo - inaczej po synchronizacji wiersz ze zdjęciami wyglądałby inaczej
+  na tablecie, a inaczej w panelu.
+*/
+describe("przesuwanie zdjęcia", () => {
+  const BESIDE = "![a|25%](assets/a.png) ![b|25%](assets/b.png)";
+  const STACKED = "![a|25%](assets/a.png)\n![b|25%](assets/b.png)";
+
+  /** Numery bloków ze zdjęciami - notatka ma między nimi kawałki do pisania. */
+  function photos(blocks: ReturnType<typeof splitTextBlocks>): number[] {
+    return blocks.flatMap((block, at) => (block.kind === "image" ? [at] : []));
+  }
+
+  it("pierwsze zdjęcie wiersza też da się odsunąć", () => {
+    // Znacznik „stoję obok" ma sąsiad, nie pierwsze zdjęcie - bez tego
+    // pierwszego zdjęcia nie dałoby się w ogóle odsunąć od reszty.
+    const blocks = splitTextBlocks(BESIDE);
+    const first = photos(blocks)[0];
+
+    expect(standsInRow(blocks, first)).toBe(true);
+    expect(joinTextBlocks(setPhotoBeside(blocks, first, false).blocks)).toBe(STACKED);
+  });
+
+  it("przesunięcie w bok zamienia zdjęcia miejscami w wierszu", () => {
+    const blocks = splitTextBlocks(BESIDE);
+    const first = photos(blocks)[0];
+
+    expect(joinTextBlocks(nudgePhoto(blocks, first, "right").blocks)).toBe(
+      "![b|25%](assets/b.png) ![a|25%](assets/a.png)",
+    );
+    // Skrajne zdjęcie nie ma się z kim zamienić w tę stronę.
+    expect(nudgePhoto(blocks, first, "left").blocks).toBe(blocks);
+  });
+
+  it("przesunięcie w prawo stawia zdjęcie obok tego nad nim", () => {
+    /*
+      Między zdjęciami stojącymi jedno pod drugim zostaje pusty kawałek do
+      pisania. Dla wiersza się nie liczy - inaczej „obok poprzedniego" nie
+      działałoby ani razu, bo tuż nad zdjęciem stałby zawsze kawałek tekstu.
+    */
+    const blocks = splitTextBlocks(STACKED);
+    const second = photos(blocks)[1];
+
+    expect(canStandBeside(blocks, second)).toBe(true);
+    const beside = nudgePhoto(blocks, second, "right");
+    expect(joinTextBlocks(beside.blocks)).toBe(BESIDE);
+    // Zdjęcie przeprowadziło się tuż za sąsiada, więc jego numer się zmienił.
+    expect(beside.blocks[beside.index]).toMatchObject({
+      target: "assets/b.png",
+      beside: true,
+    });
+  });
+
+  it("przesunięcie w pionie wyprowadza zdjęcie z wiersza", () => {
+    const blocks = splitTextBlocks(BESIDE);
+    const second = photos(blocks)[1];
+
+    expect(joinTextBlocks(nudgePhoto(blocks, second, "down").blocks)).toBe(STACKED);
+  });
+
+  it("zdjęcie przeskakuje pusty kawałek do pisania", () => {
+    // Samo przejście nad pustym blokiem nic by w treści nie zmieniło, więc
+    // ruch wyglądałby na nieudany.
+    const blocks = splitTextBlocks(STACKED);
+    const second = photos(blocks)[1];
+
+    expect(joinTextBlocks(nudgePhoto(blocks, second, "up").blocks)).toBe(
+      "![b|25%](assets/b.png)\n![a|25%](assets/a.png)",
+    );
+  });
+
+  it("przesunięcie w pionie samotnego zdjęcia przenosi je po notatce", () => {
+    const blocks = splitTextBlocks("Tekst\n![a|25%](assets/a.png)");
+    const photo = photos(blocks)[0];
+
+    expect(joinTextBlocks(nudgePhoto(blocks, photo, "up").blocks)).toBe(
+      "![a|25%](assets/a.png)\nTekst",
+    );
+  });
+
+  it("samotne zdjęcie bez sąsiada nad sobą nie ma dokąd pójść w bok", () => {
+    const blocks = splitTextBlocks("Tekst\n![a|25%](assets/a.png)");
+    const photo = photos(blocks)[0];
+
+    expect(standsInRow(blocks, photo)).toBe(false);
+    expect(canStandBeside(blocks, photo)).toBe(false);
+    expect(nudgePhoto(blocks, photo, "right").blocks).toBe(blocks);
+    expect(nudgePhoto(blocks, photo, "left").blocks).toBe(blocks);
   });
 });
 

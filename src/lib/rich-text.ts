@@ -468,15 +468,26 @@ function imageHtml(
     do treści notatki.
   */
   shown = node.width,
+  /*
+    Zdjęcie stojące w swoim wierszu bierze szerokość ZAWSZE, także 100%:
+    „na całą szerokość" znaczy szerokość notatki, tak samo jak na tablecie.
+    Bez tego małe zdjęcie przy 100% było mniejsze niż przy 90%, bo przy 100%
+    zostawało przy swoich pikselach. Zdjęcie wpisane w środek zdania zostaje
+    takie, jakie jest, dopóki ktoś nie da mu rozmiaru.
+  */
+  ownLine = false,
 ): string {
   const source = options.imageUrl ? options.imageUrl(node.target) : node.target;
   const target =
     source === node.target ? "" : ` data-target="${escapeHtml(node.target)}"`;
   // W atrybucie alt zostaje sam opis; szerokość idzie w styl, bo kanoniczny
   // dopisek `|60%` nie jest tekstem dla człowieka - patrz text-note.ts.
-  const size = shown < IMAGE_FULL_WIDTH ? ` style="width:${Math.round(shown)}%"` : "";
+  const size =
+    ownLine || shown < IMAGE_FULL_WIDTH ? ` style="width:${Math.round(shown)}%"` : "";
   const stored =
-    node.width < IMAGE_FULL_WIDTH ? ` data-width="${Math.round(node.width)}"` : "";
+    ownLine || node.width < IMAGE_FULL_WIDTH
+      ? ` data-width="${Math.round(node.width)}"`
+      : "";
   const align = node.align && node.align !== "left" ? ` data-align="${node.align}"` : "";
   return `<img src="${escapeHtml(safeUrl(source))}" alt="${escapeHtml(node.alt)}"${target}${stored}${align}${size}>`;
 }
@@ -497,7 +508,7 @@ function imageRowHtml(photos: ImageOnLine[], options: HtmlOptions): string {
   const align = photos[0].align;
   const mark = align === "left" ? "" : ` data-align="${align}"`;
   const images = photos
-    .map((photo, index) => imageHtml(photo, options, shown[index]))
+    .map((photo, index) => imageHtml(photo, options, shown[index], true))
     .join(" ");
   return `<p class="photo-row"${mark}>${images}</p>`;
 }

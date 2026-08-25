@@ -1419,6 +1419,24 @@ textarea.mono-field {
   border: var(--hairline) solid var(--rule);
   border-radius: var(--radius);
   background: var(--sheet);
+  /* Zdjęcie wybiera się kliknięciem - dopiero wtedy ma pasek z przyciskami. */
+  cursor: pointer;
+}
+
+/*
+  Wybrane zdjęcie ma obwódkę, żeby było widać, którego dotyczy pasek pod
+  wierszem. Ramka idzie cieniem, a nie grubszą kreską: grubsza przesuwałaby
+  zdjęcie o piksel przy każdym kliknięciu.
+*/
+.note-photo-row img.chosen {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+  cursor: grab;
+  /*
+    Palcem przesuwa się dopiero wybrane zdjęcie. Gdyby brało dotyk zawsze,
+    strony nie dałoby się przewinąć w miejscu, gdzie stoi.
+  */
+  touch-action: none;
 }
 
 /*

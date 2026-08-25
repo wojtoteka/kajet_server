@@ -90,6 +90,28 @@ describe("znaczniki w wierszu", () => {
     expect(htmlToMarkdown(html)).toBe("![a|75%](assets/a.png) ![b|75%](assets/b.png)");
   });
 
+  it("zdjęcie na całą szerokość bierze szerokość notatki, nie swoje piksele", () => {
+    /*
+      100% ma znaczyć „na całą szerokość notatki", tak samo jak na tablecie.
+      Wcześniej przy 100% zdjęcie nie dostawało szerokości w ogóle i zostawało
+      przy swoich pikselach, więc małe zdjęcie po zmniejszeniu do 90% ROSŁO.
+    */
+    const html = markdownToHtml("![kot](assets/kot.png)");
+    expect(html).toBe(
+      '<p class="photo-row"><img src="assets/kot.png" alt="kot" data-width="100" style="width:100%"></p>',
+    );
+    // Pełna szerokość nie potrzebuje dopisku w opisie - notatka zostaje czysta.
+    expect(htmlToMarkdown(html)).toBe("![kot](assets/kot.png)");
+  });
+
+  it("zdjęcie wpisane w zdanie zostaje przy swoim rozmiarze", () => {
+    // Szerokość dostaje zdjęcie stojące w swoim wierszu. Wpisane w środek
+    // zdania zostaje takie, jakie jest, dopóki ktoś nie da mu rozmiaru.
+    const html = markdownToHtml("Tu ![kot](assets/kot.png) siedzi");
+    expect(html).toBe('<p>Tu <img src="assets/kot.png" alt="kot"> siedzi</p>');
+    expect(htmlToMarkdown(html)).toBe("Tu ![kot](assets/kot.png) siedzi");
+  });
+
   it("odnośnik javascript: nie ma prawa nigdzie zaprowadzić", () => {
     // Notatkę można udostępnić obcej osobie - podgląd rysuje ten sam HTML.
     expect(markdownToHtml("[klik](javascript:alert(1))")).toContain('href="#"');
