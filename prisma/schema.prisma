@@ -572,3 +572,32 @@ model AiCall {
   @@index([userId, createdAt])
   @@map("ai_calls")
 }
+
+// --- Zapory ---
+
+/// Licznik prób dla zapór: logowania, raportów o awariach, pytania o wersję
+/// aplikacji, sprawdzania captchy i uruchamiania kodu.
+///
+/// Liczniki siedziały kiedyś w pamięci procesu. Restart je zerował, więc
+/// kwadrans przerwy po pięciu błędnych hasłach kończył się przy najbliższym
+/// wdrożeniu, a gdyby serwer chodził kiedyś w dwóch procesach, każdy liczyłby
+/// po swojemu i wszystkie granice byłyby podwójne.
+///
+/// Wiersze są jednorazowe i nic po nich nie zostaje: sprząta je sweeper
+/// z lib/rate-limit.ts, a skasowanie któregokolwiek najwyżej daruje komuś
+/// przerwę.
+model RateLimit {
+  /// Co jest liczone: rodzaj zapory i to, czego dotyczy - na przykład
+  /// „logowanie:mail:kto@example.com" albo „awarie:203.0.113.7". Adres
+  /// e-mail bywa długi, a klucz główny przy utf8mb4 mieści 191 znaków,
+  /// więc klucze dłuższe niż to skraca się z doklejonym odciskiem.
+  bucket    String   @id @db.VarChar(190)
+  /// Ile prób doliczono w tym oknie.
+  hits      Int      @default(0)
+  /// Początek okna. Wszystko starsze niż okno zaczyna liczenie od nowa.
+  startedAt DateTime @default(now())
+
+  /// Sprzątanie przeterminowanych.
+  @@index([startedAt])
+  @@map("rate_limits")
+}

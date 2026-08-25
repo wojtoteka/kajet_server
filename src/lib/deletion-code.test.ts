@@ -3,7 +3,6 @@ import {
   MAX_ATTEMPTS,
   clearDeletionTries,
   deletionTryAllowed,
-  forgetAllDeletionTries,
   formatCode,
   issueDeletionCode,
   noteFailedDeletionTry,
@@ -11,13 +10,16 @@ import {
   useDeletionCode,
 } from "./deletion-code";
 
-vi.mock("@/lib/prisma", () => ({
+vi.mock("@/lib/prisma", async () => ({
   prisma: {
     verificationToken: {
       deleteMany: vi.fn(),
       create: vi.fn(),
       findFirst: vi.fn(),
     },
+    // Licznik nietrafionych prób siedzi w bazie, więc podstawiona baza musi
+    // umieć także jego tabelę.
+    ...(await import("./rate-limit.fake")).fakeRateLimits(),
   },
 }));
 
@@ -27,9 +29,9 @@ const deleteMany = vi.mocked(prisma.verificationToken.deleteMany);
 const create = vi.mocked(prisma.verificationToken.create);
 const findFirst = vi.mocked(prisma.verificationToken.findFirst);
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
-  forgetAllDeletionTries();
+  await prisma.rateLimit.deleteMany({});
   deleteMany.mockResolvedValue({ count: 0 } as never);
   create.mockResolvedValue({} as never);
 });
@@ -126,13 +128,13 @@ describe("useDeletionCode", () => {
 });
 
 describe("zapora przed zgadywaniem kodu", () => {
-  it("pierwsze próby przechodzą, po pięciu nietrafionych zamyka", () => {
+  it("pierwsze próby przechodzą, po pięciu nietrafionych zamyka", async () => {
     for (let i = 0; i < MAX_ATTEMPTS; i += 1) {
-      expect(deletionTryAllowed("u1").allowed).toBe(true);
-      noteFailedDeletionTry("u1");
+      expect((await deletionTryAllowed("u1")).allowed).toBe(true);
+      await noteFailedDeletionTry("u1");
     }
 
-    const gate = deletionTryAllowed("u1");
+    const gate = await deletionTryAllowed("u1");
     expect(gate.allowed).toBe(false);
     if (!gate.allowed) {
       expect(gate.retryInSeconds).toBeGreaterThan(0);
@@ -140,18 +142,29 @@ describe("zapora przed zgadywaniem kodu", () => {
     }
   });
 
-  it("licznik jest osobny dla każdego konta", () => {
-    for (let i = 0; i < MAX_ATTEMPTS; i += 1) noteFailedDeletionTry("u1");
+  it("licznik jest osobny dla każdego konta", async () => {
+    for (let i = 0; i < MAX_ATTEMPTS; i += 1) await noteFailedDeletionTry("u1");
 
-    expect(deletionTryAllowed("u1").allowed).toBe(false);
-    expect(deletionTryAllowed("u2").allowed).toBe(true);
+    expect((await deletionTryAllowed("u1")).allowed).toBe(false);
+    expect((await deletionTryAllowed("u2")).allowed).toBe(true);
   });
 
-  it("trafiony kod zeruje licznik", () => {
-    for (let i = 0; i < MAX_ATTEMPTS; i += 1) noteFailedDeletionTry("u1");
-    expect(deletionTryAllowed("u1").allowed).toBe(false);
+  it("trafiony kod zeruje licznik", async () => {
+    for (let i = 0; i < MAX_ATTEMPTS; i += 1) await noteFailedDeletionTry("u1");
+    expect((await deletionTryAllowed("u1")).allowed).toBe(false);
 
-    clearDeletionTries("u1");
-    expect(deletionTryAllowed("u1").allowed).toBe(true);
+    await clearDeletionTries("u1");
+    expect((await deletionTryAllowed("u1")).allowed).toBe(true);
+  });
+
+  it("przerwa przeżywa restart serwera", async () => {
+    // Licznik siedzi w bazie, a nie w pamięci procesu - inaczej kwadrans
+    // przerwy kończyłby się przy najbliższym wdrożeniu.
+    for (let i = 0; i < MAX_ATTEMPTS; i += 1) await noteFailedDeletionTry("u1");
+
+    vi.resetModules();
+    const restarted = await import("./deletion-code");
+
+    expect((await restarted.deletionTryAllowed("u1")).allowed).toBe(false);
   });
 });

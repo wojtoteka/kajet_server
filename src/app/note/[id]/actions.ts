@@ -636,7 +636,7 @@ export async function runCodeAction(
   if (!language) return { error: (await currentWords()).actPickLanguage };
   if (!code.trim()) return { error: (await currentWords()).apiNothingToRun };
 
-  const limit = checkLimit(user.id, await currentWords());
+  const limit = await checkLimit(user.id, await currentWords());
   if (!limit.allowed) return { error: limit.message };
 
   const slot = takeSlot(await currentWords());

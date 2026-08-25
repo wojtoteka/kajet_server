@@ -1,4 +1,5 @@
 import { DEFAULT_LANGUAGE, tooManySignInsIn, words as dictionary, type Words } from "./i18n";
+import { bucket, forgetAttempts, noteAttempts, readAttempts } from "./rate-limit";
 /*
   Zapora przed zgadywaniem hasła.
 
@@ -8,20 +9,13 @@ import { DEFAULT_LANGUAGE, tooManySignInsIn, words as dictionary, type Words } f
   próbuje wielu kont, zatrzymują się tak samo. Udane logowanie kasuje licznik,
   więc pomyłka we własnym haśle nie ma żadnych skutków.
 
-  Licznik siedzi w pamięci procesu - tak samo jak limit uruchomień kodu
-  (run-limits.ts). Kajet chodzi jako jeden serwer, a restart i tak przerywa
-  każdą próbę zgadywania.
+  Licznik siedzi w bazie (rate-limit.ts), a nie w pamięci procesu - przerwa ma
+  przeżyć restart serwera, inaczej kwadrans kończyłby się przy najbliższym
+  wdrożeniu.
 */
 
 export const MAX_ATTEMPTS = 5;
 export const WINDOW_MS = 15 * 60 * 1000;
-
-type Window = { start: number; count: number };
-
-const failures = new Map<string, Window>();
-
-const CLEANUP_EVERY = 200;
-let sinceCleanup = 0;
 
 export type SignInGate =
   | { allowed: true }
@@ -29,8 +23,8 @@ export type SignInGate =
 
 /** Klucze, na których stoi licznik dla jednej próby logowania. */
 function keysFor(email: string, from: string | null): string[] {
-  const keys = [`mail:${email.trim().toLowerCase()}`];
-  if (from) keys.push(`skad:${from}`);
+  const keys = [bucket("logowanie:mail", email.trim().toLowerCase())];
+  if (from) keys.push(bucket("logowanie:skad", from));
   return keys;
 }
 
@@ -74,7 +68,7 @@ export function callerAddress(source: Request | Headers): string | null {
 }
 
 /** Czy wolno teraz próbować. Nic nie zapisuje - samo pytanie. */
-export function signInAllowed(
+export async function signInAllowed(
   email: string,
   from: string | null,
   /*
@@ -82,24 +76,17 @@ export function signInAllowed(
     słownik jest dla testów jednostkowych, które o język nie pytają.
   */
   words: Words = dictionary(DEFAULT_LANGUAGE),
-): SignInGate {
+): Promise<SignInGate> {
   const now = Date.now();
-  cleanupSometimes(now);
+  const counters = await readAttempts(keysFor(email, from), WINDOW_MS);
 
   let longestWait = 0;
-  for (const key of keysFor(email, from)) {
-    const window = failures.get(key);
-    if (!window) continue;
-    if (now - window.start >= WINDOW_MS) {
-      failures.delete(key);
-      continue;
-    }
-    if (window.count >= MAX_ATTEMPTS) {
-      longestWait = Math.max(longestWait, WINDOW_MS - (now - window.start));
-    }
+  for (const counter of counters) {
+    if (counter.hits < MAX_ATTEMPTS) continue;
+    longestWait = Math.max(longestWait, counter.startedAt.getTime() + WINDOW_MS - now);
   }
 
-  if (longestWait === 0) return { allowed: true };
+  if (longestWait <= 0) return { allowed: true };
 
   const retryInSeconds = Math.ceil(longestWait / 1000);
   const minutes = Math.ceil(retryInSeconds / 60);
@@ -111,35 +98,11 @@ export function signInAllowed(
 }
 
 /** Nieudana próba - licznik rośnie. */
-export function noteFailedSignIn(email: string, from: string | null): void {
-  const now = Date.now();
-  for (const key of keysFor(email, from)) {
-    const window = failures.get(key);
-    if (!window || now - window.start >= WINDOW_MS) {
-      failures.set(key, { start: now, count: 1 });
-    } else {
-      window.count += 1;
-    }
-  }
+export async function noteFailedSignIn(email: string, from: string | null): Promise<void> {
+  await noteAttempts(keysFor(email, from), WINDOW_MS);
 }
 
 /** Udane logowanie - licznik od zera, żeby własna pomyłka nic nie kosztowała. */
-export function clearFailedSignIns(email: string, from: string | null): void {
-  for (const key of keysFor(email, from)) failures.delete(key);
-}
-
-function cleanupSometimes(now: number): void {
-  sinceCleanup += 1;
-  if (sinceCleanup < CLEANUP_EVERY) return;
-  sinceCleanup = 0;
-
-  for (const [key, window] of failures) {
-    if (now - window.start >= WINDOW_MS) failures.delete(key);
-  }
-}
-
-/** Do testów: czyści całą pamięć licznika. */
-export function forgetAllSignInFailures(): void {
-  failures.clear();
-  sinceCleanup = 0;
+export async function clearFailedSignIns(email: string, from: string | null): Promise<void> {
+  await forgetAttempts(keysFor(email, from));
 }

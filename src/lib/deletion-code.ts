@@ -10,12 +10,13 @@
   hasła (`email_tokens`), pod znacznikiem `delete:<adres>`. Wysłanie nowego
   kodu unieważnia poprzedni, a zużyty znika od razu.
 
-  Licznik nietrafionych prób siedzi w pamięci procesu - tak samo jak zapora
-  logowania (signin-limits.ts) i limit uruchomień kodu (run-limits.ts).
+  Licznik nietrafionych prób siedzi w bazie (rate-limit.ts) razem z licznikami
+  wszystkich pozostałych zapór - przerwa ma przeżyć restart serwera.
 */
 
 import { randomInt } from "node:crypto";
 import { prisma } from "./prisma";
+import { bucket, forgetAttempts, noteAttempt, readAttempts, retryInSeconds } from "./rate-limit";
 
 /*
   Alfabet bez znaków, które ludzie mylą przy przepisywaniu: bez O i zera, bez
@@ -115,48 +116,26 @@ export async function forgetDeletionCode(email: string): Promise<void> {
 
 // --- Zapora przed zgadywaniem kodu ---
 
-type Window = { start: number; count: number };
-
-const tries = new Map<string, Window>();
-
 export type CodeGate = { allowed: true } | { allowed: false; retryInSeconds: number };
 
+function triesFor(userId: string): string {
+  return bucket("kasowanie", userId);
+}
+
 /** Czy wolno teraz spróbować. Nic nie zapisuje - samo pytanie. */
-export function deletionTryAllowed(userId: string): CodeGate {
-  const now = Date.now();
-  const window = tries.get(userId);
-  if (!window) return { allowed: true };
+export async function deletionTryAllowed(userId: string): Promise<CodeGate> {
+  const [counter] = await readAttempts([triesFor(userId)], WINDOW_MS);
+  if (!counter || counter.hits < MAX_ATTEMPTS) return { allowed: true };
 
-  if (now - window.start >= WINDOW_MS) {
-    tries.delete(userId);
-    return { allowed: true };
-  }
-
-  if (window.count >= MAX_ATTEMPTS) {
-    return {
-      allowed: false,
-      retryInSeconds: Math.ceil((WINDOW_MS - (now - window.start)) / 1000),
-    };
-  }
-
-  return { allowed: true };
+  return { allowed: false, retryInSeconds: retryInSeconds(counter, WINDOW_MS) };
 }
 
-export function noteFailedDeletionTry(userId: string): void {
-  const now = Date.now();
-  const window = tries.get(userId);
-  if (!window || now - window.start >= WINDOW_MS) {
-    tries.set(userId, { start: now, count: 1 });
-    return;
-  }
-  window.count += 1;
+/** Źle przepisany kod - licznik rośnie. */
+export async function noteFailedDeletionTry(userId: string): Promise<void> {
+  await noteAttempt(triesFor(userId), WINDOW_MS);
 }
 
-export function clearDeletionTries(userId: string): void {
-  tries.delete(userId);
-}
-
-/** Do testów: czyści całą pamięć licznika. */
-export function forgetAllDeletionTries(): void {
-  tries.clear();
+/** Trafiony kod - licznik od zera. */
+export async function clearDeletionTries(userId: string): Promise<void> {
+  await forgetAttempts([triesFor(userId)]);
 }

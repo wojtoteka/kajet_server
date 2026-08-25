@@ -38,7 +38,7 @@ export const POST = wrapApi(async (request: Request) => {
 
   // Pięć nieudanych prób pod rząd zamyka logowanie na kwadrans - żeby nie dało
   // się zgadywać hasła w nieskończoność.
-  const gate = signInAllowed(email, from, await apiWords());
+  const gate = await signInAllowed(email, from, await apiWords());
   if (!gate.allowed) {
     return error("too-many-attempts", gate.message, 429, {
       "Retry-After": String(gate.retryInSeconds),
@@ -50,7 +50,7 @@ export const POST = wrapApi(async (request: Request) => {
   // The same answer for a wrong address and a wrong password. Otherwise it
   // would be possible to check which addresses have accounts.
   if (!user?.passwordHash || !(await bcrypt.compare(password, user.passwordHash))) {
-    noteFailedSignIn(email, from);
+    await noteFailedSignIn(email, from);
     return error("bad-credentials", (await apiWords()).apiWrongCredentials, 401);
   }
 
@@ -64,7 +64,7 @@ export const POST = wrapApi(async (request: Request) => {
     );
   }
 
-  clearFailedSignIns(email, from);
+  await clearFailedSignIns(email, from);
 
   const { token, id } = await issueToken(
     user.id,

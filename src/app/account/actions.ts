@@ -244,12 +244,12 @@ export async function deleteOwnAccount(_previous: Result, data: FormData): Promi
   if (!typed) return { error: (await currentWords()).deletionGiveCode };
 
   // Kod ma osiem znaków, więc bez zapory dałoby się go zgadywać w nieskończoność.
-  const gate = deletionTryAllowed(user.id);
+  const gate = await deletionTryAllowed(user.id);
   if (!gate.allowed) return { error: (await currentWords()).deletionTooManyTries };
 
   const check = await useDeletionCode(user.email, typed);
   if (!check.ok) {
-    noteFailedDeletionTry(user.id);
+    await noteFailedDeletionTry(user.id);
     return {
       error:
         check.reason === "expired"
@@ -258,7 +258,7 @@ export async function deleteOwnAccount(_previous: Result, data: FormData): Promi
     };
   }
 
-  clearDeletionTries(user.id);
+  await clearDeletionTries(user.id);
 
   const removed = await removeAccount(user.id);
   if (!removed) return { error: (await currentWords()).apiMustSignIn };

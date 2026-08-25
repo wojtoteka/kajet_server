@@ -1,54 +1,41 @@
 import { settings } from "./settings";
 import { tooManyRuns } from "./i18n";
 import type { Words } from "./i18n";
+import { bucket, noteAttempt, retryInSeconds } from "./rate-limit";
 
-type Window = { start: number; count: number };
+/*
+  Granice uruchamiania kodu.
 
-const counters = new Map<string, Window>();
+  Dwie różne rzeczy i dlatego dwa różne miejsca:
+
+  - ILE RAZY na minutę wolno jednemu kontu. To liczy się w bazie
+    (rate-limit.ts), żeby przeżyć restart, tak samo jak zapora logowania.
+  - ILE KONTENERÓW chodzi TERAZ na maszynie. To nie jest licznik, tylko stan
+    tego procesu: kontenery odpalił on i to on wie, które jeszcze żyją. W bazie
+    taki wpis zostałby po ubitym procesie na zawsze i zamknąłby uruchamianie
+    kodu wszystkim, dopóki ktoś nie posprzątałby ręcznie.
+*/
 
 const WINDOW_MS = 60_000;
-const CLEANUP_EVERY = 500;
-
-let sinceCleanup = 0;
 
 export type LimitResult =
   | { allowed: true; remaining: number }
   | { allowed: false; retryInSeconds: number; message: string };
 
-export function checkLimit(userId: string, words: Words): LimitResult {
-  const now = Date.now();
-  const limit = settings.code.runsPerMinute;
+export async function checkLimit(userId: string, words: Words): Promise<LimitResult> {
+  const most = settings.code.runsPerMinute;
+  const attempt = await noteAttempt(bucket("kod", userId), WINDOW_MS);
 
-  cleanupSometimes(now);
-
-  const window = counters.get(userId);
-
-  if (!window || now - window.start >= WINDOW_MS) {
-    counters.set(userId, { start: now, count: 1 });
-    return { allowed: true, remaining: limit - 1 };
-  }
-
-  if (window.count >= limit) {
-    const retryIn = Math.ceil((WINDOW_MS - (now - window.start)) / 1000);
+  if (attempt.hits > most) {
+    const retryIn = retryInSeconds(attempt, WINDOW_MS);
     return {
       allowed: false,
       retryInSeconds: retryIn,
-      message: tooManyRuns(words, limit, retryIn),
+      message: tooManyRuns(words, most, retryIn),
     };
   }
 
-  window.count += 1;
-  return { allowed: true, remaining: limit - window.count };
-}
-
-function cleanupSometimes(now: number): void {
-  sinceCleanup += 1;
-  if (sinceCleanup < CLEANUP_EVERY) return;
-  sinceCleanup = 0;
-
-  for (const [id, window] of counters) {
-    if (now - window.start >= WINDOW_MS) counters.delete(id);
-  }
+  return { allowed: true, remaining: most - attempt.hits };
 }
 
 let runningNow = 0;

@@ -27,7 +27,7 @@ export const POST = wrapApi(async (request: Request) => {
   const words = await apiWords();
   const from = callerAddress(request);
 
-  const gate = crashAllowed(from);
+  const gate = await crashAllowed(from);
   if (!gate.allowed) {
     return error("too-often", words.apiCrashTooOften, 429, {
       "retry-after": String(gate.retryInSeconds),

@@ -39,25 +39,25 @@ const providers: NextAuthConfig["providers"] = [
 
       const from = request instanceof Request ? callerAddress(request) : null;
 
-      const gate = signInAllowed(email, from, await apiWords());
+      const gate = await signInAllowed(email, from, await apiWords());
       if (!gate.allowed) throw new TooManySignIns();
 
       const user = await prisma.user.findUnique({ where: { email } });
       // An account created through Google only has no password and cannot be
       // entered this way.
       if (!user?.passwordHash) {
-        noteFailedSignIn(email, from);
+        await noteFailedSignIn(email, from);
         return null;
       }
       if (user.blocked) return null;
 
       const matches = await bcrypt.compare(password, user.passwordHash);
       if (!matches) {
-        noteFailedSignIn(email, from);
+        await noteFailedSignIn(email, from);
         return null;
       }
 
-      clearFailedSignIns(email, from);
+      await clearFailedSignIns(email, from);
 
       await prisma.user.update({
         where: { id: user.id },

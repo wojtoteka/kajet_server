@@ -27,7 +27,7 @@ export async function checkCaptcha(token: string): Promise<boolean> {
     Granice siedzą w lib/captcha-limits.ts.
   */
   if (typeof token !== "string" || !token || token.length > LONGEST_TOKEN) return false;
-  if (!captchaCheckAllowed(callerAddress(await headers()))) return false;
+  if (!(await captchaCheckAllowed(callerAddress(await headers())))) return false;
 
   try {
     const answer = await fetch("https://api.hcaptcha.com/siteverify", {

@@ -34,7 +34,7 @@ const CACHE_HEADERS = {
 };
 
 export const GET = wrapApi(async (request: Request) => {
-  const gate = versionCheckAllowed(callerAddress(request));
+  const gate = await versionCheckAllowed(callerAddress(request));
   if (!gate.allowed) {
     return error("too-often", (await apiWords()).apiVersionTooOften, 429, {
       "retry-after": String(gate.retryInSeconds),

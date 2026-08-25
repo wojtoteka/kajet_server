@@ -27,12 +27,19 @@ const RELEASE = {
 
 async function routeWith(release: unknown) {
   vi.resetModules();
-  vi.doMock("./prisma", () => ({
-    prisma: { appRelease: { findFirst: async () => release } },
-  }));
-  vi.doMock("@/lib/prisma", () => ({
-    prisma: { appRelease: { findFirst: async () => release } },
-  }));
+
+  // Zapora zapytań liczy próby w bazie (rate-limit.ts), więc podstawiona baza
+  // musi umieć i wydania, i liczniki. Tabela liczników zostaje między testami,
+  // tak jak zostaje prawdziwa - stąd czyszczenie na wejściu.
+  const { fakeRateLimits } = await import("./rate-limit.fake");
+  const prisma = {
+    appRelease: { findFirst: async () => release },
+    ...fakeRateLimits(),
+  };
+  await prisma.rateLimit.deleteMany({});
+
+  vi.doMock("./prisma", () => ({ prisma }));
+  vi.doMock("@/lib/prisma", () => ({ prisma }));
   return import("@/app/api/v1/app/latest/route");
 }
 

@@ -51,7 +51,7 @@ export const POST = wrapApi(async (request: Request) => {
     );
   }
 
-  const limit = checkLimit(user.id, await apiWords());
+  const limit = await checkLimit(user.id, await apiWords());
   if (!limit.allowed) {
     return error("too-often", limit.message, 429);
   }
