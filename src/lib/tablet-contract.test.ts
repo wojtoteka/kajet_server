@@ -5,8 +5,13 @@ import { crashBody } from "./crash-report";
 import { LONGEST_REPORT } from "./crash-limits";
 import {
   buildTextNoteContent,
+  joinTextBlocks,
   parseExistingTextDocument,
+  readImageLine,
+  sideBySideWidths,
+  splitTextBlocks,
   textAppearanceFromContent,
+  writeImageLine,
 } from "./text-note";
 
 /**
@@ -176,5 +181,87 @@ describe("tablet contract", () => {
     // Storage in CloudClient.kt declares quota/used as String.
     expect(body.storage.quota).toBe("524288000");
     expect(body.storage.used).toBe("1234");
+  });
+});
+
+
+/**
+ * The photo row is stored in the note body itself, so both sides must read and
+ * write it the same way, character for character. The lines below are the ones
+ * asserted by ImageLinesTest.kt in the app repository (core/model/ImageLines.kt);
+ * when one side changes the notation, both suites must agree.
+ */
+describe("photo row contract", () => {
+  it("reads a row of several photos the way the tablet does", () => {
+    const photos = readImageLine("![a|25%](assets/a.png) ![b|50%](assets/b.png)");
+
+    expect(photos?.map((photo) => photo.target)).toEqual([
+      "assets/a.png",
+      "assets/b.png",
+    ]);
+    expect(photos?.map((photo) => photo.width)).toEqual([25, 50]);
+    expect(photos?.map((photo) => photo.alt)).toEqual(["a", "b"]);
+  });
+
+  it("a photo inside a sentence is not a photo row", () => {
+    expect(readImageLine("Zobacz ![to](assets/a.png) tutaj")).toBeNull();
+    expect(readImageLine("![to](assets/a.png) i jeszcze slowo")).toBeNull();
+    expect(readImageLine("zwykly wiersz")).toBeNull();
+  });
+
+  it("a filename with brackets survives the neighbouring photo", () => {
+    const photos = readImageLine("![a|25%](assets/zdjecie (2).png) ![b|25%](assets/b.png)");
+
+    expect(photos?.map((photo) => photo.target)).toEqual([
+      "assets/zdjecie (2).png",
+      "assets/b.png",
+    ]);
+  });
+
+  it("the placement belongs to the whole row, not to one photo", () => {
+    const photos = readImageLine('![a](assets/a.png "srodek") ![b](assets/b.png)');
+
+    expect(photos?.map((photo) => photo.align)).toEqual(["center", "center"]);
+  });
+
+  it("writing gives back the very same row", () => {
+    const line = '![a|25%](assets/a.png "prawo") ![b|40%](assets/b.png "prawo")';
+
+    expect(writeImageLine(readImageLine(line)!)).toBe(line);
+  });
+
+  it("still reads the old width written in the title", () => {
+    const photos = readImageLine('![z](assets/z.png "50%")');
+
+    expect(photos).toHaveLength(1);
+    expect(photos![0].width).toBe(50);
+    expect(photos![0].align).toBe("left");
+  });
+
+  it("photos wider than the page shrink to the page, the same as on the tablet", () => {
+    // ImageLines.sideBySide(listOf(0.75f, 0.75f), gapShare = 0.02f) in the app.
+    const room = sideBySideWidths([75, 75], 2);
+
+    expect(room[0]).toBeCloseTo(room[1], 5);
+    expect(room[0] + room[1]).toBeCloseTo(98, 5);
+    expect(sideBySideWidths([25, 25], 2)).toEqual([25, 25]);
+  });
+
+  it("a tablet note goes through the web editor unchanged", () => {
+    /*
+      The web editor pulls the body apart into blocks and glues it back on
+      every save. A note written on the tablet has to come out of that
+      character for character - otherwise every visit to the panel would send
+      the tablet a "changed" note.
+    */
+    const note = [
+      "Notatka",
+      "",
+      '![a|25%](assets/a.png "srodek") ![b|25%](assets/b.png "srodek")',
+      "",
+      "Koniec",
+    ].join("\n");
+
+    expect(joinTextBlocks(splitTextBlocks(note))).toBe(note);
   });
 });
