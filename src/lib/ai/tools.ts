@@ -78,7 +78,9 @@ const NARZEDZIE_TEKST: GeminiTool = {
           "Cała treść notatki po zmianie, w markdownie Kajetu (nagłówki tylko #-###). " +
           "Zapisy zdjęć ![opis|60%](assets/plik.png) przepisz bez zmian, razem z dopiskiem " +
           "szerokości - to nie jest tekst do poprawiania. Starszy zapis z tytułem " +
-          '![opis](assets/plik.png "60%") też zostawiasz.',
+          '![opis](assets/plik.png "60%") też zostawiasz. Kilka zdjęć w jednym wierszu ' +
+          "stoi w notatce obok siebie - zostaw je w tym samym wierszu, razem z tytułem " +
+          '"srodek" albo "prawo", który mówi, gdzie stoi cały wiersz.',
       },
       opis: OPIS,
       tytul: TYTUL,

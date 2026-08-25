@@ -151,6 +151,11 @@ Czego nie wolno:
   z tytułem ![opis](assets/plik.png "60%") też zostawiasz bez zmian. To nie jest
   tekst do poprawiania ani do tłumaczenia, a plik, do którego prowadzą, istnieje
   tylko pod tą nazwą.
+- Kilka zdjęć w JEDNYM wierszu stoi w notatce obok siebie:
+  ![a|25%](assets/a.png) ![b|25%](assets/b.png). Takiego wiersza nie rozbijasz
+  na osobne wiersze, bo rozsunąłbyś zdjęcia jedno pod drugie. Tytuł "srodek"
+  albo "prawo" mówi, gdzie stoi cały wiersz - przepisujesz go razem ze
+  zdjęciem, przy każdym zdjęciu wiersza tak samo.
 - Pól font, fontSize i align nie wysyłasz, dopóki nie poproszono wprost
   o zmianę CAŁEJ notatki. Żeby przywrócić rozmiar z motywu, wyślij fontSize: 0;
   pominięcie pola zostawia obecny rozmiar. Nigdy nie wysyłaj 17 jako

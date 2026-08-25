@@ -59,10 +59,19 @@ import {
   clampImageWidth,
   joinTextBlocks,
   persistFontSize,
+  sideBySideWidths,
   splitTextBlocks,
+  textBlockRows,
+  type ImageAlign,
   type TextAppearance,
   type TextBlock,
 } from "@/lib/text-note";
+
+/** Blok ze zdjęciem - wyjęty z TextBlock, żeby nie powtarzać jego kształtu. */
+type PhotoBlock = Extract<TextBlock, { kind: "image" }>;
+
+/** Odstęp między zdjęciami stojącymi obok siebie, w procentach szerokości. */
+const PHOTO_GAP_SHARE = 2;
 
 type ActionResult = {
   error?: string;
@@ -282,6 +291,58 @@ export function TextNoteEditor({
     );
   }
 
+  /** Numery bloków jednego wiersza - zdjęcia obok siebie idą razem. */
+  function rowOf(index: number): number[] {
+    return textBlockRows(blocks).find((row) => row.includes(index)) ?? [index];
+  }
+
+  /**
+   * Zdjęcie wchodzi obok poprzedniego. Ułożenie ma cały wiersz, więc bierze
+   * je od sąsiada, obok którego staje.
+   */
+  function standBeside(index: number) {
+    setBlocks((current) => {
+      const block = current[index];
+      const before = current[index - 1];
+      if (block?.kind !== "image" || before?.kind !== "image") return current;
+      return current.map((other, i) =>
+        i === index && other.kind === "image"
+          ? { ...other, beside: true, align: before.align }
+          : other,
+      );
+    });
+  }
+
+  /**
+   * Zdjęcie schodzi do własnego wiersza.
+   *
+   * Zdjęcie stojące obok poprzedniego po prostu z wiersza wychodzi. Kiedy to
+   * ono wiersz zaczyna, wychodzi to, co stoi za nim - inaczej pierwszego
+   * zdjęcia w wierszu nie dałoby się odsunąć od reszty.
+   */
+  function ownLine(index: number) {
+    setBlocks((current) => {
+      const block = current[index];
+      if (block?.kind !== "image") return current;
+      const at = block.beside ? index : index + 1;
+      const target = current[at];
+      if (target?.kind !== "image" || !target.beside) return current;
+      return current.map((other, i) =>
+        i === at && other.kind === "image" ? { ...other, beside: false } : other,
+      );
+    });
+  }
+
+  /** Ułożenie CAŁEGO wiersza, w którym stoi to zdjęcie. */
+  function setRowAlign(index: number, align: ImageAlign) {
+    const row = rowOf(index);
+    setBlocks((current) =>
+      current.map((block, i) =>
+        row.includes(i) && block.kind === "image" ? { ...block, align } : block,
+      ),
+    );
+  }
+
   /*
     Odnośnik. Adres wpisuje się w pasku pod narzędziami - wpisanie go zabiera
     kursor z notatki, więc zaznaczenie chowamy na bok i przywracamy przed
@@ -388,6 +449,8 @@ export function TextNoteEditor({
       alt: words.photoAlt,
       target: `assets/${name}`,
       width: IMAGE_FULL_WIDTH,
+      align: "left",
+      beside: false,
     };
     // Kursor dzieli blok na to, co nad zdjęciem, i to, co pod nim.
     const parts = field ? splitAtCaret(field) : null;
@@ -809,97 +872,198 @@ export function TextNoteEditor({
       ) : null}
 
       {/* Notatka w kawałkach: tekst do pisania i zdjęcia widoczne jako zdjęcia.
-          Wszystko w jednej ramce, żeby czytało się jak jedna kartka. */}
+          Wszystko w jednej ramce, żeby czytało się jak jedna kartka.
+
+          Zdjęcia stojące w jednym wierszu treści stoją obok siebie także tutaj,
+          a przyciski każdego z nich - pod całym wierszem. Pod zdjęciem
+          o szerokości 25% i tak by się nie zmieściły. */}
       <div className="note-blocks" style={{ marginTop: 10, marginBottom: 14 }}>
-        {blocks.map((block, index) =>
-          block.kind === "text" ? (
-            <RichText
-              key={index}
-              label={words.noteContent}
-              markdown={block.text}
-              revision={revision}
-              placeholder={onlyBlock ? words.writeHere : undefined}
-              register={(node) => {
-                if (node) fields.current.set(index, node);
-                else fields.current.delete(index);
-              }}
-              onChange={(text) => setBlockText(index, text)}
-              onFocus={() => {
-                focused.current = index;
-                refreshFormats();
-              }}
-              onSelect={refreshFormats}
-              onBlur={reflow}
-              style={{
-                fontFamily: cssFont(font),
-                fontSize: shownSize,
-                color: textColor !== 0 ? displayInkColor(textColor) : undefined,
-                // „Gruba czcionka" z ustawień konta. Dotyczy pisania na
-                // stronie, więc do treści notatki nic z niej nie wchodzi.
-                fontWeight: bold ? 700 : undefined,
-                lineHeight: 1.5,
-                textAlign: cssAlign(align),
-                minHeight: onlyBlock ? 300 : 44,
-              }}
-            />
-          ) : (
-            <figure key={index} className="note-block-image">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={
-                  block.target.startsWith("assets/")
-                    ? attachmentUrl(saved.noteId ?? "", block.target.slice("assets/".length), token)
-                    : block.target
-                }
-                alt={block.alt || words.photoInNote}
+        {textBlockRows(blocks).map((row) => {
+          const first = blocks[row[0]];
+          if (first.kind === "text") {
+            const index = row[0];
+            return (
+              <RichText
+                key={index}
+                label={words.noteContent}
+                markdown={first.text}
+                revision={revision}
+                placeholder={onlyBlock ? words.writeHere : undefined}
+                register={(node) => {
+                  if (node) fields.current.set(index, node);
+                  else fields.current.delete(index);
+                }}
+                onChange={(text) => setBlockText(index, text)}
+                onFocus={() => {
+                  focused.current = index;
+                  refreshFormats();
+                }}
+                onSelect={refreshFormats}
+                onBlur={reflow}
                 style={{
-                  width: block.width < IMAGE_FULL_WIDTH ? `${block.width}%` : undefined,
+                  fontFamily: cssFont(font),
+                  fontSize: shownSize,
+                  color: textColor !== 0 ? displayInkColor(textColor) : undefined,
+                  // „Gruba czcionka" z ustawień konta. Dotyczy pisania na
+                  // stronie, więc do treści notatki nic z niej nie wchodzi.
+                  fontWeight: bold ? 700 : undefined,
+                  lineHeight: 1.5,
+                  textAlign: cssAlign(align),
+                  minHeight: onlyBlock ? 300 : 44,
                 }}
               />
-              <figcaption>
-                {/* Rozmiar zdjęcia zapisuje się w treści notatki, więc taki sam
-                    wjeżdża do podglądu i do odnośnika do udostępnienia. */}
-                <button
-                  type="button"
-                  className="compact icon-only"
-                  title={words.shrinkPhoto}
-                  aria-label={words.shrinkPhoto}
-                  disabled={block.width <= IMAGE_SMALLEST_WIDTH}
-                  onClick={() => resizeImage(index, -IMAGE_WIDTH_STEP)}
-                >
-                  <Icon name="zoom_out" />
-                </button>
-                <span className="small" style={{ minWidth: 44, textAlign: "center" }}>
-                  {block.width}%
-                </span>
-                <button
-                  type="button"
-                  className="compact icon-only"
-                  title={words.growPhoto}
-                  aria-label={words.growPhoto}
-                  disabled={block.width >= IMAGE_FULL_WIDTH}
-                  onClick={() => resizeImage(index, IMAGE_WIDTH_STEP)}
-                >
-                  <Icon name="zoom_in" />
-                </button>
-                <span className="small" style={{ flex: 1 }}>
-                  {block.target.startsWith("assets/")
-                    ? block.target.slice("assets/".length)
-                    : block.target}
-                </span>
-                <button
-                  type="button"
-                  className="compact icon-only"
-                  title={words.removePhotoFromNote}
-                  aria-label={words.removePhotoFromNote}
-                  onClick={() => removeBlock(index)}
-                >
-                  <Icon name="hide_image" />
-                </button>
-              </figcaption>
-            </figure>
-          ),
-        )}
+            );
+          }
+
+          const photos = row.map((index) => blocks[index] as PhotoBlock);
+          const rowAlign = photos[0].align;
+          /*
+            Szerokość zdjęcia to ułamek szerokości notatki. Zdjęcia stojące
+            obok siebie schodzą tak, żeby zmieściły się w wierszu - ale
+            w notatce zostaje ta szerokość, którą ktoś wybrał.
+          */
+          const shown = sideBySideWidths(
+            photos.map((photo) => photo.width),
+            photos.length > 1 ? PHOTO_GAP_SHARE * (photos.length - 1) : 0,
+          );
+
+          return (
+            <div key={row[0]}>
+              <div
+                className="note-photo-row"
+                data-align={rowAlign === "left" ? undefined : rowAlign}
+              >
+                {photos.map((photo, at) => (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    key={row[at]}
+                    src={
+                      photo.target.startsWith("assets/")
+                        ? attachmentUrl(
+                            saved.noteId ?? "",
+                            photo.target.slice("assets/".length),
+                            token,
+                          )
+                        : photo.target
+                    }
+                    alt={photo.alt || words.photoInNote}
+                    style={{
+                      width:
+                        shown[at] < IMAGE_FULL_WIDTH
+                          ? `${Math.round(shown[at])}%`
+                          : undefined,
+                    }}
+                  />
+                ))}
+              </div>
+
+              {row.map((index, at) => {
+                const photo = photos[at];
+                const before = blocks[index - 1];
+                const after = blocks[index + 1];
+                const inRow =
+                  photo.beside || (after?.kind === "image" && after.beside);
+                return (
+                  <div className="note-photo-bar" key={index}>
+                    {/* Rozmiar zdjęcia zapisuje się w treści notatki, więc taki sam
+                        wjeżdża do podglądu i do odnośnika do udostępnienia. */}
+                    <button
+                      type="button"
+                      className="compact icon-only"
+                      title={words.shrinkPhoto}
+                      aria-label={words.shrinkPhoto}
+                      disabled={photo.width <= IMAGE_SMALLEST_WIDTH}
+                      onClick={() => resizeImage(index, -IMAGE_WIDTH_STEP)}
+                    >
+                      <Icon name="zoom_out" />
+                    </button>
+                    <span className="small" style={{ minWidth: 44, textAlign: "center" }}>
+                      {photo.width}%
+                    </span>
+                    <button
+                      type="button"
+                      className="compact icon-only"
+                      title={words.growPhoto}
+                      aria-label={words.growPhoto}
+                      disabled={photo.width >= IMAGE_FULL_WIDTH}
+                      onClick={() => resizeImage(index, IMAGE_WIDTH_STEP)}
+                    >
+                      <Icon name="zoom_in" />
+                    </button>
+
+                    {/* Ułożenie ma cały wiersz, więc przyciski stoją raz - przy
+                        pierwszym zdjęciu. */}
+                    {at === 0
+                      ? (
+                          [
+                            { side: "left", icon: "format_align_left", name: words.alignLeft },
+                            {
+                              side: "center",
+                              icon: "format_align_center",
+                              name: words.alignCentre,
+                            },
+                            {
+                              side: "right",
+                              icon: "format_align_right",
+                              name: words.alignRight,
+                            },
+                          ] as const
+                        ).map((choice) => (
+                          <button
+                            key={choice.side}
+                            type="button"
+                            className={`compact icon-only${rowAlign === choice.side ? " on" : ""}`}
+                            title={`${words.photoPlacement}: ${choice.name}`}
+                            aria-label={`${words.photoPlacement}: ${choice.name}`}
+                            aria-pressed={rowAlign === choice.side}
+                            onClick={() => setRowAlign(index, choice.side)}
+                          >
+                            <Icon name={choice.icon} filled={rowAlign === choice.side} />
+                          </button>
+                        ))
+                      : null}
+
+                    {/* Zdjęcie idzie obok tego, które stoi nad nim - i wraca do
+                        swojego wiersza tym samym miejscem. Kiedy nad zdjęciem nie
+                        ma zdjęcia, nie ma też obok czego stanąć. */}
+                    {inRow ? (
+                      <button
+                        type="button"
+                        className="compact"
+                        onClick={() => ownLine(index)}
+                      >
+                        {words.photoOwnLine}
+                      </button>
+                    ) : before?.kind === "image" ? (
+                      <button
+                        type="button"
+                        className="compact"
+                        onClick={() => standBeside(index)}
+                      >
+                        {words.photoBeside}
+                      </button>
+                    ) : null}
+
+                    <span className="small" style={{ flex: 1 }}>
+                      {photo.target.startsWith("assets/")
+                        ? photo.target.slice("assets/".length)
+                        : photo.target}
+                    </span>
+                    <button
+                      type="button"
+                      className="compact icon-only"
+                      title={words.removePhotoFromNote}
+                      aria-label={words.removePhotoFromNote}
+                      onClick={() => removeBlock(index)}
+                    >
+                      <Icon name="hide_image" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
       </div>
 
       {/*

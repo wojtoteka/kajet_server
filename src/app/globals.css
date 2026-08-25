@@ -1357,6 +1357,27 @@ textarea.mono-field {
   height: auto;
 }
 
+/*
+  Wiersz ze zdjęciami. Zdjęcia stojące w jednym wierszu treści stoją obok
+  siebie także na kartce, a ułożenie (lewo, środek, prawo) ma cały wiersz -
+  tak samo jak w aplikacji na tablecie.
+*/
+.rich-text p.photo-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0.6em 0;
+}
+
+.rich-text p.photo-row[data-align="center"] {
+  justify-content: center;
+}
+
+.rich-text p.photo-row[data-align="right"] {
+  justify-content: flex-end;
+}
+
 .rich-text table {
   width: auto;
   min-width: 60%;
@@ -1372,6 +1393,49 @@ textarea.mono-field {
 
 .note-block-image {
   margin: 10px 0;
+}
+
+/* To samo w polu do pisania: zdjęcia z jednego wiersza obok siebie. */
+.note-photo-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 10px 0 6px 0;
+}
+
+.note-photo-row[data-align="center"] {
+  justify-content: center;
+}
+
+.note-photo-row[data-align="right"] {
+  justify-content: flex-end;
+}
+
+.note-photo-row img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: var(--hairline) solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--sheet);
+}
+
+/*
+  Przyciski zdjęcia stoją POD wierszem, po jednym rzędzie na zdjęcie. Pod
+  zdjęciem o szerokości 25% i tak by się nie zmieściły.
+*/
+.note-photo-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.note-photo-bar .small {
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .note-block-image img {

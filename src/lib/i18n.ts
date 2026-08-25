@@ -362,6 +362,9 @@ export type Words = {
   shrinkPhoto: string;
   growPhoto: string;
   removePhotoFromNote: string;
+  photoPlacement: string;
+  photoBeside: string;
+  photoOwnLine: string;
   autosaveHint: string;
   autosaveOffHint: string;
 
@@ -1503,6 +1506,9 @@ const pl: Words = {
   shrinkPhoto: "Zmniejsz zdjęcie",
   growPhoto: "Powiększ zdjęcie",
   removePhotoFromNote: "Wyjmij zdjęcie z treści notatki",
+  photoPlacement: "Ułożenie wiersza ze zdjęciami",
+  photoBeside: "Obok poprzedniego",
+  photoOwnLine: "Od nowego wiersza",
   autosaveHint: "Notatka zapisuje się sama, kiedy przestaniesz pisać.",
   autosaveOffHint: "Autozapis jest wyłączony. Zapisz przyciskiem albo skrótem Ctrl+S.",
 
@@ -2813,6 +2819,9 @@ const en: Words = {
   shrinkPhoto: "Make the photo smaller",
   growPhoto: "Make the photo bigger",
   removePhotoFromNote: "Take the photo out of the note",
+  photoPlacement: "Placement of the photo row",
+  photoBeside: "Next to the one above",
+  photoOwnLine: "On a new line",
   autosaveHint: "The note saves itself when you stop writing.",
   autosaveOffHint: "Autosave is off. Save with the button or Ctrl+S.",
 

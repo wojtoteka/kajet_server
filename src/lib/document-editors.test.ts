@@ -368,7 +368,14 @@ describe("bloki treści tekstowej", () => {
     const blocks = splitTextBlocks("Przed\n![zdjęcie](assets/kot.gif)\nPo");
     expect(blocks).toEqual([
       { kind: "text", text: "Przed" },
-      { kind: "image", alt: "zdjęcie", target: "assets/kot.gif", width: 100 },
+      {
+        kind: "image",
+        alt: "zdjęcie",
+        target: "assets/kot.gif",
+        width: 100,
+        align: "left",
+        beside: false,
+      },
       { kind: "text", text: "Po" },
     ]);
   });
@@ -395,6 +402,10 @@ describe("bloki treści tekstowej", () => {
       "![zdjęcie](assets/kot.gif)",
       "Przed\n\n![zdjęcie](assets/kot.gif)\n\nPo",
       "![a](assets/1.png)\ntekst\n![b](assets/2.png)",
+      "![a|25%](assets/1.png) ![b|25%](assets/2.png)",
+      '![a|25%](assets/1.png "srodek") ![b|25%](assets/2.png "srodek")',
+      '![a|30%](assets/1.png "prawo")',
+      "przed wierszem\n![a|25%](assets/1.png) ![b|25%](assets/2.png)\npo wierszu",
       "![zdjęcie|60%](assets/kot.gif)",
       "wiersz\n",
     ]) {
@@ -411,13 +422,53 @@ describe("bloki treści tekstowej", () => {
       alt: "zdjęcie",
       target: "assets/zdjecie (2).png",
       width: 100,
+      align: "left",
+      beside: false,
     });
+  });
+
+  it("zdjęcia z jednego wiersza stoją obok siebie", () => {
+    const line = "![a|25%](assets/a.png) ![b|25%](assets/b.png)";
+    const blocks = splitTextBlocks(line);
+    const photos = blocks.filter((block) => block.kind === "image");
+    expect(photos).toHaveLength(2);
+    expect(photos[0]).toMatchObject({ target: "assets/a.png", beside: false });
+    expect(photos[1]).toMatchObject({ target: "assets/b.png", beside: true });
+    // Między zdjęciami stojącymi obok siebie ma zostać sam odstęp - nowy
+    // wiersz rozsunąłby je z powrotem jedno pod drugie.
+    expect(joinTextBlocks(blocks)).toBe(line);
+  });
+
+  it("ułożenie ma cały wiersz, nie pojedyncze zdjęcie", () => {
+    const blocks = splitTextBlocks('![a](assets/a.png "srodek") ![b](assets/b.png)');
+    const photos = blocks.filter((block) => block.kind === "image");
+    expect(photos.every((photo) => photo.kind === "image" && photo.align === "center")).toBe(
+      true,
+    );
+    expect(joinTextBlocks(blocks)).toBe(
+      '![a](assets/a.png "srodek") ![b](assets/b.png "srodek")',
+    );
+  });
+
+  it("zdjęcie odsunięte do własnego wiersza schodzi pod poprzednie", () => {
+    const blocks = splitTextBlocks("![a|25%](assets/a.png) ![b|25%](assets/b.png)");
+    const apart = blocks.map((block) =>
+      block.kind === "image" && block.beside ? { ...block, beside: false } : block,
+    );
+    expect(joinTextBlocks(apart)).toBe("![a|25%](assets/a.png)\n![b|25%](assets/b.png)");
   });
 
   it("puste kawałki do pisania nie zostają w treści", () => {
     const joined = joinTextBlocks([
       { kind: "text", text: "" },
-      { kind: "image", alt: "zdjęcie", target: "assets/kot.gif", width: 100 },
+      {
+        kind: "image",
+        alt: "zdjęcie",
+        target: "assets/kot.gif",
+        width: 100,
+        align: "left",
+        beside: false,
+      },
       { kind: "text", text: "" },
     ]);
     expect(joined).toBe("![zdjęcie](assets/kot.gif)");
@@ -447,6 +498,8 @@ describe("rozmiar zdjęcia w treści", () => {
       alt: "zdjęcie",
       target: "assets/kot.gif",
       width: 40,
+      align: "left",
+      beside: false,
     });
     expect(joinTextBlocks(blocks)).toBe("![zdjęcie|40%](assets/kot.gif)");
   });
@@ -458,6 +511,8 @@ describe("rozmiar zdjęcia w treści", () => {
       alt: "zdjęcie",
       target: "assets/kot.gif",
       width: 40,
+      align: "left",
+      beside: false,
     });
     expect(joinTextBlocks(blocks)).toBe("![zdjęcie|40%](assets/kot.gif)");
   });
@@ -470,6 +525,8 @@ describe("rozmiar zdjęcia w treści", () => {
       alt: "z",
       target: "assets/zdjecie (2).png",
       width: 40,
+      align: "left",
+      beside: false,
     });
     expect(fromTitle[1]).toEqual(fromAlt[1]);
     expect(joinTextBlocks(fromTitle)).toBe("![z|40%](assets/zdjecie (2).png)");
@@ -477,7 +534,14 @@ describe("rozmiar zdjęcia w treści", () => {
 
   it("zdjęcie na całą szerokość zapisuje się bez dopisku", () => {
     const joined = joinTextBlocks([
-      { kind: "image", alt: "zdjęcie", target: "assets/kot.gif", width: 100 },
+      {
+        kind: "image",
+        alt: "zdjęcie",
+        target: "assets/kot.gif",
+        width: 100,
+        align: "left",
+        beside: false,
+      },
     ]);
     expect(joined).toBe("![zdjęcie](assets/kot.gif)");
   });

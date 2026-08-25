@@ -1,4 +1,14 @@
-import { IMAGE_FULL_WIDTH, readImageAlt, readImageDestination, writeImageAlt } from "./text-note";
+import {
+  IMAGE_FULL_WIDTH,
+  readImageAlign,
+  readImageAlt,
+  readImageDestination,
+  readImageLine,
+  sideBySideWidths,
+  writeImage,
+  type ImageAlign,
+  type ImageOnLine,
+} from "./text-note";
 
 /*
   Bogaty tekst: markdown <-> HTML.
@@ -40,7 +50,11 @@ export type Inline =
   /** Złamanie wiersza wewnątrz akapitu (w markdownie zwykły znak nowej linii). */
   | { kind: "break" }
   | { kind: "code"; text: string }
-  | { kind: "image"; alt: string; target: string; width: number }
+  /*
+    Zdjęcie. `align` to ułożenie CAŁEGO wiersza ze zdjęciami (lewo, środek,
+    prawo) - siedzi w tytule zdjęcia, tak samo jak w aplikacji.
+  */
+  | { kind: "image"; alt: string; target: string; width: number; align: ImageAlign }
   | { kind: "link"; target: string; children: Inline[] }
   /*
     Barwa pisma. Markdown jej nie zna, więc - tak samo jak podkreślenie -
@@ -184,6 +198,27 @@ function closingAt(text: string, marker: string, from: number): number {
   return -1;
 }
 
+/**
+ * Nawias domykający adres zdjęcia albo odnośnika, licząc od `from`.
+ *
+ * Nawiasy w nazwie pliku („zdjecie (2).png") liczą się parami, więc adres
+ * kończy się dopiero tam, gdzie pierwszy nawias się domyka. Nowy wiersz
+ * kończy szukanie: zapis zdjęcia nie przechodzi przez wiersze.
+ */
+function closingBracket(text: string, from: number): number {
+  let depth = 1;
+  for (let at = from; at < text.length; at += 1) {
+    const sign = text[at];
+    if (sign === "\n") return -1;
+    if (sign === "(") depth += 1;
+    if (sign === ")") {
+      depth -= 1;
+      if (depth === 0) return at;
+    }
+  }
+  return -1;
+}
+
 /** Czyta wiersz markdownu na drzewko znaczników. */
 export function parseInline(text: string): Inline[] {
   const nodes: Inline[] = [];
@@ -214,17 +249,32 @@ export function parseInline(text: string): Inline[] {
       continue;
     }
 
-    // Adres łapiemy zachłannie do ostatniego nawiasu, bo nazwy plików
-    // z aplikacji potrafią same mieć nawiasy: „zdjecie (2).png". Tytuł
-    // w cudzysłowie (stary zapis szerokości) odcinamy od adresu osobno.
-    const image = /^!\[([^\]]*)\]\((.+)\)/.exec(rest);
-    if (image && !image[2].includes("\n")) {
-      flush();
-      const dest = readImageDestination(image[2]);
-      const { alt, width } = readImageAlt(image[1], dest.title);
-      nodes.push({ kind: "image", alt, target: dest.target, width });
-      at += image[0].length;
-      continue;
+    /*
+      Zdjęcie. Adres wolno zamknąć dopiero na nawiasie domykającym TEN zapis,
+      bo nazwy plików z aplikacji potrafią same mieć nawiasy: „zdjecie (2).png".
+      Nawiasy liczymy po kolei, więc zdjęcie stojące zaraz obok drugiego
+      (`![a](a.png) ![b](b.png)`) nie połyka sąsiada - a właśnie tak stoją
+      zdjęcia w jednym wierszu. Tytuł w cudzysłowie odcinamy od adresu osobno.
+    */
+    if (rest.startsWith("![")) {
+      const opened = rest.indexOf("](");
+      const closed = opened < 0 ? -1 : closingBracket(rest, opened + 2);
+      const label = opened < 0 ? "" : rest.slice(2, opened);
+      if (closed > 0 && !label.includes("]") && !label.includes("\n")) {
+        const inside = rest.slice(opened + 2, closed);
+        flush();
+        const dest = readImageDestination(inside);
+        const { alt, width } = readImageAlt(label, dest.title);
+        nodes.push({
+          kind: "image",
+          alt,
+          target: dest.target,
+          width,
+          align: readImageAlign(dest.title),
+        });
+        at += closed + 1;
+        continue;
+      }
     }
 
     const link = /^\[([^\]]*)\]\(([^)\s]*)\)/.exec(rest);
@@ -334,7 +384,12 @@ export function inlineToMarkdown(nodes: Inline[]): string {
         case "code":
           return `\`${node.text}\``;
         case "image":
-          return `![${writeImageAlt(node.alt, node.width)}](${node.target})`;
+          return writeImage({
+            alt: node.alt,
+            target: node.target,
+            width: node.width,
+            align: node.align,
+          });
         case "link":
           return `[${inlineToMarkdown(node.children)}](${node.target})`;
         case "underline":
@@ -404,17 +459,47 @@ export type HtmlOptions = {
 };
 
 function imageHtml(
-  node: { alt: string; target: string; width: number },
+  node: { alt: string; target: string; width: number; align?: ImageAlign },
   options: HtmlOptions,
+  /*
+    Szerokość do POKAZANIA. Zdjęcia stojące obok siebie schodzą tak, żeby
+    zmieściły się w wierszu, ale w notatce zostaje ta szerokość, którą ktoś
+    wybrał - dlatego prawdziwa idzie osobno, w `data-width`, i to ona wraca
+    do treści notatki.
+  */
+  shown = node.width,
 ): string {
   const source = options.imageUrl ? options.imageUrl(node.target) : node.target;
   const target =
     source === node.target ? "" : ` data-target="${escapeHtml(node.target)}"`;
   // W atrybucie alt zostaje sam opis; szerokość idzie w styl, bo kanoniczny
   // dopisek `|60%` nie jest tekstem dla człowieka - patrz text-note.ts.
-  const size =
-    node.width < IMAGE_FULL_WIDTH ? ` style="width:${node.width}%"` : "";
-  return `<img src="${escapeHtml(safeUrl(source))}" alt="${escapeHtml(node.alt)}"${target}${size}>`;
+  const size = shown < IMAGE_FULL_WIDTH ? ` style="width:${Math.round(shown)}%"` : "";
+  const stored =
+    node.width < IMAGE_FULL_WIDTH ? ` data-width="${Math.round(node.width)}"` : "";
+  const align = node.align && node.align !== "left" ? ` data-align="${node.align}"` : "";
+  return `<img src="${escapeHtml(safeUrl(source))}" alt="${escapeHtml(node.alt)}"${target}${stored}${align}${size}>`;
+}
+
+/** Odstęp między zdjęciami stojącymi obok siebie, w procentach szerokości. */
+const PHOTO_GAP_SHARE = 2;
+
+/**
+ * Wiersz ze zdjęciami na jeden akapit. Zdjęcia stoją obok siebie, a ułożenie
+ * (lewo, środek, prawo) ma cały wiersz - tak samo jak na kartce w aplikacji.
+ */
+function imageRowHtml(photos: ImageOnLine[], options: HtmlOptions): string {
+  const gap = PHOTO_GAP_SHARE * (photos.length - 1);
+  const shown = sideBySideWidths(
+    photos.map((photo) => photo.width),
+    photos.length > 1 ? gap : 0,
+  );
+  const align = photos[0].align;
+  const mark = align === "left" ? "" : ` data-align="${align}"`;
+  const images = photos
+    .map((photo, index) => imageHtml(photo, options, shown[index]))
+    .join(" ");
+  return `<p class="photo-row"${mark}>${images}</p>`;
 }
 
 function inlineToHtml(nodes: Inline[], options: HtmlOptions = {}): string {
@@ -725,6 +810,17 @@ export function markdownToHtml(markdown: string, options: HtmlOptions = {}): str
       continue;
     }
 
+    // Wiersz ze zdjęciami - jednym albo kilkoma obok siebie - jest własnym
+    // akapitem, tak samo jak w aplikacji. Inaczej ułożenie wiersza nie miałoby
+    // na czym usiąść, a zdjęcia zlewałyby się z sąsiednim zdaniem.
+    const photos = readImageLine(line);
+    if (photos) {
+      closeParagraph();
+      out.push(imageRowHtml(photos, options));
+      at += 1;
+      continue;
+    }
+
     if (!line.trim()) {
       closeParagraph();
       at += 1;
@@ -1009,11 +1105,16 @@ function inlineFromHtml(nodes: HtmlNode[]): Inline[] {
       continue;
     }
     if (tag === "img") {
+      /*
+        Szerokość bierzemy z `data-width`, bo styl mógł zostać ściągnięty na
+        potrzeby wiersza (zdjęcia obok siebie schodzą tak, żeby się zmieściły).
+        Bez tego samo otwarcie notatki zapisywałoby zdjęciu mniejszą szerokość
+        niż wybrana.
+      */
+      const stored = node.attrs["data-width"];
       const styleWidth = /(?:^|;)\s*width\s*:\s*(\d{1,3})\s*%/i.exec(node.attrs.style ?? "");
-      const { alt, width } = readImageAlt(
-        node.attrs.alt ?? "",
-        styleWidth ? `${styleWidth[1]}%` : "",
-      );
+      const percent = stored || (styleWidth ? styleWidth[1] : "");
+      const { alt, width } = readImageAlt(node.attrs.alt ?? "", percent ? `${percent}%` : "");
       out.push({
         kind: "image",
         alt,
@@ -1021,6 +1122,7 @@ function inlineFromHtml(nodes: HtmlNode[]): Inline[] {
         // spod którego przeglądarka wzięła zdjęcie. Do notatki wraca ten pierwszy.
         target: node.attrs["data-target"] || node.attrs.src || "",
         width,
+        align: readImageAlign(node.attrs["data-align"] ?? ""),
       });
       continue;
     }

@@ -101,15 +101,24 @@ export function parseExistingTextDocument(content: string): NoteDocument | null 
 */
 export type TextBlock =
   | { kind: "text"; text: string }
-  | { kind: "image"; alt: string; target: string; width: number };
+  | {
+      kind: "image";
+      alt: string;
+      target: string;
+      width: number;
+      /** Ułożenie CAŁEGO wiersza ze zdjęciami: lewo, środek albo prawo. */
+      align: ImageAlign;
+      /** Czy zdjęcie stoi obok poprzedniego, w tym samym wierszu pliku. */
+      beside: boolean;
+    };
 
 /*
-  Wiersz ze zdjęciem. Adres łapiemy zachłannie do ostatniego nawiasu w wierszu,
-  tak samo jak podgląd, bo nazwy plików potrafią same mieć nawiasy:
-  „zdjecie (2).png". Tytuł w cudzysłowie (stary zapis szerokości z tabletu)
-  odcinamy dopiero potem, żeby nawias w nazwie pliku nie uciął adresu.
+  Jedno zdjęcie z wiersza. Adres łapiemy zachłannie do ostatniego nawiasu tego
+  kawałka, tak samo jak podgląd, bo nazwy plików potrafią same mieć nawiasy:
+  „zdjecie (2).png". Tytuł w cudzysłowie odcinamy dopiero potem, żeby nawias
+  w nazwie pliku nie uciął adresu.
 */
-const IMAGE_LINE = /^!\[([^\]]*)\]\((.+)\)\s*$/;
+const IMAGE_TOKEN = /^!\[([^\]]*)\]\((.+)\)$/;
 
 /*
   Rozmiar zdjęcia w treści. Markdown sam z siebie nie ma na to miejsca, więc
@@ -171,6 +180,126 @@ export function clampImageWidth(width: number): number {
   return Math.min(IMAGE_FULL_WIDTH, Math.max(IMAGE_SMALLEST_WIDTH, Math.round(width)));
 }
 
+/* ------------------------------------------------------------------ */
+/* Wiersz ze zdjęciami                                                  */
+/* ------------------------------------------------------------------ */
+
+/*
+  Zdjęcia stojące w JEDNYM wierszu treści stoją obok siebie także na kartce:
+
+      ![mapa|25%](assets/mapa.png) ![szkic|25%](assets/szkic.png)
+
+  Tak samo czyta to markdown i tak samo pokazuje to aplikacja
+  (core/model/ImageLines.kt) - zapis nie jest niczym naszym własnym. Wcześniej
+  każde zdjęcie musiało stać w swoim wierszu i przy 25% szerokości zostawał
+  po nim pusty pas przez trzy czwarte notatki.
+
+  Ułożenie wiersza siedzi w tytule zdjęcia (`"srodek"`), a nie w opisie: opis
+  czyta czytnik ekranu i trafia do wydruku, więc słowo „srodek" nie jest
+  opisem zdjęcia. Ułożenie ma CAŁY wiersz, więc wszystkie zdjęcia stojące
+  obok siebie dostają je takie samo.
+*/
+
+export type ImageAlign = "left" | "center" | "right";
+
+/** Jedno zdjęcie z wiersza - opis, adres, szerokość i ułożenie wiersza. */
+export type ImageOnLine = {
+  alt: string;
+  target: string;
+  width: number;
+  align: ImageAlign;
+};
+
+const CENTRE_MARK = "srodek";
+const RIGHT_MARK = "prawo";
+
+/** Ułożenie z tytułu zdjęcia. Po angielsku też - notatka bywa spoza tabletu. */
+export function readImageAlign(title: string): ImageAlign {
+  switch (title.trim().toLowerCase()) {
+    case CENTRE_MARK:
+    case "środek":
+    case "center":
+    case "centre":
+      return "center";
+    case RIGHT_MARK:
+    case "right":
+      return "right";
+    default:
+      return "left";
+  }
+}
+
+/** Tytuł do zapisu - z odstępem z przodu, bo wchodzi tuż za adres. */
+function imageAlignTitle(align: ImageAlign): string {
+  if (align === "center") return ` "${CENTRE_MARK}"`;
+  if (align === "right") return ` "${RIGHT_MARK}"`;
+  return "";
+}
+
+/** Jedno zdjęcie w kanonicznym zapisie. */
+export function writeImage(photo: ImageOnLine): string {
+  return `![${writeImageAlt(photo.alt, photo.width)}](${photo.target}${imageAlignTitle(photo.align)})`;
+}
+
+/** Cały wiersz: zdjęcia stojące obok siebie dzieli sam odstęp. */
+export function writeImageLine(photos: ImageOnLine[]): string {
+  return photos.map(writeImage).join(" ");
+}
+
+/**
+ * Zdjęcia z wiersza albo null, gdy w wierszu stoi cokolwiek poza nimi.
+ *
+ * Null znaczy „to nie jest wiersz ze zdjęciami" - wtedy wiersz zostaje
+ * zwykłym tekstem, także wtedy, gdy zdjęcie stoi w środku zdania.
+ */
+export function readImageLine(line: string): ImageOnLine[] | null {
+  const trimmed = line.trim();
+  if (!trimmed.startsWith("![")) return null;
+
+  const starts: number[] = [];
+  for (let at = trimmed.indexOf("!["); at >= 0; at = trimmed.indexOf("![", at + 2)) {
+    starts.push(at);
+  }
+
+  const photos: ImageOnLine[] = [];
+  for (let index = 0; index < starts.length; index += 1) {
+    const stop = index + 1 < starts.length ? starts[index + 1] : trimmed.length;
+    const piece = trimmed.slice(starts[index], stop);
+    // Domykający nawias tego zdjęcia to ostatni nawias przed następnym
+    // zdjęciem. Między zdjęciami może stać tylko odstęp - inaczej jest to
+    // zdanie ze zdjęciem w środku, a nie wiersz ze zdjęciami.
+    const close = piece.lastIndexOf(")");
+    if (close < 0) return null;
+    if (piece.slice(close + 1).trim() !== "") return null;
+
+    const match = IMAGE_TOKEN.exec(piece.slice(0, close + 1));
+    if (!match) return null;
+    const dest = readImageDestination(match[2]);
+    const { alt, width } = readImageAlt(match[1], dest.title);
+    photos.push({ alt, target: dest.target, width, align: readImageAlign(dest.title) });
+  }
+  if (photos.length === 0) return null;
+
+  // Ułożenie ma cały wiersz, nie pojedyncze zdjęcie. Gdyby drugie zdjęcie
+  // miało własne, wiersz nie miałby dokąd się przesunąć.
+  const align = photos[0].align;
+  return photos.map((photo) => (photo.align === align ? photo : { ...photo, align }));
+}
+
+/**
+ * Szerokości zdjęć w wierszu, ściągnięte tak, żeby zmieściły się obok siebie.
+ * `gapShare` to ułamek szerokości notatki zjadany przez odstępy między
+ * zdjęciami. Bez tego dwa zdjęcia po 75% wychodziłyby poza kartkę, a suwak
+ * od szerokości nic o sąsiedzie nie wie i wiedzieć nie musi.
+ */
+export function sideBySideWidths(widths: number[], gapShare = 0): number[] {
+  if (widths.length === 0) return widths;
+  const room = Math.max(1, IMAGE_FULL_WIDTH - gapShare);
+  const together = widths.reduce((sum, width) => sum + width, 0);
+  const shrink = together > room ? room / together : 1;
+  return widths.map((width) => Math.min(IMAGE_FULL_WIDTH, Math.max(1, width * shrink)));
+}
+
 /**
  * Dzieli treść na bloki do pisania i bloki ze zdjęciem. Przy każdym zdjęciu -
  * przed nim i po nim - zostaje blok tekstu, nawet pusty: inaczej w notatce
@@ -186,18 +315,47 @@ export function splitTextBlocks(markdown: string): TextBlock[] {
   };
 
   for (const line of markdown.split("\n")) {
-    const image = line.match(IMAGE_LINE);
-    if (!image) {
+    const photos = readImageLine(line);
+    if (!photos) {
       (lines ??= []).push(line);
       continue;
     }
     closeText();
-    const dest = readImageDestination(image[2]);
-    const { alt, width } = readImageAlt(image[1], dest.title);
-    blocks.push({ kind: "image", alt, target: dest.target, width });
+    // Kilka zdjęć w jednym wierszu treści to kilka zdjęć stojących obok
+    // siebie. Każde ma swój blok - własną szerokość, podpis i przyciski -
+    // a trzyma je razem znacznik `beside`.
+    photos.forEach((photo, index) => {
+      blocks.push({
+        kind: "image",
+        alt: photo.alt,
+        target: photo.target,
+        width: photo.width,
+        align: photo.align,
+        beside: index > 0,
+      });
+    });
   }
   closeText();
   return blocks;
+}
+
+/**
+ * Numery bloków pogrupowane tak, jak stoją na kartce: zdjęcia obok siebie
+ * w jednej grupie, każdy inny blok sam. Numery, a nie same bloki, bo pole do
+ * pisania trzyma się numeru bloku - po nim wie, gdzie stoi kursor.
+ */
+export function textBlockRows(blocks: TextBlock[]): number[][] {
+  const rows: number[][] = [];
+  blocks.forEach((block, index) => {
+    const last = rows[rows.length - 1];
+    const previous = last ? blocks[last[last.length - 1]] : undefined;
+    if (block.kind === "image" && block.beside && previous?.kind === "image") {
+      last.push(index);
+    } else {
+      rows.push([index]);
+    }
+  });
+  return rows;
 }
 
 /**
@@ -206,14 +364,30 @@ export function splitTextBlocks(markdown: string): TextBlock[] {
  * przy każdym otwarciu.
  */
 export function joinTextBlocks(blocks: TextBlock[]): string {
-  return blocks
-    .filter((block) => block.kind !== "text" || block.text !== "")
-    .map((block) =>
+  const written = blocks.filter((block) => block.kind !== "text" || block.text !== "");
+  const out: string[] = [];
+
+  written.forEach((block, index) => {
+    const before = written[index - 1];
+    const text =
       block.kind === "text"
         ? block.text
-        : `![${writeImageAlt(block.alt, block.width)}](${block.target})`,
-    )
-    .join("\n");
+        : writeImage({
+            alt: block.alt,
+            target: block.target,
+            width: block.width,
+            align: block.align,
+          });
+    // Zdjęcia stojące obok siebie idą do JEDNEGO wiersza, rozdzielone samym
+    // odstępem. Nowy wiersz rozsunąłby je z powrotem jedno pod drugie.
+    if (index > 0 && block.kind === "image" && block.beside && before?.kind === "image") {
+      out[out.length - 1] += " " + text;
+    } else {
+      out.push(text);
+    }
+  });
+
+  return out.join("\n");
 }
 
 

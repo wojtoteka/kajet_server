@@ -45,16 +45,49 @@ describe("znaczniki w wierszu", () => {
       '<p><a href="https://kajet.pl">opis</a></p>',
     );
     // Szerokość z opisu rysuje się od razu; w atrybucie alt zostaje sam opis,
-    // a dopisek wraca do markdownu ze stylu, żeby człowiek nie widział `|60%`.
+    // a dopisek wraca do markdownu z `data-width`, żeby człowiek nie widział `|60%`.
     expect(markdownToHtml("![zdjęcie|60%](assets/kot.png)")).toBe(
-      '<p><img src="assets/kot.png" alt="zdjęcie" style="width:60%"></p>',
+      '<p class="photo-row"><img src="assets/kot.png" alt="zdjęcie" data-width="60" style="width:60%"></p>',
     );
     expect(markdownToHtml('![zdjęcie](assets/kot.png "60%")')).toBe(
-      '<p><img src="assets/kot.png" alt="zdjęcie" style="width:60%"></p>',
+      '<p class="photo-row"><img src="assets/kot.png" alt="zdjęcie" data-width="60" style="width:60%"></p>',
     );
     expect(
       htmlToMarkdown('<p><img src="assets/kot.png" alt="zdjęcie|60%" style="width:60%"></p>'),
     ).toBe("![zdjęcie|60%](assets/kot.png)");
+  });
+
+  it("dwa zdjęcia w wierszu stoją obok siebie, a nie jedno w drugim", () => {
+    /*
+      Zdjęcia obok siebie to jeden wiersz treści. Wcześniej adres pierwszego
+      łapany był zachłannie aż do ostatniego nawiasu wiersza, więc z dwóch
+      zdjęć robiło się jedno o adresie „a.png) ![b](b.png" - i notatka
+      wracała z panelu z połkniętym zdjęciem.
+    */
+    expect(markdownToHtml("![a|25%](assets/a.png) ![b|25%](assets/b.png)")).toBe(
+      '<p class="photo-row">' +
+        '<img src="assets/a.png" alt="a" data-width="25" style="width:25%"> ' +
+        '<img src="assets/b.png" alt="b" data-width="25" style="width:25%">' +
+        "</p>",
+    );
+  });
+
+  it("ułożenie wiersza ze zdjęciami idzie z tytułu na akapit", () => {
+    const html = markdownToHtml('![a|30%](assets/a.png "srodek") ![b|30%](assets/b.png)');
+    expect(html).toContain('<p class="photo-row" data-align="center">');
+    // Ułożenie ma cały wiersz, więc drugie zdjęcie bierze je od pierwszego.
+    expect(html.match(/data-align="center"/g)).toHaveLength(3);
+    expect(htmlToMarkdown(html)).toBe(
+      '![a|30%](assets/a.png "srodek") ![b|30%](assets/b.png "srodek")',
+    );
+  });
+
+  it("zdjęcia szersze niż wiersz schodzą, ale notatka trzyma wybraną szerokość", () => {
+    // Dwa razy 75% nie zmieści się obok siebie - pokazujemy mniejsze, ale
+    // w notatce ma zostać to, co człowiek wybrał.
+    const html = markdownToHtml("![a|75%](assets/a.png) ![b|75%](assets/b.png)");
+    expect(html).toContain('data-width="75" style="width:49%"');
+    expect(htmlToMarkdown(html)).toBe("![a|75%](assets/a.png) ![b|75%](assets/b.png)");
   });
 
   it("odnośnik javascript: nie ma prawa nigdzie zaprowadzić", () => {
@@ -193,6 +226,16 @@ describe("droga tam i z powrotem", () => {
     ["![zdjęcie](assets/kot.png)", "![zdjęcie](assets/kot.png)"],
     ["![zdjęcie|60%](assets/kot.png)", "![zdjęcie|60%](assets/kot.png)"],
     ['![zdjęcie](assets/kot.png "60%")', "![zdjęcie|60%](assets/kot.png)"],
+    // Zdjęcia obok siebie: jeden wiersz treści, ułożenie w tytule.
+    [
+      "![a|25%](assets/a.png) ![b|25%](assets/b.png)",
+      "![a|25%](assets/a.png) ![b|25%](assets/b.png)",
+    ],
+    [
+      '![a|25%](assets/a.png "srodek") ![b|25%](assets/b.png "srodek")',
+      '![a|25%](assets/a.png "srodek") ![b|25%](assets/b.png "srodek")',
+    ],
+    ['![a|40%](assets/a.png "prawo")', '![a|40%](assets/a.png "prawo")'],
     ["---", "---"],
     // Ujednolicenia: markdown ma po kilka zapisów tej samej rzeczy.
     ["_pochyły_", "*pochyły*"],
