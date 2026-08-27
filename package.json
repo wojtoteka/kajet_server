@@ -21,7 +21,7 @@
     "sprawdz": "node scripts/sprawdz-serwer.mjs",
     "sprawdz:pliki": "node scripts/sprawdz-pliki.mjs",
     "sprawdz:ai": "tsx scripts/sprawdz-asystenta.ts",
-    "admin": "tsx scripts/grant-admin.ts"
+    "konta": "tsx scripts/konta.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.4",

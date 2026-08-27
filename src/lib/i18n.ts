@@ -745,8 +745,8 @@ export type Words = {
   blockAccount: string;
   blockReasonPlaceholder: string;
   blockReasonAria: string;
-  takeAdminRights: string;
-  makeAdmin: string;
+  adminAccountEyebrow: string;
+  adminAccountFromServer: string;
   takeCodeRunning: string;
   allowCodeRunning: string;
   takeAiAccess: string;
@@ -1056,11 +1056,11 @@ export type Words = {
   actSignInDenied: string;
   actNoFileArrived: string;
   actAdminOnly: string;
+  actAdminAccountFromServer: string;
   actCheckNumbers: string;
   actCopyRegistrationLink: string;
   actUnlimitedGiven: string;
   actNoSpaceGiven: string;
-  actCannotBlockSelf: string;
   actLoginRulesAdmin: string;
   actBadLogin: string;
   actAccountHasAddress: string;
@@ -1098,9 +1098,7 @@ export type Words = {
 
   actCopyConfirmLink: string;
   actResetMailFailed: string;
-  actCannotTakeOwnRights: string;
   actStorageRecomputed: string;
-  actCannotDeleteOwnAccount: string;
   actVersionExample: string;
   actPickApkFirst: string;
   actUploadLost: string;
@@ -1977,8 +1975,9 @@ const pl: Words = {
   blockAccount: "Zablokuj konto",
   blockReasonPlaceholder: "Powód (opcjonalnie)",
   blockReasonAria: "Powód blokady",
-  takeAdminRights: "Odbierz uprawnienia",
-  makeAdmin: "Zrób administratorem",
+  adminAccountEyebrow: "Konto administratora",
+  adminAccountFromServer:
+    "Tego konta panel nie zmienia. Uprawnienia, hasło i adres administratora ustawia się tylko na serwerze.",
   takeCodeRunning: "Zabierz uruchamianie kodu",
   allowCodeRunning: "Pozwól uruchamiać kod",
   takeAiAccess: "Zabierz KajetAI",
@@ -2364,11 +2363,11 @@ const pl: Words = {
   actSignInDenied: "Logowanie odrzucone. Aplikacja dowie się o tym w ciągu kilku sekund.",
   actNoFileArrived: "Nie przyszedł żaden plik.",
   actAdminOnly: "Ta czynność jest tylko dla administratora.",
+  actAdminAccountFromServer: "To konto administratora. Zmienia się je tylko na serwerze.",
   actCheckNumbers: "Sprawdź wpisane liczby.",
   actCopyRegistrationLink: "Kopiuj odnośnik do rejestracji",
   actUnlimitedGiven: "Konto dostało miejsce bez limitu.",
   actNoSpaceGiven: "Konto zostało bez miejsca - nic się na serwerze nie zapisze.",
-  actCannotBlockSelf: "Nie da się zablokować własnego konta.",
   actLoginRulesAdmin:
     "Login może mieć od 3 do 24 znaków: małe litery, cyfry, kropka, kreska i podkreślenie.",
   actBadLogin: "Ten login nie spełnia zasad wypisanych pod polem.",
@@ -2408,9 +2407,7 @@ const pl: Words = {
   actCopyConfirmLink: "Kopiuj odnośnik do potwierdzenia",
   actResetMailFailed:
     "Nie udało się wysłać wiadomości. Przekaż odnośnik samodzielnie - jest ważny przez godzinę.",
-  actCannotTakeOwnRights: "Nie da się odebrać uprawnień samemu sobie.",
   actStorageRecomputed: "Zajęte miejsce przeliczone od nowa.",
-  actCannotDeleteOwnAccount: "Nie da się skasować własnego konta.",
   actVersionExample: "Wersja to na przykład 1.4.2 albo 2.0-beta.",
   actPickApkFirst: "Najpierw wskaż plik APK.",
   actUploadLost: "Wgrany plik przepadł. Wskaż go jeszcze raz i wyślij od nowa.",
@@ -3298,8 +3295,9 @@ const en: Words = {
   blockAccount: "Block the account",
   blockReasonPlaceholder: "Reason (optional)",
   blockReasonAria: "Reason for the block",
-  takeAdminRights: "Take away admin rights",
-  makeAdmin: "Make administrator",
+  adminAccountEyebrow: "Administrator account",
+  adminAccountFromServer:
+    "The panel does not change this account. An administrator's rights, password and address are set on the server only.",
   takeCodeRunning: "Take away code running",
   allowCodeRunning: "Allow code running",
   takeAiAccess: "Take KajetAI away",
@@ -3672,11 +3670,11 @@ const en: Words = {
   actSignInDenied: "Sign-in denied. The app will find out within a few seconds.",
   actNoFileArrived: "No file arrived.",
   actAdminOnly: "This action is for administrators only.",
+  actAdminAccountFromServer: "This is an administrator account. It is changed on the server only.",
   actCheckNumbers: "Check the numbers you typed.",
   actCopyRegistrationLink: "Copy the registration link",
   actUnlimitedGiven: "The account was given unlimited space.",
   actNoSpaceGiven: "The account was left with no space - nothing will be saved on the server.",
-  actCannotBlockSelf: "You cannot block your own account.",
   actLoginRulesAdmin:
     "A login can be 3 to 24 characters: lowercase letters, digits, dot, dash and underscore.",
   actBadLogin: "That login does not follow the rules listed under the field.",
@@ -3715,9 +3713,7 @@ const en: Words = {
   actCopyConfirmLink: "Copy the confirmation link",
   actResetMailFailed:
     "The e-mail did not go out. Pass the link on yourself - it is valid for an hour.",
-  actCannotTakeOwnRights: "You cannot take away your own rights.",
   actStorageRecomputed: "The used space has been recomputed.",
-  actCannotDeleteOwnAccount: "You cannot delete your own account.",
   actVersionExample: "A version looks like 1.4.2 or 2.0-beta.",
   actPickApkFirst: "Choose the APK file first.",
   actUploadLost: "The uploaded file is gone. Choose it again and upload once more.",
@@ -4426,12 +4422,6 @@ export function confirmBlockAccount(words: Words, login: string): string {
     : `Zablokować konto ${login}? Zostanie wylogowane ze wszystkich urządzeń.`;
 }
 
-export function confirmMakeAdmin(words: Words, login: string): string {
-  return words.locale === "en-US"
-    ? `Give ${login} administrator rights?`
-    : `Nadać ${login} uprawnienia administratora?`;
-}
-
 /**
  * Nadanie KajetAI cudzemu kontu. Jedyne miejsce, w którym o wysyłaniu treści
  * do Google decyduje ktoś inny niż właściciel notatek - dlatego zdanie o
@@ -4507,18 +4497,6 @@ export function passwordSetForMsg(words: Words, login: string): string {
   return words.locale === "en-US"
     ? `Password set for ${login}. The account was signed out on every device.`
     : `Hasło dla ${login} ustawione. Konto zostało wylogowane ze wszystkich urządzeń.`;
-}
-
-export function adminRightsGivenMsg(words: Words, login: string): string {
-  return words.locale === "en-US"
-    ? `${login} now has administrator rights.`
-    : `${login} ma teraz uprawnienia administratora.`;
-}
-
-export function adminRightsTakenMsg(words: Words, login: string): string {
-  return words.locale === "en-US"
-    ? `${login} is an ordinary user again.`
-    : `${login} jest znowu zwykłym użytkownikiem.`;
 }
 
 export function codeRunningAllowedMsg(words: Words, login: string): string {

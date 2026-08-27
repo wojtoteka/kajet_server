@@ -66,7 +66,7 @@ src/app/          strony i API (App Router)
 src/components/   edytory (tekst, odręczne, mapa myśli, kod) i reszta UI
 src/lib/          logika: auth, synchronizacja, limity, markdown, KajetAI, wydania APK
 prisma/           schemat bazy
-scripts/          narzędzia serwisowe (migracje, wdrożenie, kontrola stanu)
+scripts/          narzędzia serwisowe (migracje, wdrożenie, kontrola stanu, konta administratorów)
 docker/           obraz do uruchamiania kodu + konfiguracja MySQL
 ```
 
@@ -85,13 +85,50 @@ Przydatne skrypty:
 npm test          # Vitest
 npm run typecheck # tsc --noEmit
 npm run build     # generuje klienta Prismy i buduje Next.js
-npm run admin     # nadaje kontu rolę administratora
+npm run konta     # konta administratorów - patrz niżej (panel tego nie robi)
 npm run sprawdz   # kontrola stanu działającego serwera
 ```
 
 Wszystkie ustawienia są w `.env` - jego wzór z opisem każdej zmiennej leży w
 [`.env.example`](.env.example). Prawdziwy `.env`, katalog `data/` z notatkami użytkowników
 i zrzuty bazy nigdy nie trafiają do repozytorium.
+
+## Konta administratorów
+
+Panel administratora nie tyka kont administratorów: nie nadaje ani nie odbiera uprawnień,
+nie zmieni hasła, adresu, blokady, limitów ani nie skasuje takiego konta. Robi to wyłącznie
+`npm run konta`, czyli powłoka na maszynie, na której stoi serwer.
+
+Chodzi o to, co się dzieje, gdy ktoś przejmie konto administratora. Wcześniej dostawał wtedy
+pełnię władzy nad serwerem - mógł zrobić administratora z konta, które miał pod ręką,
+i odebrać uprawnienia wszystkim prawowitym. Teraz najgorsze, co da się zrobić z panelu,
+dotyczy zwykłych kont, a odzyskanie serwera zostaje przy tym, kto ma do niego dostęp powłoką.
+Odmowa stoi w samych czynnościach serwerowych ([`src/app/admin/actions.ts`](src/app/admin/actions.ts)),
+nie tylko w wyglądzie strony - ukryty przycisk to nie zabezpieczenie.
+
+```bash
+npm run konta                                lista kont administratorów
+npm run konta -- lista [fraza]               wszystkie konta (fraza szuka po loginie i adresie)
+npm run konta -- nadaj <konto>               nadaje uprawnienia administratora
+npm run konta -- odbierz <konto>             odbiera uprawnienia
+npm run konta -- haslo <konto> <hasło>       ustawia hasło i wylogowuje wszystkie urządzenia
+npm run konta -- email <konto> <nowy>        zmienia adres (nowy czeka na potwierdzenie)
+npm run konta -- login <konto> <nowy>        zmienia login
+npm run konta -- zablokuj <konto> [powód]
+npm run konta -- odblokuj <konto>
+npm run konta -- miejsce <konto> <MB>        miejsce na notatki (-1 to bez ograniczeń, 0 to zero)
+npm run konta -- kod <konto> tak|nie         uruchamianie kodu na serwerze
+npm run konta -- kajetai <konto> tak|nie [na dobę]
+npm run konta -- skasuj <konto> --na-pewno
+```
+
+Konto wskazuje się adresem e-mail albo loginem. Odebranie uprawnień ostatniemu administratorowi
+i skasowanie konta wymagają dopisku `--na-pewno`. Każda zmiana trafia do dziennika w `/admin/log`
+z dopiskiem „(z serwera)" i bez autora.
+
+Pierwszy administrator: przy pustej bazie `npm run konta -- nadaj <adres>` wydaje kod
+zaproszenia, bo konto trzeba najpierw założyć zwykłą rejestracją na `/register`. Po jej
+zakończeniu to samo polecenie nadaje uprawnienia.
 
 ## Uwagi
 

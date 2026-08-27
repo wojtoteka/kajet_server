@@ -6,7 +6,6 @@ import { ActionForm } from "@/components/ActionForm";
 import { aiWorks } from "@/lib/settings";
 import { NO_AI_USAGE, aiUsageForMany, dailyLimitFor } from "@/lib/ai/limits";
 import {
-  toggleAdmin,
   toggleBlock,
   toggleCodeRunning,
   toggleAi,
@@ -28,7 +27,6 @@ import {
   confirmBlockAccount,
   confirmChangeEmail,
   confirmDeleteUser,
-  confirmMakeAdmin,
   confirmSetPassword,
   noAccountMatches,
 } from "@/lib/i18n";
@@ -166,225 +164,230 @@ export default async function AccountsPage({
                 </div>
               </div>
 
-              <div className="account-columns">
-                <div>
-                  <p className="eyebrow">{words.quotaSection}</p>
-                  <ActionForm action={setQuota} label={words.setQuota} compact toast>
-                    <input type="hidden" name="userId" value={user.id} />
-                    <div className="quota-row">
-                      <input
-                        name="quotaMb"
-                        type="number"
-                        // Minus jeden przechodzi, bo tak zapisuje się „bez
-                        // ograniczeń"; zero znaczy zero megabajtów.
-                        min={-1}
-                        defaultValue={unlimited ? -1 : Math.round(quota / 1024 / 1024)}
-                        aria-label={words.quotaInMb}
-                      />
-                      <span className="small">MB</span>
-                      <input
-                        name="forDays"
-                        type="number"
-                        // -1 znaczy „na stałe", tak samo jak przy kodzie
-                        // zaproszenia znaczy „bez terminu".
-                        min={-1}
-                        defaultValue={-1}
-                        aria-label={words.forHowManyDays}
-                      />
-                      <span className="small">{words.daysWord}</span>
-                    </div>
-                    <p className="small" style={{ margin: "0 0 8px 0" }}>
-                      {words.quotaHint}
-                    </p>
-                  </ActionForm>
-
-                  {/*
-                    KajetAI siedzi W ŚRODKU kolumny limitów, za cienką kreską,
-                    a nie jako osobna kolumna siatki. Jako osobna robił piątą
-                    kolumnę tam, gdzie mieszczą się cztery - i „Dostęp" spadał
-                    sam do drugiego rzędu, zostawiając pół karty pustki. Teraz
-                    liczba kolumn jest stała, więc karta wygląda tak samo
-                    z uprawnieniem do KajetAI i bez niego.
-                  */}
-                  {assistantHere && user.canUseAi ? (
-                    <div className="account-sub">
-                      <p className="eyebrow">{words.aiSection}</p>
-                      <p className="small" style={{ margin: "0 0 8px 0" }}>
-                        {(usage.get(user.id) ?? NO_AI_USAGE).week === 0
-                          ? words.aiNoUsageYet
-                          : aiUsageLine(
-                              words,
-                              (usage.get(user.id) ?? NO_AI_USAGE).today,
-                              dailyLimitFor(user),
-                              (usage.get(user.id) ?? NO_AI_USAGE).week,
-                              (usage.get(user.id) ?? NO_AI_USAGE).tokens,
-                            )}
-                      </p>
-                      <ActionForm action={setAiLimit} label={words.setAiLimit} compact toast>
-                        <input type="hidden" name="userId" value={user.id} />
-                        <input
-                          name="perDay"
-                          type="number"
-                          min={0}
-                          defaultValue={user.aiDailyLimit}
-                          aria-label={words.aiDailyLimitLabel}
-                        />
-                        <p className="small" style={{ margin: "4px 0 8px 0" }}>
-                          {words.aiLimitHint}
-                        </p>
-                      </ActionForm>
-                    </div>
-                  ) : null}
-                </div>
-
-                <div>
-                  <p className="eyebrow">{words.loginEyebrow}</p>
-                  <ActionForm action={changeLogin} label={words.changeLogin} compact toast>
-                    <input type="hidden" name="userId" value={user.id} />
-                    <input
-                      name="login"
-                      type="text"
-                      defaultValue={user.login}
-                      aria-label={words.newLogin}
-                    />
-                  </ActionForm>
-
-                  <p className="eyebrow" style={{ marginTop: 14 }}>
-                    {words.emailAddressEyebrow}
+              {/*
+                Konto administratora widać, ale nic się z nim stąd nie zrobi -
+                ani hasła, ani adresu, ani uprawnień. Zmienia się je poleceniem
+                npm run konta na serwerze, więc przejęty panel nie daje władzy
+                nad resztą administracji. Odmowę powtarzają same czynności
+                w actions.ts; tu chodzi tylko o to, żeby nie pokazywać
+                przycisków, które i tak odmówią.
+              */}
+              {user.role === "ADMIN" ? (
+                <div className="account-sub">
+                  <p className="eyebrow">{words.adminAccountEyebrow}</p>
+                  <p className="small" style={{ margin: 0 }}>
+                    {words.adminAccountFromServer}
                   </p>
-                  <ActionForm
-                    action={changeEmail}
-                    label={words.changeEmail}
-                    compact
-                    toast
-                    confirmation={confirmChangeEmail(words, user.login)}
-                  >
-                    <input type="hidden" name="userId" value={user.id} />
-                    <input
-                      name="email"
-                      type="email"
-                      defaultValue={user.email}
-                      aria-label={words.newEmail}
-                    />
-                  </ActionForm>
                 </div>
-
-                <div>
-                  <p className="eyebrow">{words.passwordEyebrow}</p>
-                  <div className="account-actions">
-                    <ActionForm
-                      action={sendPasswordReset}
-                      label={words.sendPasswordLink}
-                      compact
-                      toast
-                    >
+              ) : (
+                <div className="account-columns">
+                  <div>
+                    <p className="eyebrow">{words.quotaSection}</p>
+                    <ActionForm action={setQuota} label={words.setQuota} compact toast>
                       <input type="hidden" name="userId" value={user.id} />
+                      <div className="quota-row">
+                        <input
+                          name="quotaMb"
+                          type="number"
+                          // Minus jeden przechodzi, bo tak zapisuje się „bez
+                          // ograniczeń"; zero znaczy zero megabajtów.
+                          min={-1}
+                          defaultValue={unlimited ? -1 : Math.round(quota / 1024 / 1024)}
+                          aria-label={words.quotaInMb}
+                        />
+                        <span className="small">MB</span>
+                        <input
+                          name="forDays"
+                          type="number"
+                          // -1 znaczy „na stałe", tak samo jak przy kodzie
+                          // zaproszenia znaczy „bez terminu".
+                          min={-1}
+                          defaultValue={-1}
+                          aria-label={words.forHowManyDays}
+                        />
+                        <span className="small">{words.daysWord}</span>
+                      </div>
+                      <p className="small" style={{ margin: "0 0 8px 0" }}>
+                        {words.quotaHint}
+                      </p>
                     </ActionForm>
 
+                    {/*
+                      KajetAI siedzi W ŚRODKU kolumny limitów, za cienką kreską,
+                      a nie jako osobna kolumna siatki. Jako osobna robił piątą
+                      kolumnę tam, gdzie mieszczą się cztery - i „Dostęp" spadał
+                      sam do drugiego rzędu, zostawiając pół karty pustki. Teraz
+                      liczba kolumn jest stała, więc karta wygląda tak samo
+                      z uprawnieniem do KajetAI i bez niego.
+                    */}
+                    {assistantHere && user.canUseAi ? (
+                      <div className="account-sub">
+                        <p className="eyebrow">{words.aiSection}</p>
+                        <p className="small" style={{ margin: "0 0 8px 0" }}>
+                          {(usage.get(user.id) ?? NO_AI_USAGE).week === 0
+                            ? words.aiNoUsageYet
+                            : aiUsageLine(
+                                words,
+                                (usage.get(user.id) ?? NO_AI_USAGE).today,
+                                dailyLimitFor(user),
+                                (usage.get(user.id) ?? NO_AI_USAGE).week,
+                                (usage.get(user.id) ?? NO_AI_USAGE).tokens,
+                              )}
+                        </p>
+                        <ActionForm action={setAiLimit} label={words.setAiLimit} compact toast>
+                          <input type="hidden" name="userId" value={user.id} />
+                          <input
+                            name="perDay"
+                            type="number"
+                            min={0}
+                            defaultValue={user.aiDailyLimit}
+                            aria-label={words.aiDailyLimitLabel}
+                          />
+                          <p className="small" style={{ margin: "4px 0 8px 0" }}>
+                            {words.aiLimitHint}
+                          </p>
+                        </ActionForm>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div>
+                    <p className="eyebrow">{words.loginEyebrow}</p>
+                    <ActionForm action={changeLogin} label={words.changeLogin} compact toast>
+                      <input type="hidden" name="userId" value={user.id} />
+                      <input
+                        name="login"
+                        type="text"
+                        defaultValue={user.login}
+                        aria-label={words.newLogin}
+                      />
+                    </ActionForm>
+
+                    <p className="eyebrow" style={{ marginTop: 14 }}>
+                      {words.emailAddressEyebrow}
+                    </p>
                     <ActionForm
-                      action={setUserPassword}
-                      label={words.setPasswordForUser}
+                      action={changeEmail}
+                      label={words.changeEmail}
                       compact
                       toast
-                      confirmation={confirmSetPassword(words, user.login)}
+                      confirmation={confirmChangeEmail(words, user.login)}
                     >
                       <input type="hidden" name="userId" value={user.id} />
                       <input
-                        name="password"
-                        type="text"
-                        autoComplete="off"
-                        placeholder={words.atLeast8Placeholder}
-                        aria-label={words.newPasswordLabel}
+                        name="email"
+                        type="email"
+                        defaultValue={user.email}
+                        aria-label={words.newEmail}
                       />
                     </ActionForm>
                   </div>
-                </div>
 
-                {/*
-                  Przełączniki i akcje konta idą pasem na całą szerokość karty,
-                  poziomo. W pionowej kolumnie sześć przycisków dawało rząd
-                  wysoki na 340 px, a obok niego pustkę na trzy kolumny.
-                */}
-                <div className="account-strip">
-                  <p className="eyebrow">{words.accessEyebrow}</p>
-                  <div className="account-buttons">
-                    <ActionForm
-                      action={toggleBlock}
-                      label={user.blocked ? words.unblockAccount : words.blockAccount}
-                      compact
-                      toast
-                      danger={!user.blocked}
-                      confirmation={
-                        user.blocked ? undefined : confirmBlockAccount(words, user.login)
-                      }
-                    >
-                      <input type="hidden" name="userId" value={user.id} />
-                      {!user.blocked ? (
-                        <input
-                          name="reason"
-                          type="text"
-                          placeholder={words.blockReasonPlaceholder}
-                          aria-label={words.blockReasonAria}
-                        />
-                      ) : null}
-                    </ActionForm>
-
-                    <ActionForm
-                      action={toggleAdmin}
-                      label={user.role === "ADMIN" ? words.takeAdminRights : words.makeAdmin}
-                      compact
-                      toast
-                      confirmation={
-                        user.role === "ADMIN" ? undefined : confirmMakeAdmin(words, user.login)
-                      }
-                    >
-                      <input type="hidden" name="userId" value={user.id} />
-                    </ActionForm>
-
-                    <ActionForm
-                      action={toggleCodeRunning}
-                      label={
-                        user.canRunCode ? words.takeCodeRunning : words.allowCodeRunning
-                      }
-                      compact
-                      toast
-                    >
-                      <input type="hidden" name="userId" value={user.id} />
-                    </ActionForm>
-
-                    {assistantHere ? (
+                  <div>
+                    <p className="eyebrow">{words.passwordEyebrow}</p>
+                    <div className="account-actions">
                       <ActionForm
-                        action={toggleAi}
-                        label={user.canUseAi ? words.takeAiAccess : words.allowAiAccess}
+                        action={sendPasswordReset}
+                        label={words.sendPasswordLink}
                         compact
                         toast
+                      >
+                        <input type="hidden" name="userId" value={user.id} />
+                      </ActionForm>
+
+                      <ActionForm
+                        action={setUserPassword}
+                        label={words.setPasswordForUser}
+                        compact
+                        toast
+                        confirmation={confirmSetPassword(words, user.login)}
+                      >
+                        <input type="hidden" name="userId" value={user.id} />
+                        <input
+                          name="password"
+                          type="text"
+                          autoComplete="off"
+                          placeholder={words.atLeast8Placeholder}
+                          aria-label={words.newPasswordLabel}
+                        />
+                      </ActionForm>
+                    </div>
+                  </div>
+
+                  {/*
+                    Przełączniki i akcje konta idą pasem na całą szerokość karty,
+                    poziomo. W pionowej kolumnie sześć przycisków dawało rząd
+                    wysoki na 340 px, a obok niego pustkę na trzy kolumny.
+                  */}
+                  <div className="account-strip">
+                    <p className="eyebrow">{words.accessEyebrow}</p>
+                    <div className="account-buttons">
+                      <ActionForm
+                        action={toggleBlock}
+                        label={user.blocked ? words.unblockAccount : words.blockAccount}
+                        compact
+                        toast
+                        danger={!user.blocked}
                         confirmation={
-                          user.canUseAi ? undefined : confirmAllowAi(words, user.login)
+                          user.blocked ? undefined : confirmBlockAccount(words, user.login)
                         }
                       >
                         <input type="hidden" name="userId" value={user.id} />
+                        {!user.blocked ? (
+                          <input
+                            name="reason"
+                            type="text"
+                            placeholder={words.blockReasonPlaceholder}
+                            aria-label={words.blockReasonAria}
+                          />
+                        ) : null}
                       </ActionForm>
-                    ) : null}
 
-                    <ActionForm action={recomputeStorage} label={words.recomputeStorage} compact toast>
-                      <input type="hidden" name="userId" value={user.id} />
-                    </ActionForm>
-
-                    <div className="account-last">
                       <ActionForm
-                        action={deleteUser}
-                        label={words.deleteAccount}
+                        action={toggleCodeRunning}
+                        label={
+                          user.canRunCode ? words.takeCodeRunning : words.allowCodeRunning
+                        }
                         compact
-                        danger
                         toast
-                        confirmation={confirmDeleteUser(words, user.login, user._count.notes)}
                       >
                         <input type="hidden" name="userId" value={user.id} />
                       </ActionForm>
+
+                      {assistantHere ? (
+                        <ActionForm
+                          action={toggleAi}
+                          label={user.canUseAi ? words.takeAiAccess : words.allowAiAccess}
+                          compact
+                          toast
+                          confirmation={
+                            user.canUseAi ? undefined : confirmAllowAi(words, user.login)
+                          }
+                        >
+                          <input type="hidden" name="userId" value={user.id} />
+                        </ActionForm>
+                      ) : null}
+
+                      <ActionForm action={recomputeStorage} label={words.recomputeStorage} compact toast>
+                        <input type="hidden" name="userId" value={user.id} />
+                      </ActionForm>
+
+                      <div className="account-last">
+                        <ActionForm
+                          action={deleteUser}
+                          label={words.deleteAccount}
+                          compact
+                          danger
+                          toast
+                          confirmation={confirmDeleteUser(words, user.login, user._count.notes)}
+                        >
+                          <input type="hidden" name="userId" value={user.id} />
+                        </ActionForm>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           );
         })}

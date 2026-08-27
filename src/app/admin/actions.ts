@@ -20,8 +20,6 @@ import {
   accountEmailNowMsg,
   accountLoginNowMsg,
   accountUnblockedMsg,
-  adminRightsGivenMsg,
-  adminRightsTakenMsg,
   aiAccessGivenMsg,
   aiAccessTakenMsg,
   aiLimitDefaultMsg,
@@ -44,6 +42,33 @@ async function requireAdmin() {
   const admin = await currentAdmin();
   if (!admin) throw new Error((await currentWords()).actAdminOnly);
   return admin;
+}
+
+/**
+ * Konto, na którym panelowi wolno cokolwiek zrobić.
+ *
+ * Kont administratorów panel nie rusza: ani nie zablokuje, ani nie skasuje,
+ * ani nie zmieni im hasła czy adresu - i nie nadaje ani nie odbiera samych
+ * uprawnień. Robi się to wyłącznie z serwera, poleceniem npm run konta.
+ *
+ * Chodzi o to, co się dzieje, gdy ktoś przejmie konto administratora: przez
+ * panel dosięgnie wtedy zwykłych kont, ale nie zabetonuje się na serwerze -
+ * nie zrobi administratora z konta, które ma pod ręką, i nie odbierze
+ * uprawnień prawowitym administratorom, żeby nie mieli czym tego cofnąć.
+ * Odzyskanie serwera zostaje przy tym, kto ma do niego dostęp powłoką.
+ *
+ * Sprawdzenie siedzi TUTAJ, a nie tylko w widoku: ukryty przycisk to nie to
+ * samo co niedziałająca czynność, a czynności serwerowe wołać można wprost.
+ */
+async function editableUser(userId: string) {
+  const words = await currentWords();
+  if (!userId) return { error: words.actWhichAccount } as const;
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) return { error: words.apiNoSuchAccount } as const;
+  if (user.role === "ADMIN") return { error: words.actAdminAccountFromServer } as const;
+
+  return { user } as const;
 }
 
 async function writeToLog(actorId: string, action: string, details: string) {
@@ -200,6 +225,9 @@ export async function setQuota(_previous: Result, data: FormData): Promise<Resul
   if (!parsed.success) return { error: (await currentWords()).actCheckNumbers };
 
   const { userId, quotaMb, forDays } = parsed.data;
+  const target = await editableUser(userId);
+  if ("error" in target) return { error: target.error };
+
   const quota = quotaFromMb(quotaMb);
 
   await prisma.user.update({
@@ -243,9 +271,9 @@ export async function toggleBlock(_previous: Result, data: FormData): Promise<Re
   const userId = String(data.get("userId") ?? "");
   const reason = String(data.get("reason") ?? "").trim();
 
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) return { error: (await currentWords()).apiNoSuchAccount };
-  if (user.id === admin.id) return { error: (await currentWords()).actCannotBlockSelf };
+  const target = await editableUser(userId);
+  if ("error" in target) return { error: target.error };
+  const user = target.user;
 
   const blocking = !user.blocked;
 
@@ -305,6 +333,9 @@ export async function changeLogin(_previous: Result, data: FormData): Promise<Re
 
   const { userId, login } = parsed.data;
 
+  const target = await editableUser(userId);
+  if ("error" in target) return { error: target.error };
+
   const taken = await prisma.user.findUnique({ where: { login }, select: { id: true } });
   if (taken && taken.id !== userId) return { error: (await currentWords()).actLoginTaken };
 
@@ -335,8 +366,10 @@ export async function changeEmail(_previous: Result, data: FormData): Promise<Re
 
   const { userId, email } = parsed.data;
 
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) return { error: (await currentWords()).apiNoSuchAccount };
+  const target = await editableUser(userId);
+  if ("error" in target) return { error: target.error };
+  const user = target.user;
+
   if (user.email === email) return { error: (await currentWords()).actAccountHasAddress };
 
   const taken = await prisma.user.findUnique({ where: { email }, select: { id: true } });
@@ -383,8 +416,9 @@ export async function sendPasswordReset(_previous: Result, data: FormData): Prom
   const admin = await requireAdmin();
   const userId = String(data.get("userId") ?? "");
 
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) return { error: (await currentWords()).apiNoSuchAccount };
+  const target = await editableUser(userId);
+  if ("error" in target) return { error: target.error };
+  const user = target.user;
 
   const token = randomBytes(32).toString("base64url");
 
@@ -431,8 +465,9 @@ export async function setUserPassword(_previous: Result, data: FormData): Promis
 
   const { userId, password } = parsed.data;
 
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) return { error: (await currentWords()).apiNoSuchAccount };
+  const target = await editableUser(userId);
+  if ("error" in target) return { error: target.error };
+  const user = target.user;
 
   await prisma.$transaction([
     prisma.user.update({
@@ -454,34 +489,18 @@ export async function setUserPassword(_previous: Result, data: FormData): Promis
   return { success: passwordSetForMsg(await currentWords(), user.login) };
 }
 
-export async function toggleAdmin(_previous: Result, data: FormData): Promise<Result> {
-  const admin = await requireAdmin();
-  const userId = String(data.get("userId") ?? "");
-
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) return { error: (await currentWords()).apiNoSuchAccount };
-  if (user.id === admin.id) return { error: (await currentWords()).actCannotTakeOwnRights };
-
-  const newRole = user.role === "ADMIN" ? "USER" : "ADMIN";
-  await prisma.user.update({ where: { id: userId }, data: { role: newRole } });
-  await writeToLog(admin.id, "account.role", `${user.login} -> ${newRole}`);
-
-  revalidatePath("/admin/accounts");
-  const words = await currentWords();
-  return {
-    success:
-      newRole === "ADMIN"
-        ? adminRightsGivenMsg(words, user.login)
-        : adminRightsTakenMsg(words, user.login),
-  };
-}
+/*
+  Nadawania i odbierania uprawnień administratora tu nie ma i nie będzie.
+  Rola konta zmienia się wyłącznie z serwera - patrz scripts/konta.ts.
+*/
 
 export async function toggleCodeRunning(_previous: Result, data: FormData): Promise<Result> {
   const admin = await requireAdmin();
   const userId = String(data.get("userId") ?? "");
 
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) return { error: (await currentWords()).apiNoSuchAccount };
+  const target = await editableUser(userId);
+  if ("error" in target) return { error: target.error };
+  const user = target.user;
 
   const allowed = !user.canRunCode;
   await prisma.user.update({
@@ -513,8 +532,9 @@ export async function toggleAi(_previous: Result, data: FormData): Promise<Resul
   const admin = await requireAdmin();
   const userId = String(data.get("userId") ?? "");
 
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) return { error: (await currentWords()).apiNoSuchAccount };
+  const target = await editableUser(userId);
+  if ("error" in target) return { error: target.error };
+  const user = target.user;
 
   const allowed = !user.canUseAi;
   await prisma.user.update({
@@ -545,8 +565,9 @@ export async function setAiLimit(_previous: Result, data: FormData): Promise<Res
     .safeParse({ userId: data.get("userId"), perDay: data.get("perDay") ?? 0 });
   if (!parsed.success) return { error: (await currentWords()).actCheckNumbers };
 
-  const user = await prisma.user.findUnique({ where: { id: parsed.data.userId } });
-  if (!user) return { error: (await currentWords()).apiNoSuchAccount };
+  const target = await editableUser(parsed.data.userId);
+  if ("error" in target) return { error: target.error };
+  const user = target.user;
 
   await prisma.user.update({
     where: { id: parsed.data.userId },
@@ -567,7 +588,9 @@ export async function setAiLimit(_previous: Result, data: FormData): Promise<Res
 export async function recomputeStorage(_previous: Result, data: FormData): Promise<Result> {
   await requireAdmin();
   const userId = String(data.get("userId") ?? "");
-  if (!userId) return { error: (await currentWords()).actWhichAccount };
+
+  const target = await editableUser(userId);
+  if ("error" in target) return { error: target.error };
 
   await recomputeUsed(userId);
   revalidatePath("/admin/accounts");
@@ -578,7 +601,8 @@ export async function deleteUser(_previous: Result, data: FormData): Promise<Res
   const admin = await requireAdmin();
   const userId = String(data.get("userId") ?? "");
 
-  if (userId === admin.id) return { error: (await currentWords()).actCannotDeleteOwnAccount };
+  const target = await editableUser(userId);
+  if ("error" in target) return { error: target.error };
 
   const removed = await removeAccount(userId);
   if (!removed) return { error: (await currentWords()).apiNoSuchAccount };
