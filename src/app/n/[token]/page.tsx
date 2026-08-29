@@ -12,6 +12,7 @@ import { TextNoteEditor } from "@/components/TextNoteEditor";
 import { MindMapEditor } from "@/components/MindMapEditor";
 import { HandwritingEditor } from "@/components/HandwritingEditor";
 import { CodeNotePanel } from "@/components/CodeNotePanel";
+import { LargeNoteNotice } from "@/components/LargeNoteNotice";
 import { runCodeAction } from "@/app/note/[id]/actions";
 import {
   saveSharedTextNote,
@@ -20,6 +21,7 @@ import {
   saveSharedCodeNote,
 } from "./actions";
 import { currentWords } from "@/lib/language";
+import { noteDisplayDecision } from "@/lib/note-display";
 import type { Words } from "@/lib/i18n";
 
 export async function generateMetadata() {
@@ -67,6 +69,9 @@ export default async function SharedNotePage({
   }
 
   const { note, canEdit, isOwner } = result.access;
+  // Także odnośnik tylko do odczytu omija ciężki NotePreview. Inaczej duży
+  // plik blokowałby stronę udostępnienia mimo ochrony w widoku właściciela.
+  const display = noteDisplayDecision(note);
 
   /*
     Edycja przez odnośnik używa tych samych edytorów co właściciel - różni się
@@ -79,7 +84,7 @@ export default async function SharedNotePage({
   // Zdjęcia już wysłane do notatki - edytor odręczny umie je wstawiać, choć
   // wysyłanie nowych zostaje u właściciela.
   const attachments =
-    canEdit && note.kind === "HANDWRITTEN"
+    canEdit && !display.tooLarge && note.kind === "HANDWRITTEN"
       ? await prisma.attachment.findMany({
           where: { noteId: note.id },
           orderBy: { createdAt: "asc" },
@@ -87,11 +92,14 @@ export default async function SharedNotePage({
         })
       : [];
 
-  const codeBody = canEdit && note.kind === "CODE" ? parseCodeNote(note.content) : null;
+  const codeBody =
+    canEdit && !display.tooLarge && note.kind === "CODE" ? parseCodeNote(note.content) : null;
   const mindMapBody =
-    canEdit && note.kind === "MINDMAP" ? parseMindMapNote(note.content) : null;
+    canEdit && !display.tooLarge && note.kind === "MINDMAP" ? parseMindMapNote(note.content) : null;
   const handwritingBody =
-    canEdit && note.kind === "HANDWRITTEN" ? parseHandwritingNote(note.content) : null;
+    canEdit && !display.tooLarge && note.kind === "HANDWRITTEN"
+      ? parseHandwritingNote(note.content)
+      : null;
 
   return (
     <main className="page wide">
@@ -113,6 +121,15 @@ export default async function SharedNotePage({
         ) : null}
       </div>
 
+      {display.tooLarge ? (
+        <LargeNoteNotice
+          words={words}
+          sizeBytes={display.sizeBytes}
+          limitBytes={display.limitBytes}
+          downloadHref={`/n/${token}/download`}
+        />
+      ) : (
+        <>
       {canEdit && note.kind === "TEXT" ? (
         <section>
           <p className="eyebrow" style={{ marginBottom: 10 }}>
@@ -210,6 +227,8 @@ export default async function SharedNotePage({
       ) : null}
 
       {!canEdit ? <NotePreview content={note.content} noteId={note.id} token={token} /> : null}
+        </>
+      )}
 
       <hr className="divider" />
       <p className="small">

@@ -15,13 +15,23 @@ import {
   setFolderLook,
   moveNoteToFolder,
   bulkNotesFromLibrary,
+  uploadLibraryFile,
 } from "./actions";
 import { BulkNotesForm, BULK_FORM_ID } from "@/components/BulkNotesForm";
+import { LibraryFileUpload } from "@/components/LibraryFileUpload";
 import { FolderMoveForm } from "@/components/FolderMoveForm";
 import { FolderList } from "@/components/FolderList";
 import { Icon, type IconName } from "@/components/Icon";
 import { currentWords } from "@/lib/language";
-import { attachmentsCount, notesCount, type Words } from "@/lib/i18n";
+import {
+  attachmentsCount,
+  libraryFileUploadHint,
+  libraryFileUploadLabel,
+  libraryFileUploadingLabel,
+  notesCount,
+  type Words,
+} from "@/lib/i18n";
+import { LIBRARY_FILE_ACCEPT } from "@/lib/library-file";
 
 export async function generateMetadata() {
   return { title: (await currentWords()).libraryTitle };
@@ -196,14 +206,7 @@ export default async function LibraryPage({
       <div className="library-head">
         <div>
           <h1 style={{ marginBottom: 4 }}>
-            {favoritesOnly ? (
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
-                <Icon name="star" size={28} filled />
-                {words.favorites}
-              </span>
-            ) : (
-              here
-            )}
+            {favoritesOnly ? words.favorites : here}
           </h1>
           <p className="small" style={{ margin: 0 }}>
             {total === 0
@@ -258,6 +261,18 @@ export default async function LibraryPage({
             <Icon name="code" size={18} />
             {words.newCode}
           </Link>
+          <LibraryFileUpload
+            action={uploadLibraryFile}
+            folderId={
+              folderFilter && folderFilter !== "__none" ? folderFilter : undefined
+            }
+            accept={LIBRARY_FILE_ACCEPT}
+            label={libraryFileUploadLabel(words)}
+            busyLabel={libraryFileUploadingLabel(words)}
+            hint={libraryFileUploadHint(words)}
+            openLabel={words.open}
+            closeLabel={words.close}
+          />
           <Link className="button compact" href="/library/trash">
             <Icon name="delete" size={18} />
             {words.trash}
@@ -393,6 +408,7 @@ export default async function LibraryPage({
                 {words.favoritesEmptyAbout}
               </p>
               <Link className="button primary" href="/library">
+                <Icon name="inbox" size={18} />
                 {words.all}
               </Link>
             </div>
@@ -405,9 +421,11 @@ export default async function LibraryPage({
               </p>
               <div className="row">
                 <Link className="button primary" href="/note/new">
+                  <Icon name="article" size={18} />
                   {words.textNote}
                 </Link>
                 <Link className="button" href="/note/new/code">
+                  <Icon name="code" size={18} />
                   {words.codeFile}
                 </Link>
               </div>

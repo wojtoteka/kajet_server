@@ -17,6 +17,9 @@ vi.mock("@/lib/prisma", () => ({
       update: vi.fn(),
       delete: vi.fn(),
     },
+    attachment: {
+      findMany: vi.fn(async () => []),
+    },
     // Nagrobki po notatkach skasowanych na zawsze. Zapis notatki pod
     // identyfikatorem, który ma nagrobek, ten nagrobek zdejmuje.
     deletedNote: {
@@ -38,10 +41,17 @@ vi.mock("@/lib/files", () => ({
     `hash:${typeof data === "string" ? data : data.toString("utf8")}`,
   deleteAttachment: vi.fn(async () => undefined),
   deleteNoteDirectory: vi.fn(async () => undefined),
+  noteStoragePrefix: (ownerId: string, noteId: string) => `${ownerId}/${noteId}/`,
+}));
+
+vi.mock("@/lib/attachment-delete", () => ({
+  deleteAttachmentFileIfUnused: vi.fn(async () => false),
 }));
 
 import { prisma } from "@/lib/prisma";
 import { reserveBytes } from "@/lib/quota";
+import { deleteAttachment, deleteNoteDirectory } from "@/lib/files";
+import { deleteAttachmentFileIfUnused } from "@/lib/attachment-delete";
 
 const owner = "user-1";
 
@@ -546,6 +556,48 @@ describe("purgeNoteForUser", () => {
         create: { noteId: "note-1", ownerId: owner },
       }),
     );
+  });
+
+  it("removes the whole scoped directory when no other note references it", async () => {
+    vi.mocked(prisma.note.findUnique).mockResolvedValue({
+      id: "note-1",
+      ownerId: owner,
+      deletedAt: new Date(1_700_000_000_000),
+      sizeBytes: 100,
+      attachments: [
+        { path: "user-1/note-1/hash-a.png", sizeBytes: 10 },
+        { path: "user-1/note-1/hash-b.log", sizeBytes: 20 },
+      ],
+    } as never);
+    vi.mocked(prisma.attachment.findMany).mockResolvedValue([] as never);
+
+    await purgeNoteForUser(owner, "note-1");
+
+    expect(deleteNoteDirectory).toHaveBeenCalledWith(owner, "note-1");
+    expect(deleteAttachment).not.toHaveBeenCalled();
+  });
+
+  it("preserves shared files and deletes only exclusive paths during note purge", async () => {
+    const shared = "user-1/note-1/hash-shared.png";
+    const exclusive = "user-1/note-1/hash-own.log";
+    vi.mocked(prisma.note.findUnique).mockResolvedValue({
+      id: "note-1",
+      ownerId: owner,
+      deletedAt: new Date(1_700_000_000_000),
+      sizeBytes: 100,
+      attachments: [
+        { path: shared, sizeBytes: 10 },
+        { path: exclusive, sizeBytes: 20 },
+      ],
+    } as never);
+    vi.mocked(prisma.attachment.findMany).mockResolvedValue([{ path: shared }] as never);
+
+    await purgeNoteForUser(owner, "note-1");
+
+    expect(deleteNoteDirectory).not.toHaveBeenCalled();
+    expect(deleteAttachment).toHaveBeenCalledTimes(1);
+    expect(deleteAttachment).toHaveBeenCalledWith(owner, "note-1", exclusive);
+    expect(deleteAttachmentFileIfUnused).toHaveBeenCalledWith(owner, "note-1", shared);
   });
 
   it("refuses a note that is not in the bin yet", async () => {

@@ -4,6 +4,7 @@ import {
   startTransition,
   useActionState,
   useCallback,
+  useDeferredValue,
   useEffect,
   useMemo,
   useRef,
@@ -34,6 +35,13 @@ type RunAction = (previous: RunResult, data: FormData) => Promise<RunResult>;
 
 /** Ile wierszy konsoli podglądu pokazujemy, zanim przestaniemy zbierać. */
 const CONSOLE_LIMIT = 300;
+
+/**
+ * Powyżej tej liczby rezygnujemy z kolumny numerów. Sam kod nadal jest w
+ * jednym natywnym textarea, ale budowanie i malowanie dziesiątek tysięcy
+ * numerów przy każdym dopisanym znaku nie zabiera już czasu głównemu polu.
+ */
+const GUTTER_LINE_LIMIT = 10_000;
 
 export function CodeNotePanel({
   saveAction,
@@ -70,15 +78,25 @@ export function CodeNotePanel({
   const [currentSource, setCurrentSource] = useState(source);
   const [noteTitle, setNoteTitle] = useState(title);
 
+  // Kosztowne dodatki mogą zostać o jedną klatkę za pisaniem. Kontrolowane
+  // textarea dostaje świeżą wartość od razu; numeracja i HTML nie blokują
+  // naciśnięcia klawisza przeliczaniem całego pliku.
+  const deferredSource = useDeferredValue(currentSource);
+
   // Numery wierszy obok kodu. Liczymy je z treści, a nie z wysokości pola:
   // przy wyłączonym zawijaniu jeden wiersz kodu to zawsze jeden wiersz na
   // ekranie, więc wystarczy policzyć znaki końca wiersza.
   const sourceRef = useRef<HTMLTextAreaElement | null>(null);
   const gutterRef = useRef<HTMLDivElement | null>(null);
-  const lineNumbers = useMemo(() => {
-    const count = currentSource.split("\n").length;
-    return Array.from({ length: count }, (_, at) => at + 1).join("\n");
-  }, [currentSource]);
+  const lineCount = useMemo(() => sourceLineCount(deferredSource), [deferredSource]);
+  const showLineNumbers = lineCount <= GUTTER_LINE_LIMIT;
+  const lineNumbers = useMemo(
+    () =>
+      showLineNumbers
+        ? Array.from({ length: lineCount }, (_, at) => at + 1).join("\n")
+        : "",
+    [lineCount, showLineNumbers],
+  );
 
   /*
     Spis do wyboru. Plik przyniesiony z tabletu może mieć język, którego ten
@@ -268,9 +286,11 @@ export function CodeNotePanel({
             samo jak w aplikacji przy wyłączonym zawijaniu.
           */}
           <div className="code-editor">
-            <div className="code-gutter" ref={gutterRef} aria-hidden="true">
-              {lineNumbers}
-            </div>
+            {showLineNumbers ? (
+              <div className="code-gutter" ref={gutterRef} aria-hidden="true">
+                {lineNumbers}
+              </div>
+            ) : null}
             <textarea
               id="code-source"
               name="source"
@@ -289,6 +309,11 @@ export function CodeNotePanel({
               wrap="off"
             />
           </div>
+          {!showLineNumbers ? (
+            <p className="small" style={{ margin: "7px 0 0 0" }}>
+              {words.codeLineNumbersHidden}
+            </p>
+          ) : null}
         </div>
 
         {/* Powodzenie zapisu pokazuje napis przy przycisku - zielona ramka nad
@@ -345,7 +370,7 @@ export function CodeNotePanel({
             className="code-html-preview"
             title={words.htmlPreviewFrame}
             sandbox="allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox"
-            srcDoc={previewDocument(currentSource, words)}
+            srcDoc={previewDocument(deferredSource, words)}
             style={{
               width: "100%",
               minHeight: 360,
@@ -512,6 +537,14 @@ export function CodeNotePanel({
       ) : null}
     </div>
   );
+}
+
+/** Liczenie bez tablicy z kopią każdej linii dużego pliku. */
+function sourceLineCount(source: string): number {
+  let count = 1;
+  let at = -1;
+  while ((at = source.indexOf("\n", at + 1)) !== -1) count += 1;
+  return count;
 }
 
 /** Znak przed wierszem konsoli, żeby rodzaj wpisu był widać bez koloru. */

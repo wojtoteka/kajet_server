@@ -249,6 +249,9 @@ export type Words = {
   editingHandwriting: string;
   handwritingUnreadable: string;
   codeUnreadable: string;
+  largeNoteEyebrow: string;
+  largeNoteHeading: string;
+  downloadNote: string;
   sharingEyebrow: string;
   shareThisNote: string;
   shareAbout: string;
@@ -319,6 +322,7 @@ export type Words = {
   runningEyebrow: string;
   runOnServer: string;
   cannotRunHere: string;
+  codeLineNumbersHidden: string;
   standardInput: string;
   stdinPlaceholder: string;
   exitCodeWord: string;
@@ -1397,6 +1401,9 @@ const pl: Words = {
     "Nie udało się otworzyć tej notatki. Nie zapisuj jej - inaczej stracisz to, co jest " +
     "w środku.",
   codeUnreadable: "Nie udało się odczytać treści pliku z kodem.",
+  largeNoteEyebrow: "Duży plik",
+  largeNoteHeading: "Ten plik jest za duży dla edytora w przeglądarce",
+  downloadNote: "Pobierz plik",
   sharingEyebrow: "Udostępnianie",
   shareThisNote: "Udostępnij tę notatkę",
   shareAbout:
@@ -1470,6 +1477,8 @@ const pl: Words = {
   runningEyebrow: "Uruchomienie",
   runOnServer: "Uruchom na serwerze",
   cannotRunHere: "Tego kodu nie uruchomisz na stronie. Zapisywanie działa jak zwykle.",
+  codeLineNumbersHidden:
+    "Numery wierszy są ukryte w tym dużym pliku, żeby pisanie i przewijanie pozostały płynne.",
   standardInput: "Wejście standardowe (opcjonalnie)",
   stdinPlaceholder: "To, co program ma przeczytać…",
   exitCodeWord: "kod wyjścia",
@@ -2717,6 +2726,9 @@ const en: Words = {
   handwritingUnreadable:
     "This note could not be opened. Do not save it, or you will lose what is inside.",
   codeUnreadable: "Kajet could not read the contents of this code file.",
+  largeNoteEyebrow: "Large file",
+  largeNoteHeading: "This file is too large for the browser editor",
+  downloadNote: "Download the file",
   sharingEyebrow: "Sharing",
   shareThisNote: "Share this note",
   shareAbout:
@@ -2789,6 +2801,8 @@ const en: Words = {
   runningEyebrow: "Running",
   runOnServer: "Run it on the server",
   cannotRunHere: "You cannot run this code on the website. Saving works as usual.",
+  codeLineNumbersHidden:
+    "Line numbers are hidden for this large file so that typing and scrolling stay responsive.",
   standardInput: "Standard input (optional)",
   stdinPlaceholder: "What the program should read…",
   exitCodeWord: "exit code",
@@ -4115,11 +4129,63 @@ export function aiNoteTooBig(words: Words, chars: number, most: number): string 
         `Podziel ją na mniejsze albo popraw ten fragment ręcznie.`;
 }
 
+/** Ostrzeżenie przed zamontowaniem ciężkiego edytora lub podglądu. */
+export function largeNoteDisplayWarning(
+  words: Words,
+  size: string,
+  limit: string,
+): string {
+  return words.locale === "en-US"
+    ? `The file is ${size}; the safe inline limit for this kind is ${limit}. ` +
+        `To keep this page responsive, Kajet has not started the editor or preview. ` +
+        `Download the complete file instead — nothing will be truncated.`
+    : `Plik ma ${size}, a bezpieczny limit wyświetlania tego rodzaju to ${limit}. ` +
+        `Żeby strona pozostała płynna, Kajet nie uruchomił edytora ani podglądu. ` +
+        `Zamiast tego pobierz cały plik — nic nie zostanie obcięte.`;
+}
+
 /** Załącznik cięższy, niż serwer przyjmuje. */
 export function fileTooBig(words: Words, size: string): string {
   return words.locale === "en-US"
     ? `The file is too big. The largest one accepted is ${size}.`
     : `Plik jest za duży. Największy przyjmowany rozmiar to ${size}.`;
+}
+
+/** Napisy i odmowy przy wgrywaniu samodzielnego pliku do biblioteki. */
+export function libraryFileUploadLabel(words: Words): string {
+  return words.locale === "en-US" ? "Upload file" : "Wgraj plik";
+}
+
+export function libraryFileUploadingLabel(words: Words): string {
+  return words.locale === "en-US" ? "Uploading…" : "Wgrywam…";
+}
+
+export function libraryFileUploadHint(words: Words): string {
+  return words.locale === "en-US"
+    ? "Upload a text or source-code file supported by the Kajet app"
+    : "Wgraj plik tekstowy albo z kodem obsługiwany przez aplikację Kajet";
+}
+
+export function libraryFileKindRefused(words: Words): string {
+  return words.locale === "en-US"
+    ? "Kajet does not support that file extension. Choose a text or source-code file supported by the app."
+    : "Kajet nie obsługuje tego rozszerzenia. Wybierz plik tekstowy albo z kodem obsługiwany przez aplikację.";
+}
+
+export function libraryFileMimeRefused(words: Words): string {
+  return words.locale === "en-US"
+    ? "The file type does not match a text or source-code file."
+    : "Rodzaj pliku nie zgadza się z plikiem tekstowym ani z kodem.";
+}
+
+export function libraryFileEncodingRefused(words: Words): string {
+  return words.locale === "en-US"
+    ? "Kajet could not read this as a UTF-8 text file."
+    : "Kajet nie może odczytać tego jako pliku tekstowego UTF-8.";
+}
+
+export function libraryFileUploaded(words: Words, name: string): string {
+  return words.locale === "en-US" ? `Uploaded “${name}”.` : `Wgrano „${name}”.`;
 }
 
 /** To samo o pliku wydania - zdanie dla administratora, więc z nazwą ustawienia. */

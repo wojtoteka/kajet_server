@@ -56,7 +56,7 @@ export function safeAttachmentName(raw: string): string {
 }
 
 export type StoredFile = {
-path: string;
+  path: string;
   hash: string;
   sizeBytes: number;
 };
@@ -108,10 +108,79 @@ export async function readAttachment(relativePath: string): Promise<Buffer | nul
   }
 }
 
-export async function deleteAttachment(relativePath: string): Promise<void> {
-  const full = path.resolve(rootDirectory(), relativePath);
-  if (!full.startsWith(rootDirectory() + path.sep)) return;
+/**
+ * Prefix used by every attachment belonging to one note in the database.
+ * It is exported for cleanup code which has to detect references from other
+ * notes before removing the whole directory.
+ */
+export function noteStoragePrefix(ownerId: string, noteId: string): string {
+  return `${userStoragePrefix(ownerId)}${safeId(noteId)}/`;
+}
+
+/** Prefix of all attachment paths physically owned by one account. */
+export function userStoragePrefix(ownerId: string): string {
+  return `${safeId(ownerId)}/`;
+}
+
+/**
+ * Resolve a database path only when it names a direct child of the expected
+ * owner/note directory.
+ *
+ * Checking only that a path remains somewhere below FILES_DIR is not enough:
+ * a damaged (or maliciously edited) row could otherwise make deleting one
+ * note remove a different user's file. Stored attachment paths always have
+ * exactly three segments: owner, note and the hash-based disk name.
+ */
+function attachmentFilePath(
+  ownerId: string,
+  noteId: string,
+  relativePath: string,
+): string | null {
+  if (!relativePath || relativePath.includes("\0")) return null;
+
+  // Accept both separators so paths written on another operating system can
+  // still be cleaned up, but reject extra/nested segments and every `..`.
+  const segments = relativePath.split(/[\\/]/);
+  if (segments.length !== 3 || segments.some((segment) => !segment || segment === "." || segment === "..")) {
+    return null;
+  }
+
+  const expectedOwner = safeId(ownerId);
+  const expectedNote = safeId(noteId);
+  if (segments[0] !== expectedOwner || segments[1] !== expectedNote) return null;
+
+  const directory = noteDirectory(ownerId, noteId);
+  const full = path.resolve(rootDirectory(), ...segments);
+  if (path.dirname(full) !== directory) return null;
+  return full;
+}
+
+/** Visible for security regression tests; no absolute server path escapes. */
+export function isAttachmentPathForNote(
+  ownerId: string,
+  noteId: string,
+  relativePath: string,
+): boolean {
+  try {
+    return attachmentFilePath(ownerId, noteId, relativePath) !== null;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Remove one physical attachment only from its expected note directory.
+ * Returns false for a refused path; a missing file still counts as removed.
+ */
+export async function deleteAttachment(
+  ownerId: string,
+  noteId: string,
+  relativePath: string,
+): Promise<boolean> {
+  const full = attachmentFilePath(ownerId, noteId, relativePath);
+  if (!full) return false;
   await rm(full, { force: true });
+  return true;
 }
 
 export async function deleteNoteDirectory(ownerId: string, noteId: string): Promise<void> {

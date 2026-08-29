@@ -1,7 +1,13 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { reserveBytes, changeUsed } from "@/lib/quota";
-import { contentHash, deleteAttachment, deleteNoteDirectory } from "@/lib/files";
+import {
+  contentHash,
+  deleteAttachment,
+  deleteNoteDirectory,
+  noteStoragePrefix,
+} from "@/lib/files";
+import { deleteAttachmentFileIfUnused } from "@/lib/attachment-delete";
 import { fitTitle } from "@/lib/note-title";
 import { apiWords } from "./language";
 
@@ -591,10 +597,39 @@ export async function purgeNoteForUser(
   const attachmentBytes = existing.attachments.reduce((sum, a) => sum + a.sizeBytes, 0);
   const freed = existing.sizeBytes + attachmentBytes;
 
-  for (const attachment of existing.attachments) {
-    await deleteAttachment(attachment.path);
+  const paths = [...new Set(existing.attachments.map((attachment) => attachment.path))];
+  const prefix = noteStoragePrefix(userId, noteId);
+
+  // Normally every attachment path belongs only to this note and its whole
+  // directory can be removed, including old orphan files. A defensive lookup
+  // is still necessary: hash deduplication, legacy rows or damaged data may
+  // make a different note point into this directory. Exact-path matching also
+  // catches legacy paths written with the other operating-system separator.
+  const externalReferences = await prisma.attachment.findMany({
+    where: {
+      noteId: { not: noteId },
+      OR:
+        paths.length > 0
+          ? [{ path: { startsWith: prefix } }, { path: { in: paths } }]
+          : [{ path: { startsWith: prefix } }],
+    },
+    select: { path: true },
+  });
+  const protectedPaths = new Set(externalReferences.map((attachment) => attachment.path));
+
+  if (protectedPaths.size === 0) {
+    await deleteNoteDirectory(userId, noteId);
+  } else {
+    // The directory contains at least one shared file, so removing it
+    // recursively would break the other note. Delete only paths exclusively
+    // owned by the note being purged; invalid/out-of-scope paths are refused
+    // by deleteAttachment.
+    for (const relativePath of paths) {
+      if (!protectedPaths.has(relativePath)) {
+        await deleteAttachment(userId, noteId, relativePath);
+      }
+    }
   }
-  await deleteNoteDirectory(userId, noteId);
 
   // Wiersz i nagrobek jednym zapisem. Osobno dałoby się rozerwać w połowie:
   // notatka skasowana bez nagrobka znika po cichu i żadne urządzenie się o
@@ -608,6 +643,13 @@ export async function purgeNoteForUser(
       update: { deletedAt: new Date(), ownerId: userId },
     }),
   ]);
+
+  // If two notes sharing a physical path are purged at the same time, each
+  // may initially see the other reference. Rechecking after the transaction
+  // makes the last deletion remove the file instead of leaving an orphan.
+  for (const relativePath of protectedPaths) {
+    await deleteAttachmentFileIfUnused(userId, noteId, relativePath);
+  }
 
   await changeUsed(userId, -freed);
 

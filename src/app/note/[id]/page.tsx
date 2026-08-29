@@ -21,6 +21,7 @@ import { aiVisibleFor } from "@/lib/ai/access";
 import { aiHandles } from "@/lib/ai/tools";
 import { AttachmentsPanel } from "@/components/AttachmentsPanel";
 import { NoteActionsBar } from "@/components/NoteActionsBar";
+import { LargeNoteNotice } from "@/components/LargeNoteNotice";
 import { ActionForm } from "@/components/ActionForm";
 import { CopyableLink } from "@/components/CopyableLink";
 import {
@@ -43,6 +44,7 @@ import {
   clearAiConversation,
 } from "./actions";
 import { currentWords } from "@/lib/language";
+import { noteDisplayDecision } from "@/lib/note-display";
 import type { Words } from "@/lib/i18n";
 
 function kindName(words: Words, kind: string): string {
@@ -107,13 +109,17 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
       ? words.codeDisabledForAccount
       : runState.description;
 
-  const codeBody = note.kind === "CODE" ? parseCodeNote(note.content) : null;
+  // Ta decyzja zapada przed JSON.parse i przed przekazaniem treści do
+  // komponentu klienckiego. Duży plik nie montuje więc ani kontrolowanego
+  // textarea, ani parsera Markdown/mapy, ani podglądu HTML.
+  const display = noteDisplayDecision(note);
+  const codeBody = !display.tooLarge && note.kind === "CODE" ? parseCodeNote(note.content) : null;
   const mindMapBody =
-    note.kind === "MINDMAP"
+    !display.tooLarge && note.kind === "MINDMAP"
       ? (parseMindMapNote(note.content) ?? { ...defaultMindMapSeed(), viewX: 0, viewY: 0, zoom: 1 })
       : null;
   const handwritingBody =
-    note.kind === "HANDWRITTEN" ? parseHandwritingNote(note.content) : null;
+    !display.tooLarge && note.kind === "HANDWRITTEN" ? parseHandwritingNote(note.content) : null;
 
   return (
     <main className="page wide">
@@ -154,22 +160,30 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
           przy notatce i udostępnianie - one dostają świeże dane bez niczyjej
           pomocy, bo są serwerowe i bezstanowe.
         */}
-        <NoteLive
-          version={note.version}
-          ai={
-            assistantHere
-              ? {
-                  noteId: note.id,
-                  version: note.version,
-                  consented: owner?.aiConsentAt != null,
-                  askAction: askAssistant,
-                  undoAction: undoAssistant,
-                  historyAction: readAiConversation,
-                  clearAction: clearAiConversation,
-                }
-              : null
-          }
-        >
+        {display.tooLarge ? (
+          <LargeNoteNotice
+            words={words}
+            sizeBytes={display.sizeBytes}
+            limitBytes={display.limitBytes}
+            downloadHref={`/note/${note.id}/download`}
+          />
+        ) : (
+          <NoteLive
+            version={note.version}
+            ai={
+              assistantHere
+                ? {
+                    noteId: note.id,
+                    version: note.version,
+                    consented: owner?.aiConsentAt != null,
+                    askAction: askAssistant,
+                    undoAction: undoAssistant,
+                    historyAction: readAiConversation,
+                    clearAction: clearAiConversation,
+                  }
+                : null
+            }
+          >
           {note.kind === "TEXT" ? (
             <section>
               <p className="eyebrow" style={{ marginBottom: 10 }}>
@@ -266,7 +280,8 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
               <NotePreview content={note.content} noteId={note.id} />
             </section>
           ) : null}
-        </NoteLive>
+          </NoteLive>
+        )}
 
         <AttachmentsPanel
           noteId={note.id}

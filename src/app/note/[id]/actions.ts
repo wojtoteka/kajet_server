@@ -26,7 +26,12 @@ import {
   buildHandwritingNoteContent,
   parseExistingHandwritingDocument,
 } from "@/lib/handwriting-note";
-import { buildCodeNoteContent, parseCodeNote, guessLanguageFromTitle } from "@/lib/code-note";
+import {
+  buildCodeNoteContent,
+  parseCodeNote,
+  guessLanguageFromTitle,
+  isCodeNoteLanguage,
+} from "@/lib/code-note";
 import type { MindEdge, MindNode, Page } from "@/lib/document";
 import { LANGUAGES, run, runnerState } from "@/lib/code-runner";
 import { checkLimit, takeSlot } from "@/lib/run-limits";
@@ -44,9 +49,12 @@ import {
   resolveUploadMime,
   safeAttachmentName,
   storeAttachment,
-  deleteAttachment,
   RefusedUpload,
 } from "@/lib/files";
+import {
+  deleteAttachmentFileIfUnused,
+  removeAttachmentRecord,
+} from "@/lib/attachment-delete";
 import { reserveBytes, changeUsed } from "@/lib/quota";
 
 export type Result = {
@@ -504,7 +512,7 @@ export async function saveCodeNote(_previous: Result, data: FormData): Promise<R
   }
 
   const language = parsed.data.language;
-  if (!LANGUAGES.some((entry) => entry.id === language)) {
+  if (!isCodeNoteLanguage(language)) {
     return { error: (await currentWords()).actLanguageUnsupported };
   }
 
@@ -775,10 +783,6 @@ export async function uploadAttachment(_previous: Result, data: FormData): Promi
     };
   }
 
-  if (previous && previous.hash !== stored.hash) {
-    await deleteAttachment(previous.path);
-  }
-
   try {
     await prisma.attachment.upsert({
       where: { noteId_name: { noteId, name } },
@@ -799,7 +803,19 @@ export async function uploadAttachment(_previous: Result, data: FormData): Promi
     });
   } catch (problem) {
     await changeUsed(user.id, -added);
+    // The new hash-based file was written before the database update. If the
+    // update failed and nobody else uses this path, do not leave it orphaned.
+    await deleteAttachmentFileIfUnused(user.id, noteId, stored.path).catch((cleanupProblem) => {
+      console.error("[panel] attachment rollback cleanup", cleanupProblem);
+    });
     throw problem;
+  }
+
+  // Only now is the old row no longer pointing at its previous path. Cleaning
+  // it before the upsert could break the existing attachment if the DB write
+  // failed; the reference check also preserves hash-deduplicated files.
+  if (previous && previous.path !== stored.path) {
+    await deleteAttachmentFileIfUnused(user.id, noteId, previous.path);
   }
 
   revalidatePath(`/note/${noteId}`);
@@ -826,9 +842,8 @@ export async function removeAttachment(_previous: Result, data: FormData): Promi
   });
   if (!attachment) return { success: (await currentWords()).actAttachmentGone };
 
-  await deleteAttachment(attachment.path);
-  await prisma.attachment.delete({ where: { id: attachment.id } });
-  await changeUsed(user.id, -attachment.sizeBytes);
+  const removed = await removeAttachmentRecord(user.id, attachment);
+  if (removed) await changeUsed(user.id, -attachment.sizeBytes);
 
   revalidatePath(`/note/${noteId}`);
   return { success: attachmentRemovedMsg(await currentWords(), name) };

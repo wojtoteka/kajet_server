@@ -11,6 +11,10 @@ import {
 import { FOLDER_COLOURS, FOLDER_ICONS } from "@/lib/folder-look";
 import { currentWords } from "@/lib/language";
 import {
+  importLibraryFileForUser,
+  libraryFileImportMessage,
+} from "@/lib/library-file-import";
+import {
   bulkMovedMsg,
   bulkPartlyFailedMsg,
   bulkTrashedMsg,
@@ -19,9 +23,32 @@ import {
   folderRenamedMsg,
   trashEmptiedMsg,
   trashEmptiedPartlyMsg,
+  libraryFileUploaded,
 } from "@/lib/i18n";
 
-export type Result = { error?: string; success?: string };
+export type Result = { error?: string; success?: string; noteId?: string };
+
+/** Wgrywa plik tekstowy/kod jako tę samą notatkę CODE, którą synchronizuje aplikacja. */
+export async function uploadLibraryFile(_previous: Result, data: FormData): Promise<Result> {
+  const user = await currentUser();
+  const words = await currentWords();
+  if (!user) return { error: words.apiMustSignIn };
+
+  const file = data.get("file");
+  if (!(file instanceof File)) return { error: words.actPickFileFirst };
+
+  const rawFolder = String(data.get("folderId") ?? "").trim();
+  const folderId = rawFolder && rawFolder !== "__none" ? rawFolder : null;
+  const imported = await importLibraryFileForUser(user.id, file, folderId);
+  if (!imported.ok) return { error: libraryFileImportMessage(words, imported) };
+
+  revalidatePath("/library");
+  revalidatePath(`/note/${imported.noteId}`);
+  return {
+    success: libraryFileUploaded(words, imported.name),
+    noteId: imported.noteId,
+  };
+}
 
 export async function trashNoteFromLibrary(_previous: Result, data: FormData): Promise<Result> {
   const user = await currentUser();

@@ -1,5 +1,12 @@
 import type { NextConfig } from "next";
 
+const DEFAULT_MAX_FILE_BYTES = 26_214_400;
+const configuredFileBytes = Number(process.env.MAX_FILE_BYTES);
+const maxFileBytes =
+  Number.isFinite(configuredFileBytes) && configuredFileBytes >= 0
+    ? configuredFileBytes
+    : DEFAULT_MAX_FILE_BYTES;
+
 const config: NextConfig = {
   reactStrictMode: true,
 
@@ -7,10 +14,12 @@ const config: NextConfig = {
   compress: false,
 
   // A handwritten note with dense writing can weigh several megabytes, while
-  // server actions accept only one by default.
+  // server actions accept only one by default. The library upload uses the
+  // same MAX_FILE_BYTES as the API; multipart headers get a small allowance
+  // so a file exactly at the limit still reaches our readable validator.
   experimental: {
     serverActions: {
-      bodySizeLimit: "16mb",
+      bodySizeLimit: Math.max(16 * 1024 * 1024, maxFileBytes + 64 * 1024),
     },
   },
 

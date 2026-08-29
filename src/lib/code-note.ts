@@ -1,5 +1,10 @@
 import { LANGUAGES, findLanguage } from "@/lib/code-runner";
 import { readDocument } from "@/lib/document";
+import {
+  LIBRARY_FILE_TYPES,
+  isLibraryCodeLanguage,
+  libraryFileType,
+} from "@/lib/library-file";
 
 export type CodeNoteBody = {
   language: string;
@@ -71,29 +76,30 @@ export function languageOptions(): {
   nameEn?: string;
   preview?: boolean;
 }[] {
-  return LANGUAGES.map(({ id, namePl, nameEn, preview }) => ({ id, namePl, nameEn, preview }));
+  const runtime = LANGUAGES.map(({ id, namePl, nameEn, preview }) => ({
+    id,
+    namePl,
+    nameEn,
+    preview,
+  }));
+  const runtimeIds = new Set(runtime.map((language) => language.id));
+  const appOnly = LIBRARY_FILE_TYPES.filter((type) => !runtimeIds.has(type.language)).map(
+    (type) => ({
+      id: type.language,
+      namePl: type.namePl,
+      nameEn: type.nameEn,
+    }),
+  );
+  return [...runtime, ...appOnly];
 }
 
-/**
- * Rozszerzenia, które znaczą to samo co główne. Aplikacja zna ich więcej
- * (CodeLanguage.kt), tu stoją te, po których strona ma poznać język pliku.
- */
-const EXTRA_EXTENSIONS: Record<string, string> = {
-  htm: "html",
-  mjs: "javascript",
-  cc: "c++",
-  cxx: "c++",
-  hpp: "c++",
-  h: "c",
-  bash: "bash",
-};
-
 export function guessLanguageFromTitle(title: string): string | null {
-  const ext = title.includes(".") ? title.split(".").pop()?.toLowerCase() : "";
-  if (!ext) return null;
-  const match = LANGUAGES.find((language) => language.extension === ext);
-  if (match) return match.id;
-  return EXTRA_EXTENSIONS[ext] ?? null;
+  return libraryFileType(title)?.language ?? null;
+}
+
+/** Języki zapisywalne w pliku CODE: runtimes serwera plus formaty aplikacji. */
+export function isCodeNoteLanguage(language: string): boolean {
+  return Boolean(findLanguage(language)) || isLibraryCodeLanguage(language);
 }
 
 export function languageLabel(id: string): string {

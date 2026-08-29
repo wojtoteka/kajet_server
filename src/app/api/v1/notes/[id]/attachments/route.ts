@@ -5,10 +5,13 @@ import {
   readAttachment,
   mayUpload,
   resolveUploadMime,
-  deleteAttachment,
   storeAttachment,
   RefusedUpload,
 } from "@/lib/files";
+import {
+  deleteAttachmentFileIfUnused,
+  removeAttachmentRecord,
+} from "@/lib/attachment-delete";
 import { apiWords } from "@/lib/language";
 
 export { OPTIONS } from "@/lib/api";
@@ -83,12 +86,6 @@ export const POST = wrapApi(async (request: Request, { params }: { params: Promi
     );
   }
 
-  // The same file under the same name already sits on disk under a name made
-  // from its hash, so we delete the old file only once the content really changed.
-  if (previous && previous.hash !== stored.hash) {
-    await deleteAttachment(previous.path);
-  }
-
   try {
     await prisma.attachment.upsert({
       where: { noteId_name: { noteId, name } },
@@ -109,7 +106,15 @@ export const POST = wrapApi(async (request: Request, { params }: { params: Promi
     });
   } catch (problem) {
     await changeUsed(user.id, -added);
+    // A failed DB write must not strand the newly stored hash file.
+    await deleteAttachmentFileIfUnused(user.id, noteId, stored.path).catch((cleanupProblem) => {
+      console.error("[api/v1] attachment rollback cleanup", cleanupProblem);
+    });
     throw problem;
+  }
+
+  if (previous && previous.path !== stored.path) {
+    await deleteAttachmentFileIfUnused(user.id, noteId, previous.path);
   }
 
   return json({
@@ -202,9 +207,8 @@ export const DELETE = wrapApi(async (
     return error("not-yours", (await apiWords()).apiNoteNotYours, 403);
   }
 
-  await deleteAttachment(attachment.path);
-  await prisma.attachment.delete({ where: { id: attachment.id } });
-  await changeUsed(result.user.id, -attachment.sizeBytes);
+  const removed = await removeAttachmentRecord(result.user.id, attachment);
+  if (removed) await changeUsed(result.user.id, -attachment.sizeBytes);
 
   return new Response(null, { status: 204 });
 });
