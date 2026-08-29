@@ -6,6 +6,7 @@ import {
   decodeLibraryFile,
   libraryFileMimeMatches,
   libraryFileType,
+  isLibraryUploadId,
   safeLibraryFileName,
 } from "./library-file";
 
@@ -93,5 +94,11 @@ describe("library file contract with Android", () => {
     expect(decodeLibraryFile(new TextEncoder().encode("zażółć\n"))).toBe("zażółć\n");
     expect(decodeLibraryFile(Uint8Array.from([0xc3, 0x28]))).toBeNull();
     expect(decodeLibraryFile(Uint8Array.from([0x61, 0x00, 0x62]))).toBeNull();
+  });
+
+  it("accepts only UUID upload identifiers used for idempotent retries", () => {
+    expect(isLibraryUploadId("550e8400-e29b-41d4-a716-446655440000")).toBe(true);
+    expect(isLibraryUploadId("550e8400-e29b-41d4-c716-446655440000")).toBe(false);
+    expect(isLibraryUploadId("../../same-file")).toBe(false);
   });
 });

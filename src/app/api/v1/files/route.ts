@@ -5,6 +5,7 @@ import {
   importLibraryFileForUser,
   libraryFileImportMessage,
 } from "@/lib/library-file-import";
+import { isLibraryUploadId } from "@/lib/library-file";
 
 export { OPTIONS } from "@/lib/api";
 
@@ -16,7 +17,8 @@ const MULTIPART_OVERHEAD_BYTES = 64 * 1024;
  *
  * The file is stored as a CODE note, exactly like a recognised code file
  * synchronised by the Android app. Authentication is the usual app Bearer
- * token. Form fields: `file` (required), `folderId` (optional).
+ * token. Form fields: `file` (required), `folderId` (optional), `uploadId`
+ * (optional UUID; strongly recommended for retry-safe mobile uploads).
  */
 export const POST = wrapApi(async (request: Request) => {
   const identity = await userFromRequest(request);
@@ -51,7 +53,11 @@ export const POST = wrapApi(async (request: Request) => {
   }
 
   const folderId = String(form.get("folderId") ?? "").trim() || null;
-  const imported = await importLibraryFileForUser(identity.user.id, file, folderId);
+  const uploadId = String(form.get("uploadId") ?? "").trim() || null;
+  if (uploadId && !isLibraryUploadId(uploadId)) {
+    return error("invalid-upload-id", words.apiBadRequest, 400);
+  }
+  const imported = await importLibraryFileForUser(identity.user.id, file, folderId, uploadId);
   if (!imported.ok) {
     const codes: Record<typeof imported.problem, string> = {
       "missing-name": "missing-name",
@@ -61,6 +67,7 @@ export const POST = wrapApi(async (request: Request) => {
       unreadable: "unreadable-file",
       "not-utf8": "not-utf8",
       "no-folder": "no-folder",
+      "idempotency-conflict": "idempotency-conflict",
       "save-failed": "save-failed",
     };
     return error(
@@ -72,7 +79,7 @@ export const POST = wrapApi(async (request: Request) => {
 
   return json(
     {
-      status: "created",
+      status: imported.created ? "created" : "existing",
       id: imported.noteId,
       title: imported.name,
       kind: "CODE",
@@ -83,6 +90,6 @@ export const POST = wrapApi(async (request: Request) => {
       updatedAt: imported.updatedAt,
       url: `/note/${imported.noteId}`,
     },
-    201,
+    imported.created ? 201 : 200,
   );
 });

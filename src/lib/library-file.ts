@@ -184,6 +184,18 @@ export type CheckedLibraryFile = {
   type: LibraryFileType;
 };
 
+/**
+ * Identyfikator nadany przez klienta dla jednego logicznego uploadu.
+ *
+ * Ten sam UUID może bezpiecznie wrócić po zerwanym połączeniu; serwer używa
+ * go wtedy jako identyfikatora notatki CODE i rozpoznaje powtórkę.
+ */
+export function isLibraryUploadId(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+}
+
 /** Tania walidacja wykonywana przed `arrayBuffer()`. */
 export function checkLibraryFileMetadata(
   file: { name: string; type: string; size: number },

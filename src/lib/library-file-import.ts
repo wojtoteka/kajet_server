@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { settings } from "@/lib/settings";
 import { buildCodeNoteContent } from "@/lib/code-note";
+import { parseCodeNote } from "@/lib/code-note";
 import { upsertCodeNoteForUser } from "@/lib/note-write";
 import { humanSize } from "@/lib/quota";
 import type { Words } from "@/lib/i18n";
@@ -30,6 +31,7 @@ export type LibraryFileImportFailure =
   | "unreadable"
   | "not-utf8"
   | "no-folder"
+  | "idempotency-conflict"
   | "save-failed";
 
 export type LibraryFileImportResult =
@@ -42,6 +44,7 @@ export type LibraryFileImportResult =
       storedSizeBytes: number;
       version: number;
       updatedAt: number;
+      created: boolean;
     }
   | {
       ok: false;
@@ -61,6 +64,7 @@ export async function importLibraryFileForUser(
   userId: string,
   incoming: IncomingLibraryFile,
   folderId?: string | null,
+  uploadId?: string | null,
 ): Promise<LibraryFileImportResult> {
   const metadata = checkLibraryFileMetadata(incoming, settings.files.maxFileBytes);
   if (!metadata.ok) {
@@ -104,7 +108,52 @@ export async function importLibraryFileForUser(
   const source = decodeLibraryFile(data);
   if (source == null) return { ok: false, problem: "not-utf8", status: 415 };
 
-  const noteId = randomUUID();
+  const noteId = uploadId || randomUUID();
+
+  // Powtórka tego samego logicznego uploadu po utracie odpowiedzi ma oddać
+  // istniejący rekord, a nie tworzyć drugi. Inny plik pod tym samym kluczem
+  // jest błędem klienta i nie może po cichu nadpisać pierwszego.
+  if (uploadId) {
+    const existing = await prisma.note.findUnique({
+      where: { id: noteId },
+      select: {
+        ownerId: true,
+        kind: true,
+        title: true,
+        content: true,
+        sizeBytes: true,
+        version: true,
+        updatedAt: true,
+        folderId: true,
+        deletedAt: true,
+      },
+    });
+    if (existing) {
+      const code = existing.kind === "CODE" ? parseCodeNote(existing.content) : null;
+      const same =
+        existing.ownerId === userId &&
+        existing.deletedAt == null &&
+        existing.title === metadata.file.name &&
+        existing.folderId === (folderId || null) &&
+        code?.language === metadata.file.type.language &&
+        code.source === source;
+      if (!same) {
+        return { ok: false, problem: "idempotency-conflict", status: 409 };
+      }
+      return {
+        ok: true,
+        noteId,
+        name: metadata.file.name,
+        language: metadata.file.type.language,
+        fileSizeBytes: data.byteLength,
+        storedSizeBytes: existing.sizeBytes,
+        version: existing.version,
+        updatedAt: existing.updatedAt.getTime(),
+        created: false,
+      };
+    }
+  }
+
   const content = buildCodeNoteContent({
     id: noteId,
     title: metadata.file.name,
@@ -142,6 +191,7 @@ export async function importLibraryFileForUser(
     storedSizeBytes: Buffer.byteLength(content, "utf8"),
     version: outcome.version,
     updatedAt: outcome.status === "unchanged" ? Date.now() : outcome.updatedAt,
+    created: true,
   };
 }
 
@@ -164,6 +214,8 @@ export function libraryFileImportMessage(
       return libraryFileEncodingRefused(words);
     case "no-folder":
       return words.actNoSuchFolder;
+    case "idempotency-conflict":
+      return words.apiBadRequest;
     case "unreadable":
       return words.apiUploadUnreadable;
     case "save-failed":
