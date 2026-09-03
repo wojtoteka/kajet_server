@@ -28,6 +28,7 @@ import { Icon } from "@/components/Icon";
 import { useWords } from "@/components/LanguageProvider";
 import { mapTally, type Words } from "@/lib/i18n";
 import { SaveStatus } from "@/components/SaveStatus";
+import { safeAction } from "@/components/safe-action";
 import { useAutosave } from "@/components/useAutosave";
 import { useSavedNote } from "@/components/useSavedNote";
 import { useNoteFlush } from "@/components/NoteSync";
@@ -95,7 +96,12 @@ export function MindMapEditor({
   submitLabel: string;
 }) {
   const words = useWords();
-  const [state, submit, busy] = useActionState<ActionResult, FormData>(action, {});
+  // safeAction: zapis, który nie doszedł do serwera (stara karta po wdrożeniu,
+  // zerwane łącze), wraca jako zwykły błąd zamiast zabierać mapę z ekranem.
+  const [state, submit, busy] = useActionState<ActionResult, FormData>(
+    safeAction(action, { error: words.saveLost }),
+    {},
+  );
 
   // Autozapis jak w aplikacji: mapa zapisuje się sama po chwili spokoju.
   // Sam zegar siedzi niżej, bo potrzebuje historii zmian.

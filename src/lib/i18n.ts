@@ -63,6 +63,8 @@ export type Words = {
   autosaveOn: string;
   autosaveOff: string;
   saveFailed: string;
+  saveLost: string;
+  requestLost: string;
   willSaveWhenYouType: string;
 
   // --- Biblioteka ---
@@ -237,6 +239,12 @@ export type Words = {
   homePage: string;
   sharedLinkNote: string;
 
+  // --- Coś poszło nie tak (src/app/error.tsx) ---
+  errorWord: string;
+  errorHeading: string;
+  errorLead: string;
+  errorTryAgain: string;
+  errorWriteUs: string;
 
   // --- Strona notatki ---
   noteHandwritten: string;
@@ -1210,6 +1218,10 @@ const pl: Words = {
   autosaveOn: "Autozapis włączony",
   autosaveOff: "Autozapis wyłączony",
   saveFailed: "Nie udało się zapisać",
+  saveLost:
+    "Zapis nie doszedł do serwera. Treść dalej jest na ekranie - jeśli to się powtórzy, " +
+    "skopiuj ją i odśwież stronę.",
+  requestLost: "Serwer nie odpowiedział. Odśwież stronę i spróbuj jeszcze raz.",
   willSaveWhenYouType: "Zapisze się samo",
 
   library: "Biblioteka",
@@ -1388,6 +1400,14 @@ const pl: Words = {
   sharedLinkNote:
     "Jeśli prowadził tu odnośnik do udostępnionej notatki, poproś o nowy - stare " +
     "przestają działać.",
+
+  errorWord: "Błąd",
+  errorHeading: "Coś się popsuło",
+  errorLead:
+    "Strona zatrzymała się w połowie ruchu. Zwykle wystarczy spróbować jeszcze raz. " +
+    "Zapisane notatki są całe - leżą tam, gdzie zawsze.",
+  errorTryAgain: "Spróbuj jeszcze raz",
+  errorWriteUs: "A jeśli to wraca przy każdym wejściu,",
 
   noteHandwritten: "Notatka odręczna",
   noteTextKind: "Notatka tekstowa",
@@ -2538,6 +2558,10 @@ const en: Words = {
   autosaveOn: "Autosave is on",
   autosaveOff: "Autosave is off",
   saveFailed: "Could not save",
+  saveLost:
+    "The save did not reach the server. Your text is still on the screen - if this " +
+    "happens again, copy it and refresh the page.",
+  requestLost: "The server did not answer. Refresh the page and try again.",
   willSaveWhenYouType: "It saves itself",
 
   library: "Library",
@@ -2714,6 +2738,14 @@ const en: Words = {
   homePage: "Home page",
   sharedLinkNote:
     "If a link to a shared note brought you here, ask for a new one - old ones stop working.",
+
+  errorWord: "Error",
+  errorHeading: "Something went wrong",
+  errorLead:
+    "The page stopped halfway. Trying again usually helps. Your saved notes are fine - " +
+    "right where they always were.",
+  errorTryAgain: "Try again",
+  errorWriteUs: "And if it comes back every time,",
 
   noteHandwritten: "Handwritten note",
   noteTextKind: "Text note",

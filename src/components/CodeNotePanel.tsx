@@ -14,6 +14,7 @@ import { assistKey, type CodeAssistEdit } from "@/lib/code-assist";
 import { PREVIEW_MESSAGE, previewDocument } from "@/lib/code-preview";
 import { useWords } from "@/components/LanguageProvider";
 import { SaveStatus } from "@/components/SaveStatus";
+import { safeAction } from "@/components/safe-action";
 import { useAutosave } from "@/components/useAutosave";
 import { useSavedNote } from "@/components/useSavedNote";
 import { useNoteFlush } from "@/components/NoteSync";
@@ -72,8 +73,17 @@ export function CodeNotePanel({
   submitLabel: string;
 }) {
   const words = useWords();
-  const [saveState, saveSubmit, saveBusy] = useActionState<SaveResult, FormData>(saveAction, {});
-  const [runState, runSubmit, runBusy] = useActionState<RunResult, FormData>(runAction, {});
+  // safeAction: wywołanie, które nie doszło do serwera (stara karta po
+  // wdrożeniu, zerwane łącze), wraca jako zwykły błąd zamiast zabierać plik
+  // z ekranem.
+  const [saveState, saveSubmit, saveBusy] = useActionState<SaveResult, FormData>(
+    safeAction(saveAction, { error: words.saveLost }),
+    {},
+  );
+  const [runState, runSubmit, runBusy] = useActionState<RunResult, FormData>(
+    safeAction(runAction, { error: words.requestLost }),
+    {},
+  );
   const [currentLanguage, setCurrentLanguage] = useState(language);
   const [currentSource, setCurrentSource] = useState(source);
   const [noteTitle, setNoteTitle] = useState(title);

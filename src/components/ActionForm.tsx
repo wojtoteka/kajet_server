@@ -5,6 +5,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { CopyButton } from "@/components/CopyableLink";
 import { useWords } from "@/components/LanguageProvider";
 import { Icon, type IconName } from "@/components/Icon";
+import { safeAction } from "@/components/safe-action";
 
 type ActionResult = {
   error?: string;
@@ -56,7 +57,14 @@ export function ActionForm({
   children?: React.ReactNode;
 }) {
   const words = useWords();
-  const [state, submit, busy] = useActionState<ActionResult, FormData>(action, {});
+  // safeAction: wywołanie, które nie doszło do serwera (stara karta po
+  // wdrożeniu, zerwane łącze), wraca jako zwykły błąd w ramce. Bez tego
+  // zabierało ze sobą całą stronę - a na stronie notatki stoi obok edytora
+  // z niezapisaną treścią.
+  const [state, submit, busy] = useActionState<ActionResult, FormData>(
+    safeAction(action, { error: words.requestLost }),
+    {},
+  );
   const [toastShown, setToastShown] = useState(false);
 
   // Pytanie o zgodę we własnym oknie zamiast window.confirm - przeglądarkowe

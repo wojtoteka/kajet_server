@@ -15,6 +15,7 @@ import { useWords } from "@/components/LanguageProvider";
 import { noteTally, type Words } from "@/lib/i18n";
 import { tally } from "@/lib/text-tally";
 import { SaveStatus } from "@/components/SaveStatus";
+import { safeAction } from "@/components/safe-action";
 import { useAutosave } from "@/components/useAutosave";
 import { useSavedNote } from "@/components/useSavedNote";
 import { useNoteFlush } from "@/components/NoteSync";
@@ -144,7 +145,12 @@ export function TextNoteEditor({
   token?: string;
 }) {
   const words = useWords();
-  const [state, submit, busy] = useActionState<ActionResult, FormData>(action, {});
+  // safeAction: zapis, który nie doszedł do serwera (stara karta po wdrożeniu,
+  // zerwane łącze), wraca jako zwykły błąd zamiast zabierać notatkę z ekranem.
+  const [state, submit, busy] = useActionState<ActionResult, FormData>(
+    safeAction(action, { error: words.saveLost }),
+    {},
+  );
   const [noteTitle, setNoteTitle] = useState(title);
   /*
     Jeden tryb: pisanie - i od razu w gotowym wyglądzie. Pogrubienie jest grube,
@@ -551,7 +557,7 @@ export function TextNoteEditor({
     notatki), a akcję wołamy z ręcznie złożonym FormData.
   */
   const [uploadState, uploadSubmit, uploading] = useActionState<ActionResult, FormData>(
-    uploadAction ?? (async () => ({})),
+    safeAction(uploadAction ?? (async () => ({})), { error: words.requestLost }),
     {},
   );
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -1251,10 +1257,11 @@ export function TextNoteEditor({
 
       {/* Powodzenie zapisu pokazuje napis przy przycisku - zielona ramka nad
           notatką przeskakiwałaby przy każdym autozapisie. Pełny błąd też stoi
-          tutaj, przy przycisku: na górze spychał całą notatkę w dół. */}
-      {state.error ? (
+          tutaj, przy przycisku: na górze spychał całą notatkę w dół. Tędy idzie
+          również odmowa wysłania zdjęcia - wcześniej nie mówiła nic. */}
+      {(state.error ?? uploadState.error) ? (
         <p className="error" style={{ margin: "0 0 10px 0" }}>
-          {state.error}
+          {state.error ?? uploadState.error}
         </p>
       ) : null}
 

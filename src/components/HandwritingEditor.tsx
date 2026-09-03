@@ -61,6 +61,7 @@ import {
   type Words,
 } from "@/lib/i18n";
 import { SaveStatus } from "@/components/SaveStatus";
+import { safeAction } from "@/components/safe-action";
 import { useAutosave } from "@/components/useAutosave";
 import { useSavedNote } from "@/components/useSavedNote";
 import { TITLE_LIMIT } from "@/lib/note-title";
@@ -236,7 +237,12 @@ export function HandwritingEditor({
 }) {
   const words = useWords();
   const darkTheme = useDarkTheme();
-  const [state, submit, busy] = useActionState<ActionResult, FormData>(action, {});
+  // safeAction: zapis, który nie doszedł do serwera (stara karta po wdrożeniu,
+  // zerwane łącze), wraca jako zwykły błąd zamiast zabierać kartkę z ekranem.
+  const [state, submit, busy] = useActionState<ActionResult, FormData>(
+    safeAction(action, { error: words.saveLost }),
+    {},
+  );
   const [pages, setPages] = useState<Page[]>(initial.pages);
   const [noteTitle, setNoteTitle] = useState(title);
   const [pageIndex, setPageIndex] = useState(0);
@@ -378,7 +384,7 @@ export function HandwritingEditor({
     (nie trafia do zapisu notatki), a akcję wołamy z ręcznie złożonym FormData.
   */
   const [uploadState, uploadSubmit, uploading] = useActionState<ActionResult, FormData>(
-    uploadAction ?? (async () => ({})),
+    safeAction(uploadAction ?? (async () => ({})), { error: words.requestLost }),
     {},
   );
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -1502,10 +1508,11 @@ export function HandwritingEditor({
 
       {/* Powodzenie zapisu pokazuje napis przy przycisku - zielona ramka nad
           kartką przeskakiwałaby przy każdym autozapisie. Pełny błąd też stoi
-          tutaj, przy przycisku: na górze spychał całą kartkę w dół. */}
-      {state.error ? (
+          tutaj, przy przycisku: na górze spychał całą kartkę w dół. Tędy idzie
+          również odmowa wysłania zdjęcia - wcześniej nie mówiła nic. */}
+      {(state.error ?? uploadState.error) ? (
         <p className="error" style={{ margin: "10px 0" }}>
-          {state.error}
+          {state.error ?? uploadState.error}
         </p>
       ) : null}
 

@@ -1,0 +1,18 @@
+/*
+  Strona „coś się popsuło". Mówi tym samym głosem co „nie ma takiej strony":
+  nadtytuł, podkreślone słowo i gruba zielona kreska - tyle że bez rysunku
+  obok. Kiedy strona raz już się wywróciła, im mniej ma do narysowania, tym
+  większa szansa, że stanie na nogi.
+*/
+
+.otwarcie {
+  display: grid;
+  gap: 8px;
+  padding-block: 8px 96px;
+  max-width: 56ch;
+}
+
+.otwarcie h1 {
+  margin-bottom: 20px;
+  max-width: 16ch;
+}
