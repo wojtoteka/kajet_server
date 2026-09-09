@@ -148,7 +148,7 @@ export function TextNoteEditor({
   // safeAction: zapis, który nie doszedł do serwera (stara karta po wdrożeniu,
   // zerwane łącze), wraca jako zwykły błąd zamiast zabierać notatkę z ekranem.
   const [state, submit, busy] = useActionState<ActionResult, FormData>(
-    safeAction(action, { error: words.saveLost }),
+    safeAction(action, { error: words.saveLost }, { error: words.saveOutdated }),
     {},
   );
   const [noteTitle, setNoteTitle] = useState(title);
@@ -557,7 +557,11 @@ export function TextNoteEditor({
     notatki), a akcję wołamy z ręcznie złożonym FormData.
   */
   const [uploadState, uploadSubmit, uploading] = useActionState<ActionResult, FormData>(
-    safeAction(uploadAction ?? (async () => ({})), { error: words.requestLost }),
+    safeAction(
+      uploadAction ?? (async () => ({})),
+      { error: words.requestLost },
+      { error: words.requestOutdated },
+    ),
     {},
   );
   const fileRef = useRef<HTMLInputElement | null>(null);

@@ -3,6 +3,7 @@
 import { useActionState, useRef } from "react";
 import { Icon } from "@/components/Icon";
 import { useWords } from "@/components/LanguageProvider";
+import { safeAction } from "@/components/safe-action";
 import { folderIcon, folderTint } from "@/lib/folder-look";
 
 type Result = { error?: string; success?: string };
@@ -35,7 +36,13 @@ export function FolderMoveForm({
   action: Action;
 }) {
   const words = useWords();
-  const [state, submit, busy] = useActionState<Result, FormData>(action, {});
+  // safeAction: wywołanie, które nie doszło do serwera (stara strona po
+  // wdrożeniu, zerwane łącze), wraca jako zwykły błąd zamiast zabierać ze sobą
+  // całą stronę.
+  const [state, submit, busy] = useActionState<Result, FormData>(
+    safeAction(action, { error: words.requestLost }, { error: words.requestOutdated }),
+    {},
+  );
   const form = useRef<HTMLFormElement>(null);
 
   const current = folderId ? (folders.find((entry) => entry.id === folderId) ?? null) : null;

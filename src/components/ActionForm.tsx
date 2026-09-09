@@ -57,12 +57,12 @@ export function ActionForm({
   children?: React.ReactNode;
 }) {
   const words = useWords();
-  // safeAction: wywołanie, które nie doszło do serwera (stara karta po
+  // safeAction: wywołanie, które nie doszło do serwera (stara strona po
   // wdrożeniu, zerwane łącze), wraca jako zwykły błąd w ramce. Bez tego
   // zabierało ze sobą całą stronę - a na stronie notatki stoi obok edytora
   // z niezapisaną treścią.
   const [state, submit, busy] = useActionState<ActionResult, FormData>(
-    safeAction(action, { error: words.requestLost }),
+    safeAction(action, { error: words.requestLost }, { error: words.requestOutdated }),
     {},
   );
   const [toastShown, setToastShown] = useState(false);

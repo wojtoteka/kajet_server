@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { register, startGoogleWithCode, type RegistrationResult } from "./actions";
 import { useWords } from "@/components/LanguageProvider";
+import { safeAction } from "@/components/safe-action";
 import { PRIVACY_URL, TERMS_URL } from "@/lib/documents";
 
 const empty: RegistrationResult = {};
@@ -47,7 +48,13 @@ export function RegistrationForm({
   googleAvailable: boolean;
 }) {
   const words = useWords();
-  const [state, submitForm, busy] = useActionState(register, empty);
+  // safeAction: wywołanie, które nie doszło do serwera (stara strona po
+  // wdrożeniu, zerwane łącze), wraca jako zwykły błąd zamiast zabierać ze sobą
+  // całą stronę.
+  const [state, submitForm, busy] = useActionState(
+    safeAction(register, { error: words.requestLost }, { error: words.requestOutdated }),
+    empty,
+  );
   const [viaGoogle, setViaGoogle] = useState(false);
 
   return (
@@ -153,7 +160,17 @@ export function RegistrationForm({
 
 function GoogleForm({ codeFromLink }: { codeFromLink: string }) {
   const words = useWords();
-  const [state, submitForm, busy] = useActionState(startGoogleWithCode, empty);
+  // safeAction: wywołanie, które nie doszło do serwera (stara strona po
+  // wdrożeniu, zerwane łącze), wraca jako zwykły błąd zamiast zabierać ze sobą
+  // całą stronę.
+  const [state, submitForm, busy] = useActionState(
+    safeAction(
+      startGoogleWithCode,
+      { error: words.requestLost },
+      { error: words.requestOutdated },
+    ),
+    empty,
+  );
 
   return (
     <div>

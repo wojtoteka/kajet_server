@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useActionState, useEffect, useId, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
+import { useWords } from "@/components/LanguageProvider";
+import { safeAction } from "@/components/safe-action";
 
 type Result = { error?: string; success?: string; noteId?: string };
 type Action = (previous: Result, data: FormData) => Promise<Result>;
@@ -31,7 +33,14 @@ export function LibraryFileUpload({
   openLabel: string;
   closeLabel: string;
 }) {
-  const [state, submit, busy] = useActionState<Result, FormData>(action, {});
+  const words = useWords();
+  // safeAction: wywołanie, które nie doszło do serwera (stara strona po
+  // wdrożeniu, zerwane łącze), wraca jako zwykły błąd zamiast zabierać ze sobą
+  // całą stronę.
+  const [state, submit, busy] = useActionState<Result, FormData>(
+    safeAction(action, { error: words.requestLost }, { error: words.requestOutdated }),
+    {},
+  );
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const form = useRef<HTMLFormElement>(null);
   const input = useRef<HTMLInputElement>(null);

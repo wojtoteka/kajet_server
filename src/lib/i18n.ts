@@ -64,7 +64,9 @@ export type Words = {
   autosaveOff: string;
   saveFailed: string;
   saveLost: string;
+  saveOutdated: string;
   requestLost: string;
+  requestOutdated: string;
   willSaveWhenYouType: string;
 
   // --- Biblioteka ---
@@ -1221,7 +1223,11 @@ const pl: Words = {
   saveLost:
     "Zapis nie doszedł do serwera. Treść dalej jest na ekranie - jeśli to się powtórzy, " +
     "skopiuj ją i odśwież stronę.",
+  saveOutdated:
+    "Ta strona jest starsza niż serwer - zapis stąd już nie przejdzie. Skopiuj treść " +
+    "i odśwież stronę.",
   requestLost: "Serwer nie odpowiedział. Odśwież stronę i spróbuj jeszcze raz.",
+  requestOutdated: "Ta strona jest starsza niż serwer. Odśwież ją i spróbuj jeszcze raz.",
   willSaveWhenYouType: "Zapisze się samo",
 
   library: "Biblioteka",
@@ -2561,7 +2567,11 @@ const en: Words = {
   saveLost:
     "The save did not reach the server. Your text is still on the screen - if this " +
     "happens again, copy it and refresh the page.",
+  saveOutdated:
+    "This page is older than the server - a save from here will not go through. Copy " +
+    "your text and refresh the page.",
   requestLost: "The server did not answer. Refresh the page and try again.",
+  requestOutdated: "This page is older than the server. Refresh it and try again.",
   willSaveWhenYouType: "It saves itself",
 
   library: "Library",

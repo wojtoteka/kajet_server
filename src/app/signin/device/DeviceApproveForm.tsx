@@ -3,6 +3,7 @@
 import { useActionState, useEffect } from "react";
 import { approveDevice, denyDevice, type DeviceResult } from "./actions";
 import { useWords } from "@/components/LanguageProvider";
+import { safeAction } from "@/components/safe-action";
 import { approveButtonLabel } from "@/lib/i18n";
 
 const empty: DeviceResult = {};
@@ -15,8 +16,19 @@ export function DeviceApproveForm({
   device: string;
 }) {
   const words = useWords();
-  const [approveState, approveAction, approvePending] = useActionState(approveDevice, empty);
-  const [denyState, denyAction, denyPending] = useActionState(denyDevice, empty);
+  // safeAction: wywołanie, które nie doszło do serwera (stara strona po
+  // wdrożeniu, zerwane łącze), wraca jako zwykły błąd zamiast zabierać ze sobą
+  // całą stronę.
+  const lost: DeviceResult = { error: words.requestLost };
+  const outdated: DeviceResult = { error: words.requestOutdated };
+  const [approveState, approveAction, approvePending] = useActionState(
+    safeAction(approveDevice, lost, outdated),
+    empty,
+  );
+  const [denyState, denyAction, denyPending] = useActionState(
+    safeAction(denyDevice, lost, outdated),
+    empty,
+  );
 
   const result = approveState.success || approveState.error ? approveState : denyState;
 

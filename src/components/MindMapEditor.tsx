@@ -99,7 +99,7 @@ export function MindMapEditor({
   // safeAction: zapis, który nie doszedł do serwera (stara karta po wdrożeniu,
   // zerwane łącze), wraca jako zwykły błąd zamiast zabierać mapę z ekranem.
   const [state, submit, busy] = useActionState<ActionResult, FormData>(
-    safeAction(action, { error: words.saveLost }),
+    safeAction(action, { error: words.saveLost }, { error: words.saveOutdated }),
     {},
   );
 

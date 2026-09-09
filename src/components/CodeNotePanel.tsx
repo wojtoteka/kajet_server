@@ -77,11 +77,11 @@ export function CodeNotePanel({
   // wdrożeniu, zerwane łącze), wraca jako zwykły błąd zamiast zabierać plik
   // z ekranem.
   const [saveState, saveSubmit, saveBusy] = useActionState<SaveResult, FormData>(
-    safeAction(saveAction, { error: words.saveLost }),
+    safeAction(saveAction, { error: words.saveLost }, { error: words.saveOutdated }),
     {},
   );
   const [runState, runSubmit, runBusy] = useActionState<RunResult, FormData>(
-    safeAction(runAction, { error: words.requestLost }),
+    safeAction(runAction, { error: words.requestLost }, { error: words.requestOutdated }),
     {},
   );
   const [currentLanguage, setCurrentLanguage] = useState(language);
