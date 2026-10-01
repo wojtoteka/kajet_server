@@ -7,17 +7,17 @@ import { parseCodeNote } from "@/lib/code-note";
  * Granice dotyczą wyłącznie ciężkiego edytora/podglądu w przeglądarce. Plik
  * nadal zostaje w Kajecie, synchronizuje się i można go pobrać bez obcinania.
  *
- * Tekst ma niższy próg, bo przed pokazaniem przechodzi przez parser Markdown i
- * powstaje z niego wiele edytowalnych węzłów. Kod siedzi w jednym textarea, ale
- * dostaje też numery wierszy i (dla HTML-u) osobny dokument podglądu. Mapy i
- * pismo odręczne mają najwyższy próg: ich JSON jest zwykle obszerny, choć nie
- * każdy bajt zamienia się w osobny element strony.
+ * Tekst przed pokazaniem przechodzi przez parser Markdown i powstaje z niego
+ * wiele edytowalnych węzłów. Kod siedzi w jednym textarea, ale dostaje też
+ * numery wierszy i (dla HTML-u) osobny dokument podglądu. Mapy i pismo odręczne
+ * mają najwyższy próg: ich JSON jest zwykle obszerny, choć nie każdy bajt
+ * zamienia się w osobny element strony.
  */
 export const NOTE_DISPLAY_LIMITS: Record<NoteKind, number> = {
-  TEXT: 250 * 1024,
-  CODE: 400 * 1024,
-  MINDMAP: 500 * 1024,
-  HANDWRITTEN: 500 * 1024,
+  TEXT: 2 * 1024 * 1024,
+  CODE: 500 * 1024,
+  MINDMAP: 5 * 1024 * 1024,
+  HANDWRITTEN: 5 * 1024 * 1024,
 };
 
 export type NoteForDisplay = {

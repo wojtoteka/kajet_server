@@ -23,8 +23,13 @@ describe("note display limits", () => {
     expect(noteDisplayDecision({ kind: "TEXT", content, sizeBytes: 0 }).tooLarge).toBe(true);
   });
 
-  it("uses a lower limit for rich text than for code", () => {
-    expect(NOTE_DISPLAY_LIMITS.TEXT).toBeLessThan(NOTE_DISPLAY_LIMITS.CODE);
+  it("uses the configured per-note display limits", () => {
+    expect(NOTE_DISPLAY_LIMITS).toMatchObject({
+      TEXT: 2 * 1024 * 1024,
+      CODE: 500 * 1024,
+      MINDMAP: 5 * 1024 * 1024,
+      HANDWRITTEN: 5 * 1024 * 1024,
+    });
   });
 });
 
