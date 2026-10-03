@@ -545,13 +545,40 @@ export function TextNoteEditor({
     setColourBar(true);
   }
 
+  /*
+    Póki pasek barw jest otwarty, można zaznaczyć w notatce coś innego - drugi
+    wiersz, inne słowo. Zapamiętane zaznaczenie musi iść za tym, co jest
+    zaznaczone teraz; inaczej barwa trafiałaby w stary kawałek (albo, gdy ten
+    zniknął przy przepisaniu pola, kursor skakał na początek notatki).
+  */
+  useEffect(() => {
+    if (!colourBar) return;
+    function follow() {
+      const anchor = document.getSelection()?.anchorNode ?? null;
+      for (const field of fields.current.values()) {
+        if (field.contains(anchor)) {
+          colourRange.current = saveRange();
+          return;
+        }
+      }
+    }
+    document.addEventListener("selectionchange", follow);
+    return () => document.removeEventListener("selectionchange", follow);
+  }, [colourBar]);
+
   /** Pusty zapis znaczy „bez barwy" - tekst wraca do koloru kartki. */
   function paint(value: string) {
     const index = writingBlock();
     const field = fields.current.get(index);
     if (field) {
-      field.focus();
-      restoreRange(colourRange.current);
+      // Kółka barw nie zabierają kursora, więc żywe zaznaczenie w polu jest
+      // najświeższe. Zapamiętane przywracamy tylko, gdy kursor naprawdę
+      // uciekł - na przykład do systemowego kółka wyboru barwy.
+      if (!field.contains(document.getSelection()?.anchorNode ?? null)) {
+        field.focus();
+        const saved = colourRange.current;
+        if (saved && field.contains(saved.startContainer)) restoreRange(saved);
+      }
       if (value) applyColour(value);
       else clearColour();
       setBlockText(index, htmlToMarkdown(field.innerHTML));
