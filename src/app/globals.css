@@ -1266,6 +1266,29 @@ textarea.mono-field {
   font-size: 1.12em;
 }
 
+/* Nagłówek nadany kawałkowi zdania (<span class="h1"> - tak samo zapisuje go
+   aplikacja). Ta sama wielkość i krój co nagłówek całego akapitu, tylko
+   w środku wiersza - jak nagłówek nałożony w Wordzie na zaznaczony fragment. */
+.rich-text span.h1,
+.rich-text span.h2,
+.rich-text span.h3 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.rich-text span.h1 {
+  font-size: 1.55em;
+}
+
+.rich-text span.h2 {
+  font-size: 1.3em;
+}
+
+.rich-text span.h3 {
+  font-size: 1.12em;
+}
+
 .rich-text ul,
 .rich-text ol {
   margin: 0.4em 0;

@@ -1,6 +1,11 @@
 "use client";
 
-import { lineMarkupLength, plainTextToPasteHtml } from "@/lib/rich-text";
+import {
+  headingInBlock,
+  headingLevelsIn,
+  htmlToMarkdown,
+  plainTextToPasteHtml,
+} from "@/lib/rich-text";
 
 /*
   Polecenia paska narzędzi dla pola z bogatym tekstem.
@@ -301,10 +306,9 @@ export function toggleBlock(block: BlockName): void {
     run(list?.tagName === "OL" ? "insertOrderedList" : "insertUnorderedList");
   }
 
-  // Nagłówek zdejmuje kratki z treści zanim zmieni znacznik - inaczej
-  // formatBlock zostawiałby „# Tytuł" w środku H2, a zapis dokładałby kolejne.
+  // Nagłówek to wygląd tekstu, nie całego akapitu - patrz toggleHeading.
   if (block === "h1" || block === "h2" || block === "h3") {
-    toggleHeading(block);
+    toggleHeading(Number(block[1]) as 1 | 2 | 3);
     return;
   }
 
@@ -322,66 +326,223 @@ export function toggleBlock(block: BlockName): void {
   }
 }
 
-/**
- * To samo H2 zdejmuje nagłówek; inne H zostawia dokładnie jeden poziom.
- * Kratki i znacznik listy/cytatu schodzą z treści, żeby się nie zagnieżdżały.
- */
-function toggleHeading(block: "h1" | "h2" | "h3"): void {
-  const host = blockAbove(selection()?.anchorNode);
-  if (host) peelBlockMarkup(host);
+/*
+  --- Nagłówek jak w Wordzie ---
 
-  const current = closest(
-    selection()?.anchorNode,
-    (element) => /^H[1-3]$/.test(element.tagName),
+  H1-H3 to wygląd nadany tekstowi, a nie całemu akapitowi - tak samo jak
+  w aplikacji:
+   - zaznaczenie: nagłówek dostaje zaznaczony kawałek (cały akapit w jednym
+     poziomie staje się zwykłym <h1>, kawałek - <span class="h1">),
+   - kursor w środku słowa: to słowo,
+   - kursor w pustym akapicie: akapit staje się nagłówkiem,
+   - kursor za tekstem: nagłówkiem będzie to, co się zaraz napisze.
+  Ten sam przycisk na tym, co już ma ten poziom, go zdejmuje.
+*/
+
+const HEADING_SPAN = "span.h1, span.h2, span.h3";
+
+/** Blok, którego treść to sam tekst w wierszu - akapit, nagłówek, pozycja listy bez podlisty. */
+function isTextBlock(element: Element): boolean {
+  return (
+    element.matches("p, div, h1, h2, h3, h4, h5, h6, li, blockquote") &&
+    !element.querySelector(BLOCK_INSIDE)
   );
-  if (current && current.tagName.toLowerCase() === block) {
-    run("formatBlock", "<p>");
-    return;
-  }
-  run("formatBlock", `<${block}>`);
 }
 
-/** Zaznaczenie pierwszych [count] widocznych znaków bloku. */
-function leadingRange(root: HTMLElement, count: number): Range | null {
-  if (count <= 0) return null;
+/** Tekst węzła tak, jak liczy go model treści - bez znaku zerowej szerokości. */
+function shownText(node: Node): string {
+  return (node.textContent ?? "").replace(/\u200b/g, "");
+}
+
+/** Ile znaków tekstu stoi w [root] przed miejscem (node, offset). */
+function textOffset(root: Node, node: Node, offset: number): number {
+  const range = document.createRange();
+  range.selectNodeContents(root);
+  try {
+    range.setEnd(node, offset);
+  } catch {
+    return 0;
+  }
+  return range.toString().replace(/\u200b/g, "").length;
+}
+
+/** Miejsce w drzewie pola dla [at] znaków tekstu od początku [root]. */
+function pointAt(root: Node, at: number): { node: Node; offset: number } {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  let remaining = count;
-  let startNode: Text | null = null;
-  let endNode: Text | null = null;
-  let endOffset = 0;
+  let left = at;
+  let last: Text | null = null;
   let node: Node | null;
   while ((node = walker.nextNode())) {
     const text = node as Text;
-    if (text.length === 0) continue;
-    if (!startNode) startNode = text;
-    if (text.length >= remaining) {
-      endNode = text;
-      endOffset = remaining;
-      remaining = 0;
-      break;
+    last = text;
+    let count = 0;
+    for (let i = 0; i < text.length; i += 1) {
+      if (left === 0 && text.data[i] !== "\u200b") return { node: text, offset: i };
+      if (text.data[i] !== "\u200b") {
+        count += 1;
+        left -= 1;
+      }
     }
-    remaining -= text.length;
-    endNode = text;
-    endOffset = text.length;
+    if (left === 0 && count > 0) return { node: text, offset: text.length };
   }
-  if (!startNode || !endNode || remaining > 0) return null;
-  const range = document.createRange();
-  range.setStart(startNode, 0);
-  range.setEnd(endNode, endOffset);
-  return range;
+  return last ? { node: last, offset: last.length } : { node: root, offset: root.childNodes.length };
 }
 
-/** Kasuje kratki / listę / cytat z początku bloku przez execCommand (cofanie). */
-function peelBlockMarkup(block: HTMLElement): void {
-  const peel = lineMarkupLength(block.textContent ?? "");
-  if (peel <= 0) return;
-  const range = leadingRange(block, peel);
-  if (!range) return;
+function selectText(root: Node, from: number, to: number): void {
+  const start = pointAt(root, from);
+  const end = from === to ? start : pointAt(root, to);
+  const range = document.createRange();
+  range.setStart(start.node, start.offset);
+  range.setEnd(end.node, end.offset);
+  const current = window.getSelection();
+  current?.removeAllRanges();
+  current?.addRange(range);
+}
+
+/**
+ * Podmienia blok na nowy znacznik z nową treścią - wprost w drzewie strony.
+ *
+ * Tu świadomie NIE idziemy przez execCommand: Chrome przy `insertHTML`
+ * zamienia `<span class="h1">` na `<span style="font-size:...">` (dopasowuje
+ * wygląd zamiast przenieść znacznik), a blok wstawiony w miejsce bloku potrafi
+ * zagnieździć `<p>` w `<h1>`. Sprawdzone w Chromium. Ctrl+Z tej jednej zmiany
+ * nie cofnie, ale zapis notatki wychodzi dokładnie taki, jak trzeba.
+ */
+function replaceBlock(host: HTMLElement, tag: string, html: string): void {
+  const fresh = document.createElement(tag);
+  for (const attribute of Array.from(host.attributes)) fresh.setAttribute(attribute.name, attribute.value);
+  fresh.innerHTML = html || "<br>";
+  if (fresh.outerHTML === host.outerHTML) return;
+  host.replaceWith(fresh);
+}
+
+/** Bloki z tekstem, których dotyka zakres [from, to) - z ich miejscem w polu. */
+function textBlocksIn(field: HTMLElement, from: number, to: number) {
+  const found: { block: HTMLElement; start: number; end: number }[] = [];
+  for (const element of Array.from(field.querySelectorAll("*"))) {
+    if (!(element instanceof HTMLElement) || !isTextBlock(element)) continue;
+    const start = textOffset(field, element, 0);
+    const end = start + shownText(element).length;
+    if (end > from && start < to) found.push({ block: element, start, end });
+    // Pusty blok pod samym kursorem też się liczy.
+    else if (from === to && start === from && end === start) found.push({ block: element, start, end });
+  }
+  return found;
+}
+
+function headingLevelOf(element: Element): number | null {
+  const match = /^H([1-6])$/.exec(element.tagName) ?? /(?:^|\s)h([1-6])(?:\s|$)/.exec(element.className);
+  return match ? Math.min(3, Number(match[1])) : null;
+}
+
+/** Poziom nagłówka w miejscu kursora: najbliższy nagłówek nad nim. */
+function headingAt(node: Node | null | undefined): number | null {
+  const element = closest(node, (candidate) => /^H[1-6]$/.test(candidate.tagName) || candidate.matches(HEADING_SPAN));
+  return element ? headingLevelOf(element) : null;
+}
+
+/** Nadaje albo zdejmuje nagłówek znaków pola od [from] do [to]. */
+function headingOnText(field: HTMLElement, from: number, to: number, level: number): void {
+  const blocks = textBlocksIn(field, from, to);
+  const levels = blocks.flatMap(({ block, start }) =>
+    headingLevelsIn(block.innerHTML, block.tagName, Math.max(from, start) - start, Math.min(to, start + shownText(block).length) - start),
+  );
+  const remove = levels.length > 0 && levels.every((each) => each === level);
+  for (const { block, start, end } of blocks) {
+    const out = headingInBlock(
+      block.innerHTML,
+      block.tagName,
+      Math.max(from, start) - start,
+      Math.min(to, end) - start,
+      remove ? null : level,
+    );
+    replaceBlock(block, out.tag, out.html);
+  }
+}
+
+const WORD_SIGN = /[\p{L}\p{N}]/u;
+
+/** Słowo, w którego ŚRODKU stoi kursor ([at] w tekście pola); null na brzegu słowa. */
+function wordAround(field: HTMLElement, at: number): { from: number; to: number } | null {
+  const block = textBlocksIn(field, at, at + 1)[0] ?? textBlocksIn(field, at - 1, at)[0];
+  if (!block) return null;
+  const text = shownText(block.block);
+  const local = at - block.start;
+  if (local <= 0 || local >= text.length) return null;
+  if (!WORD_SIGN.test(text[local - 1]) || !WORD_SIGN.test(text[local])) return null;
+  let from = local;
+  while (from > 0 && WORD_SIGN.test(text[from - 1])) from -= 1;
+  let to = local;
+  while (to < text.length && WORD_SIGN.test(text[to])) to += 1;
+  return { from: block.start + from, to: block.start + to };
+}
+
+/**
+ * Kursor za tekstem: nagłówkiem ma być to, co się napisze. Kursor staje
+ * w świeżym <span class="h1"> - znak zerowej szerokości trzyma go w środku,
+ * a zapis notatki go pomija. Ten sam poziom drugi raz wyprowadza kursor
+ * z nagłówka, żeby dalej pisać zwykłym tekstem.
+ */
+function headingWhileTyping(level: number): void {
   const current = selection();
   if (!current) return;
+  const anchor = current.anchorNode;
+  const inside = closest(anchor, (element) => element.matches(HEADING_SPAN));
+  if (headingAt(anchor) === level && inside) {
+    const outside = document.createTextNode("\u200b");
+    inside.after(outside);
+    const range = document.createRange();
+    range.setStart(outside, 1);
+    range.collapse(true);
+    current.removeAllRanges();
+    current.addRange(range);
+    return;
+  }
+  if (headingAt(anchor) === level) return;
+  // Wprost, nie przez insertHTML - patrz replaceBlock.
+  const span = document.createElement("span");
+  span.className = `h${level}`;
+  const text = document.createTextNode("\u200b");
+  span.append(text);
+  const range = current.getRangeAt(0);
+  range.insertNode(span);
+  range.setStart(text, 1);
+  range.collapse(true);
   current.removeAllRanges();
   current.addRange(range);
-  run("delete");
+}
+
+export function toggleHeading(level: 1 | 2 | 3): void {
+  const current = selection();
+  if (!current) return;
+  const range = current.getRangeAt(0);
+  const field = fieldOf(range.commonAncestorContainer);
+  if (!field) return;
+
+  const from = textOffset(field, range.startContainer, range.startOffset);
+  const to = textOffset(field, range.endContainer, range.endOffset);
+
+  if (to > from) {
+    headingOnText(field, from, to, level);
+    selectText(field, from, to);
+    return;
+  }
+
+  // Pusty akapit: od razu staje się nagłówkiem, jak w Wordzie.
+  const host = blockAbove(range.startContainer);
+  if (host && isTextBlock(host) && !shownText(host).trim()) {
+    const inside = /^H[1-6]$/.test(host.tagName) && headingLevelOf(host) === level;
+    run("formatBlock", inside ? "<p>" : `<h${level}>`);
+    return;
+  }
+
+  const word = wordAround(field, from);
+  if (word) {
+    headingOnText(field, word.from, word.to, level);
+    selectText(field, from, from);
+    return;
+  }
+  headingWhileTyping(level);
 }
 
 /*
@@ -664,9 +825,13 @@ export function activeFormats(): Formats {
     if (wrappedIn(current, "code").length > 0) marks.add("code");
   }
 
-  for (const tag of ["h1", "h2", "h3", "blockquote", "pre"] as const) {
+  for (const tag of ["blockquote", "pre"] as const) {
     if (closestTag(anchor, tag)) blocks.add(tag);
   }
+  // Nagłówek świeci po najbliższym nagłówku nad kursorem - bloku albo
+  // kawałka zdania (<span class="h2">).
+  const heading = headingAt(anchor);
+  if (heading === 1 || heading === 2 || heading === 3) blocks.add(`h${heading}` as BlockName);
 
   const list = closest(anchor, (element) => element.tagName === "UL" || element.tagName === "OL");
   if (list) {

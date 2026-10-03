@@ -69,6 +69,13 @@ export type Inline =
     dokładnie takim, jaki pisze aplikacja na tablecie.
   */
   | { kind: "size"; px: number; children: Inline[] }
+  /*
+    Wygląd nagłówka (H1-H3) nadany kawałkowi zdania - jak w Wordzie, gdzie
+    nagłówek obejmuje to, co zaznaczono. Cały wiersz w jednym poziomie
+    zapisuje się zwyczajnie, „# Tytuł"; kawałek - <span class="h1">tytuł</span>.
+    Dokładnie ten zapis czyta i pisze aplikacja (RichTextCodec.kt).
+  */
+  | { kind: "heading"; level: number; children: Inline[] }
   | { kind: InlineKind; children: Inline[] };
 
 /**
@@ -134,9 +141,27 @@ const SPAN_OPENING = /^<span\s+style\s*=\s*(?:"([^"]*)"|'([^']*)')\s*>/i;
 function matchSpan(rest: string): { style: string; inner: string; length: number } | null {
   const opening = SPAN_OPENING.exec(rest);
   if (!opening) return null;
+  const closed = spanBody(rest, opening[0].length);
+  if (!closed) return null;
+  return { style: opening[1] ?? opening[2] ?? "", ...closed };
+}
+
+/** Nagłówek na kawałku zdania: <span class="h1">...</span>. */
+const HEADING_SPAN = /^<span\s+class\s*=\s*(?:"h([1-6])"|'h([1-6])')\s*>/i;
+
+function matchHeadingSpan(rest: string): { level: number; inner: string; length: number } | null {
+  const opening = HEADING_SPAN.exec(rest);
+  if (!opening) return null;
+  const closed = spanBody(rest, opening[0].length);
+  if (!closed) return null;
+  return { level: Number(opening[1] ?? opening[2]), ...closed };
+}
+
+/** Treść spanu otwartego przed [from] i długość całości razem z domknięciem. */
+function spanBody(rest: string, from: number): { inner: string; length: number } | null {
   const lower = rest.toLowerCase();
   let depth = 1;
-  let at = opening[0].length;
+  let at = from;
   while (depth > 0) {
     const open = lower.indexOf("<span", at);
     const close = lower.indexOf("</span>", at);
@@ -150,8 +175,7 @@ function matchSpan(rest: string): { style: string; inner: string; length: number
     }
   }
   return {
-    style: opening[1] ?? opening[2] ?? "",
-    inner: rest.slice(opening[0].length, at - "</span>".length),
+    inner: rest.slice(from, at - "</span>".length),
     length: at,
   };
 }
@@ -285,6 +309,14 @@ export function parseInline(text: string): Inline[] {
       continue;
     }
 
+    const heading = matchHeadingSpan(rest);
+    if (heading) {
+      flush();
+      nodes.push({ kind: "heading", level: heading.level, children: parseInline(heading.inner) });
+      at += heading.length;
+      continue;
+    }
+
     // Barwa i rozmiar pisma. Stoją przed podkreśleniem, bo to też znaczniki HTML.
     const span = matchSpan(rest);
     if (span) {
@@ -372,8 +404,82 @@ const MARKDOWN_MARKER: Record<InlineKind, string> = {
   underline: "",
 };
 
+/** Kawałek wiersza w jednym poziomie nagłówka (null - zwykły tekst). */
+type HeadingRun = { level: number | null; nodes: Inline[] };
+
+function containsHeading(nodes: Inline[]): boolean {
+  return nodes.some(
+    (node) => node.kind === "heading" || ("children" in node && containsHeading(node.children)),
+  );
+}
+
+/**
+ * Wiersz pocięty na kawałki o jednym poziomie nagłówka. Nagłówek zawsze stoi
+ * na zewnątrz - pogrubienie, które przechodzi przez granicę nagłówka, dzieli
+ * się na dwa. Dokładnie tak składa zapis aplikacja, więc ta sama treść wraca
+ * z obu stron znak w znak. Odnośnik się nie dzieli: jego opis może mieć
+ * nagłówek w środku.
+ */
+function headingRuns(nodes: Inline[], level: number | null): HeadingRun[] {
+  const runs: HeadingRun[] = [];
+  const push = (at: number | null, node: Inline) => {
+    const last = runs[runs.length - 1];
+    if (last && last.level === at) last.nodes.push(node);
+    else runs.push({ level: at, nodes: [node] });
+  };
+  for (const node of nodes) {
+    if (node.kind === "heading") {
+      for (const run of headingRuns(node.children, node.level)) {
+        for (const inner of run.nodes) push(run.level, inner);
+      }
+      continue;
+    }
+    if (node.kind !== "link" && "children" in node && containsHeading(node.children)) {
+      for (const run of headingRuns(node.children, level)) push(run.level, { ...node, children: run.nodes });
+      continue;
+    }
+    push(level, node);
+  }
+  return runs;
+}
+
 /** Drzewko znaczników z powrotem na markdown. */
 export function inlineToMarkdown(nodes: Inline[]): string {
+  if (!containsHeading(nodes)) return flatInlineToMarkdown(nodes);
+  return headingRuns(nodes, null)
+    .map((run) => {
+      const inner = flatInlineToMarkdown(run.nodes);
+      return run.level && inner ? `<span class="h${run.level}">${inner}</span>` : inner;
+    })
+    .join("");
+}
+
+/**
+ * Cały wiersz z markdownu: wiersz w jednym poziomie nagłówka idzie jako
+ * „# Tytuł" (tak go czyta każdy czytnik markdownu), wiersz mieszany -
+ * ze znacznikami na kawałkach. [base] to poziom całego bloku (`<h2>`).
+ */
+function lineToMarkdown(nodes: Inline[], base: number | null): string {
+  const wrapped: Inline[] = base ? [{ kind: "heading", level: base, children: nodes }] : nodes;
+  const runs = headingRuns(wrapped, null);
+  if (runs.length === 1 && runs[0].level !== null) {
+    const inner = flatInlineToMarkdown(runs[0].nodes);
+    if (inner.trim() && !inner.includes("\n")) return `${"#".repeat(runs[0].level)} ${inner}`;
+  }
+  return inlineToMarkdown(wrapped);
+}
+
+/** Wiersze bloku rozdzielone złamaniem wiersza, każdy osobno przez [lineToMarkdown]. */
+function linesToMarkdown(nodes: Inline[]): string {
+  const lines: Inline[][] = [[]];
+  for (const node of nodes) {
+    if (node.kind === "break") lines.push([]);
+    else lines[lines.length - 1].push(node);
+  }
+  return lines.map((line) => lineToMarkdown(line, null)).join("\n");
+}
+
+function flatInlineToMarkdown(nodes: Inline[]): string {
   return nodes
     .map((node) => {
       switch (node.kind) {
@@ -402,6 +508,10 @@ export function inlineToMarkdown(nodes: Inline[]): string {
         case "size": {
           const inner = inlineToMarkdown(node.children);
           return inner ? `<span style="font-size:${node.px}px">${inner}</span>` : "";
+        }
+        case "heading": {
+          const inner = inlineToMarkdown(node.children);
+          return inner ? `<span class="h${node.level}">${inner}</span>` : "";
         }
         default: {
           const marker = MARKDOWN_MARKER[node.kind];
@@ -531,6 +641,8 @@ function inlineToHtml(nodes: Inline[], options: HtmlOptions = {}): string {
           return `<span style="color:${escapeHtml(node.colour)}">${inlineToHtml(node.children, options)}</span>`;
         case "size":
           return `<span style="font-size:${node.px}px">${inlineToHtml(node.children, options)}</span>`;
+        case "heading":
+          return `<span class="h${node.level}">${inlineToHtml(node.children, options)}</span>`;
         default: {
           const tag = HTML_TAG[node.kind];
           return `<${tag}>${inlineToHtml(node.children, options)}</${tag}>`;
@@ -1176,7 +1288,10 @@ function inlineFromHtml(nodes: HtmlNode[]): Inline[] {
   for (const node of nodes) {
     if (!isElement(node)) {
       // Przeglądarka lubi twardą spację - w treści notatki ma być zwykła.
-      out.push({ kind: "text", text: plainSpaces(node.text) });
+      // Znak zerowej szerokości trzyma tylko kursor w pustym nagłówku
+      // (rich-commands.ts) - w treści notatki nie ma czego szukać.
+      const text = plainSpaces(node.text).replace(/\u200b/g, "");
+      if (text) out.push({ kind: "text", text });
       continue;
     }
 
@@ -1217,6 +1332,14 @@ function inlineFromHtml(nodes: HtmlNode[]): Inline[] {
         target: node.attrs.href ?? "",
         children: inlineFromHtml(node.children),
       });
+      continue;
+    }
+
+    // Nagłówek na kawałku zdania. Bez znacznika poziomu span jest przezroczysty.
+    const headingClass = tag === "span" ? /(?:^|\s)h([1-6])(?:\s|$)/.exec(node.attrs.class ?? "") : null;
+    if (headingClass) {
+      const children = inlineFromHtml(node.children);
+      if (children.length > 0) out.push({ kind: "heading", level: Number(headingClass[1]), children });
       continue;
     }
 
@@ -1265,6 +1388,24 @@ function plainText(nodes: HtmlNode[]): string {
     })
     .join("");
   return text.replace(/^\n/, "");
+}
+
+/** Treść bez spacji na brzegach - jak `.trim()` na gotowym zapisie. */
+function trimInline(nodes: Inline[]): Inline[] {
+  const out = nodes.slice();
+  const first = out[0];
+  if (first?.kind === "text") {
+    const text = first.text.replace(/^\s+/, "");
+    if (text) out[0] = { kind: "text", text };
+    else out.shift();
+  }
+  const last = out[out.length - 1];
+  if (last?.kind === "text") {
+    const text = last.text.replace(/\s+$/, "");
+    if (text) out[out.length - 1] = { kind: "text", text };
+    else out.pop();
+  }
+  return out;
 }
 
 function inlineMarkdown(nodes: HtmlNode[]): string {
@@ -1367,7 +1508,7 @@ export function htmlToMarkdown(html: string): string {
 
     const closeInline = () => {
       if (inline.length === 0) return;
-      const text = inlineMarkdown(inline).replace(/[ \t]+$/gm, "");
+      const text = linesToMarkdown(inlineFromHtml(inline)).replace(/[ \t]+$/gm, "");
       inline = [];
       if (text.trim()) blocks.push(aligned(text, inherited));
     };
@@ -1393,11 +1534,21 @@ export function htmlToMarkdown(html: string): string {
           // Notatka zna trzy poziomy - głębsze schodzą do trzeciego.
           const level = Math.min(3, Number(node.tag[1]));
           const { own, nested } = splitBlocks(node.children);
-          const raw = inlineMarkdown(own).replace(/\n/g, " ");
+          const parts = inlineFromHtml(own).map(
+            (part): Inline => (part.kind === "break" ? { kind: "text", text: " " } : part),
+          );
           // Wyciekłe kratki w treści nagłówka (`<h2># Tytuł</h2>`) schodzą,
           // żeby zapis miał dokładnie jeden znacznik.
-          const text = raw.slice(headingPrefixLength(raw)).trim();
-          if (text) blocks.push(aligned(`${"#".repeat(level)} ${text}`, align));
+          const first = parts[0];
+          if (first?.kind === "text") {
+            const lead = first.text.replace(/^\s+/, "");
+            parts[0] = { kind: "text", text: lead.slice(headingPrefixLength(lead)) };
+          }
+          const inline = trimInline(parts.filter((part) => part.kind !== "text" || part.text));
+          // Nagłówek z kawałkiem w innym poziomie (`<h1>Tytuł <span class="h2">x</span></h1>`)
+          // zapisuje się znacznikami na kawałkach - tak samo jak w aplikacji.
+          const text = lineToMarkdown(inline, level).replace(/\n/g, " ");
+          if (text.trim()) blocks.push(aligned(text, align));
           // Zdarza się, że przeglądarka wsadzi w nagłówek całą listę. Taki
           // kawałek notatki ma zostać listą, a nie zlać się w jeden wiersz.
           if (nested.length > 0) walk(nested, align);
@@ -1471,7 +1622,7 @@ export function htmlToMarkdown(html: string): string {
           if (hasBlocks) {
             walk(node.children, align);
           } else {
-            const text = inlineMarkdown(node.children).replace(/[ \t]+$/gm, "");
+            const text = linesToMarkdown(inlineFromHtml(node.children)).replace(/[ \t]+$/gm, "");
             // Pusty akapit to odstęp - w markdownie robi go już sam rozdział
             // między blokami, więc nie dokładamy niczego.
             if (text.trim()) blocks.push(aligned(text, align));
@@ -1485,6 +1636,149 @@ export function htmlToMarkdown(html: string): string {
 
   walk(parseHtml(html));
   return blocks.join("\n\n");
+}
+
+/* ------------------------------------------------------------------ */
+/* Nagłówek na kawałku bloku - dla przycisków H1-H3 na stronie          */
+/* ------------------------------------------------------------------ */
+
+/*
+  Przycisk H1 na stronie działa jak w aplikacji: na zaznaczony kawałek, a nie
+  na cały akapit. Pole do pisania podaje treść bloku (HTML), jego znacznik
+  (p, h2, li...) i zaznaczenie liczone w znakach tekstu. Tu treść rozkłada się
+  na listki (tekst, kod, zdjęcie, odnośnik) z poziomem nagłówka, kawałek
+  w zaznaczeniu dostaje nowy poziom, a blok składa się z powrotem - cały
+  w jednym poziomie staje się zwykłym <h1>, mieszany zostaje akapitem
+  z <span class="h1"> na kawałkach.
+*/
+
+type Container = Exclude<Inline, { kind: "text" | "break" | "code" | "image" | "link" | "heading" }>;
+type Leaf = { node: Inline; path: Container[]; level: number | null; length: number };
+
+function leafLength(node: Inline): number {
+  switch (node.kind) {
+    case "text":
+    case "code":
+      return node.text.length;
+    case "link":
+      return inlineToPlain(node.children).length;
+    default:
+      return 0;
+  }
+}
+
+/** Treść rozłożona na listki z poziomem nagłówka i drogą przez opakowania. */
+function leavesOf(nodes: Inline[], path: Container[], level: number | null, out: Leaf[]): Leaf[] {
+  for (const node of nodes) {
+    if (node.kind === "heading") {
+      leavesOf(node.children, path, node.level, out);
+    } else if (node.kind === "text" || node.kind === "code" || node.kind === "image" || node.kind === "break" || node.kind === "link") {
+      out.push({ node, path, level, length: leafLength(node) });
+    } else {
+      leavesOf(node.children, [...path, node], level, out);
+    }
+  }
+  return out;
+}
+
+/** Listki pocięte tak, żeby żaden nie przechodził przez granicę [at]. */
+function cutAt(leaves: Leaf[], at: number): Leaf[] {
+  const out: Leaf[] = [];
+  let position = 0;
+  for (const leaf of leaves) {
+    const node = leaf.node;
+    if (at > position && at < position + leaf.length && (node.kind === "text" || node.kind === "code")) {
+      const split = at - position;
+      out.push({ ...leaf, node: { ...node, text: node.text.slice(0, split) }, length: split });
+      out.push({ ...leaf, node: { ...node, text: node.text.slice(split) }, length: leaf.length - split });
+    } else {
+      out.push(leaf);
+    }
+    position += leaf.length;
+  }
+  return out;
+}
+
+/** Listki z powrotem w drzewko: sąsiednie listki z tym samym opakowaniem dzielą je. */
+function treeOf(leaves: Leaf[]): Inline[] {
+  const root: Inline[] = [];
+  const open: { source: Container; copy: Container }[] = [];
+  for (const leaf of leaves) {
+    let same = 0;
+    while (same < open.length && same < leaf.path.length && open[same].source === leaf.path[same]) same += 1;
+    open.length = same;
+    for (const source of leaf.path.slice(same)) {
+      const copy = { ...source, children: [] } as Container;
+      (open.length ? open[open.length - 1].copy.children : root).push(copy);
+      open.push({ source, copy });
+    }
+    (open.length ? open[open.length - 1].copy.children : root).push(leaf.node);
+  }
+  return root;
+}
+
+const WHOLE_LINE_BLOCKS = new Set(["p", "div", "h1", "h2", "h3", "h4", "h5", "h6"]);
+
+function blockLevel(tag: string): number | null {
+  const match = /^h([1-6])$/.exec(tag.toLowerCase());
+  return match ? Math.min(3, Number(match[1])) : null;
+}
+
+/** Poziomy nagłówka znaków od [from] do [to] w treści bloku. */
+export function headingLevelsIn(html: string, tag: string, from: number, to: number): (number | null)[] {
+  const levels: (number | null)[] = [];
+  let position = 0;
+  for (const leaf of leavesOf(inlineFromHtml(parseHtml(html)), [], blockLevel(tag), [])) {
+    for (let i = 0; i < leaf.length; i += 1) {
+      if (position + i >= from && position + i < to) levels.push(leaf.level);
+    }
+    position += leaf.length;
+  }
+  return levels;
+}
+
+/**
+ * Nadaje znakom bloku od [from] do [to] poziom nagłówka [level] (null - zwykły
+ * tekst). Oddaje nowy znacznik bloku i jego treść.
+ */
+export function headingInBlock(
+  html: string,
+  tag: string,
+  from: number,
+  to: number,
+  level: number | null,
+): { tag: string; html: string } {
+  let leaves = leavesOf(inlineFromHtml(parseHtml(html)), [], blockLevel(tag), []);
+  leaves = cutAt(cutAt(leaves, from), to);
+  let position = 0;
+  leaves = leaves.map((leaf) => {
+    const inside = leaf.length > 0 && position >= from && position + leaf.length <= to;
+    position += leaf.length;
+    return inside ? { ...leaf, level } : leaf;
+  });
+
+  const runs: { level: number | null; leaves: Leaf[] }[] = [];
+  for (const leaf of leaves) {
+    const last = runs[runs.length - 1];
+    if (last && last.level === leaf.level) last.leaves.push(leaf);
+    else runs.push({ level: leaf.level, leaves: [leaf] });
+  }
+
+  const lower = tag.toLowerCase();
+  if (WHOLE_LINE_BLOCKS.has(lower)) {
+    const whole = runs.length === 1 ? runs[0].level : null;
+    if (whole !== null && inlineToPlain(treeOf(runs[0].leaves)).trim()) {
+      return { tag: `h${whole}`, html: inlineToHtml(treeOf(runs[0].leaves)) };
+    }
+  }
+  const nodes: Inline[] = runs.flatMap((run) => {
+    const tree = treeOf(run.leaves);
+    return run.level ? [{ kind: "heading", level: run.level, children: tree } as Inline] : tree;
+  });
+  // Nagłówek, który przestał być w całości nagłówkiem, wraca do akapitu;
+  // pozycja listy i cytat zostają sobą.
+  const keep = blockLevel(lower) !== null ? "p" : lower;
+  return { tag: keep, html: inlineToHtml(nodes) };
 }
 
 /**
