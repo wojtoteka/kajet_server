@@ -24,6 +24,7 @@ import { NoteActionsBar } from "@/components/NoteActionsBar";
 import { LargeNoteNotice } from "@/components/LargeNoteNotice";
 import { ActionForm } from "@/components/ActionForm";
 import { CopyableLink } from "@/components/CopyableLink";
+import { PrintButton } from "@/components/PrintButton";
 import {
   revokeShare,
   share,
@@ -144,6 +145,7 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
             purgeAction={purgeNote}
             favoriteAction={toggleFavorite}
           />
+          <PrintButton href={`/note/${note.id}/print`} />
           <Link className="button compact" href="/library">
             {words.backToList}
           </Link>

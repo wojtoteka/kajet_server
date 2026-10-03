@@ -3146,3 +3146,61 @@ code,
     transition-duration: 0.001ms !important;
   }
 }
+
+/*
+  Druk (strony …/print). Na papier idzie sama notatka: bez stopki, bez
+  przycisków i zawsze w jasnych barwach - ciemny motyw na kartce to plama
+  tonera i szare pismo. Potrójne :root przebija oba bloki ciemnego motywu.
+*/
+@media print {
+  :root:root:root {
+    --desk: #ffffff;
+    --sheet: #ffffff;
+    --text: #000000;
+    --text-muted: #444444;
+    --accent: #0f6b5c;
+    --on-accent: #ffffff;
+    --accent-haze: rgba(15, 107, 92, 0.1);
+    --rule: #c8c8c8;
+    --warning: #a6392e;
+    --ink: #000000;
+    --ink-sea: #0f6b5c;
+    --ink-red: #a6392e;
+    --ink-blue: #2850a0;
+  }
+
+  :root:root:root .stroke-highlighter {
+    mix-blend-mode: multiply;
+  }
+
+  body {
+    background: #ffffff;
+  }
+
+  .no-print,
+  .site-footer {
+    display: none !important;
+  }
+
+  .print-page {
+    max-width: none;
+    padding: 0;
+  }
+
+  .print-page .rich-text {
+    max-width: none !important;
+  }
+
+  /* Strona notatki odręcznej to jedna kartka papieru - nie tniemy jej w pół. */
+  .print-page figure {
+    break-inside: avoid;
+  }
+
+  .print-page figure + figure {
+    break-before: page;
+  }
+
+  .print-page svg {
+    border: none !important;
+  }
+}
