@@ -120,3 +120,11 @@ describe("tytuł podpowiedziany z treści", () => {
     expect(titleFromMindMap([{ text: "**Środek** mapy" }])).toBe("Środek mapy");
   });
 });
+
+describe("tytuł z wyśrodkowanego akapitu", () => {
+  it("znacznik ułożenia nie wchodzi do tytułu", () => {
+    expect(
+      titleFromMarkdown('<p style="text-align:center"># Lista zakupów</p>\nmleko'),
+    ).toBe("Lista zakupów");
+  });
+});

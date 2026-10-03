@@ -114,6 +114,7 @@ export const ICON_NAMES = [
   "park",
   "photo_camera",
   "post_add",
+  "print",
   "public",
   "publish",
   "redo",

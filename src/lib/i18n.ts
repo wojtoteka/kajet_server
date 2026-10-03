@@ -542,6 +542,9 @@ export type Words = {
   mayChangeIt: string;
   readOnlyMark: string;
   openAsOwner: string;
+  printNote: string;
+  printClose: string;
+  printTooLarge: string;
   codeRunOwnerOnly: string;
   thisIsAKajetNote: string;
   seeWhatItIs: string;
@@ -1742,6 +1745,9 @@ const pl: Words = {
   mayChangeIt: "masz prawo do zmian",
   readOnlyMark: "tylko do czytania",
   openAsOwner: "Otwórz jako właściciel",
+  printNote: "Drukuj",
+  printClose: "Zamknij",
+  printTooLarge: "Ta notatka jest za duża, żeby ją wydrukować ze strony. Pobierz plik i wydrukuj go u siebie.",
   codeRunOwnerOnly:
     "Kod uruchamia tylko osoba, do której należy notatka. Zapisywanie działa jak zwykle.",
   thisIsAKajetNote: "To jest notatka z Kajetu.",
@@ -3084,6 +3090,9 @@ const en: Words = {
   mayChangeIt: "you may make changes",
   readOnlyMark: "read only",
   openAsOwner: "Open it as the owner",
+  printNote: "Print",
+  printClose: "Close",
+  printTooLarge: "This note is too large to print from the website. Download the file and print it on your own computer.",
   codeRunOwnerOnly:
     "Only the person the note belongs to can run the code. Saving works as usual.",
   thisIsAKajetNote: "This is a note from Kajet.",

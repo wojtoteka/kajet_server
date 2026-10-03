@@ -5,8 +5,13 @@ vi.mock("./prisma", () => ({
     attachment: {
       count: vi.fn(),
       deleteMany: vi.fn(),
+      findMany: vi.fn(),
     },
   },
+}));
+
+vi.mock("./quota", () => ({
+  changeUsed: vi.fn(async () => undefined),
 }));
 
 vi.mock("./files", () => ({
@@ -15,8 +20,10 @@ vi.mock("./files", () => ({
 
 import { prisma } from "./prisma";
 import { deleteAttachment } from "./files";
+import { changeUsed } from "./quota";
 import {
   deleteAttachmentFileIfUnused,
+  pruneDroppedAttachments,
   removeAttachmentRecord,
 } from "./attachment-delete";
 
@@ -96,5 +103,58 @@ describe("attachment deletion", () => {
     await expect(
       deleteAttachmentFileIfUnused("user-1", "note-1", record.path),
     ).resolves.toBe(false);
+  });
+});
+
+describe("pruning attachments a text note no longer uses", () => {
+  const findMany = vi.mocked(prisma.attachment.findMany);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    deleteMany.mockResolvedValue({ count: 1 });
+    count.mockResolvedValue(0);
+  });
+
+  const text = (markdown: string) =>
+    JSON.stringify({
+      format: 1,
+      id: "note-1",
+      kind: "text",
+      text: {
+        markdown,
+        drawings: [{ asset: "rysunek-1.png", source: "rysunek-1.strokes.json", width: 560, height: 300 }],
+      },
+    });
+
+  it("deletes the removed drawing with its strokes and gives the space back", async () => {
+    findMany.mockResolvedValue([
+      { id: "a1", noteId: "note-1", name: "rysunek-1.png", path: "u/n/h1.png", sizeBytes: 1000 },
+      { id: "a2", noteId: "note-1", name: "rysunek-1.strokes.json", path: "u/n/h2.json", sizeBytes: 200 },
+      { id: "a3", noteId: "note-1", name: "kot.png", path: "u/n/h3.png", sizeBytes: 5000 },
+    ] as never);
+
+    const removed = await pruneDroppedAttachments(
+      "user-1",
+      "note-1",
+      text("Ala\n\n![rysunek](assets/rysunek-1.png)\n\n![kot](assets/kot.png)"),
+      text("Ala\n\n![kot](assets/kot.png)"),
+    );
+
+    expect(removed.sort()).toEqual(["rysunek-1.png", "rysunek-1.strokes.json"]);
+    expect(deleteMany).toHaveBeenCalledWith({ where: { id: "a1" } });
+    expect(deleteMany).toHaveBeenCalledWith({ where: { id: "a2" } });
+    expect(deleteMany).not.toHaveBeenCalledWith({ where: { id: "a3" } });
+    expect(vi.mocked(changeUsed)).toHaveBeenCalledWith("user-1", -1000);
+    expect(vi.mocked(changeUsed)).toHaveBeenCalledWith("user-1", -200);
+  });
+
+  it("does nothing while the drawing is still in the text", async () => {
+    findMany.mockResolvedValue([
+      { id: "a1", noteId: "note-1", name: "rysunek-1.png", path: "u/n/h1.png", sizeBytes: 1000 },
+    ] as never);
+
+    const content = text("![rysunek](assets/rysunek-1.png)");
+    await expect(pruneDroppedAttachments("user-1", "note-1", content, content)).resolves.toEqual([]);
+    expect(deleteMany).not.toHaveBeenCalled();
   });
 });

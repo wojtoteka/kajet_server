@@ -126,6 +126,19 @@ export function titleIsOwn(title: string, derived: string | null): boolean {
  */
 const LEADING_SYNTAX = /^\s*(#{1,6}\s+|>\s?|[-*+]\s+(\[[ xX]\]\s+)?|\d+[.)]\s+)/;
 
+/**
+ * Wiersz bez znacznika ułożenia akapitu. Ten sam zapis co w rich-text.ts
+ * (splitParagraphAlign) - tu powtórzony, bo tytuły liczą się też tam, gdzie
+ * czytnik treści nie jest potrzebny. Aplikacja zdejmuje go tak samo
+ * (ParagraphAlign.unwrap), inaczej notatki przetytułowywałyby się nawzajem.
+ */
+function withoutParagraphAlign(line: string): string {
+  const open = /^<p style="text-align:(?:left|center|right)">/.exec(line);
+  if (!open) return line;
+  const rest = line.slice(open[0].length);
+  return rest.endsWith("</p>") ? rest.slice(0, -"</p>".length) : rest;
+}
+
 /** Znaczniki w środku wiersza. Zdejmujemy je, zostawiając samą treść. */
 function withoutMarkers(line: string): string {
   return line
@@ -156,7 +169,8 @@ export function titleFromMarkdown(markdown: string): string | null {
   const lines = markdown.split("\n");
 
   for (const [index, raw] of lines.entries()) {
-    const line = raw.trim();
+    // Znacznik ułożenia akapitu (<p style="text-align:...">) to nie treść.
+    const line = withoutParagraphAlign(raw.trim()).trim();
 
     // Płot bloku kodu i wzoru. Treść w środku bywa techniczna i na tytuł się
     // nie nadaje, więc przechodzimy nad nią.

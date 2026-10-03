@@ -13,6 +13,7 @@ import { MindMapEditor } from "@/components/MindMapEditor";
 import { HandwritingEditor } from "@/components/HandwritingEditor";
 import { CodeNotePanel } from "@/components/CodeNotePanel";
 import { LargeNoteNotice } from "@/components/LargeNoteNotice";
+import { PrintButton } from "@/components/PrintButton";
 import { runCodeAction } from "@/app/note/[id]/actions";
 import {
   saveSharedTextNote,
@@ -114,11 +115,14 @@ export default async function SharedNotePage({
             {canEdit ? ` · ${words.mayChangeIt}` : ` · ${words.readOnlyMark}`}
           </p>
         </div>
-        {isOwner ? (
-          <Link className="button compact" href={`/note/${note.id}`}>
-            {words.openAsOwner}
-          </Link>
-        ) : null}
+        <div className="row" style={{ flexWrap: "wrap" }}>
+          <PrintButton href={`/n/${token}/print`} />
+          {isOwner ? (
+            <Link className="button compact" href={`/note/${note.id}`}>
+              {words.openAsOwner}
+            </Link>
+          ) : null}
+        </div>
       </div>
 
       {display.tooLarge ? (

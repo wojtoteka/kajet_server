@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  alignEveryParagraph,
   headingLine,
   headingPrefixLength,
   htmlToMarkdown,
@@ -489,5 +490,77 @@ describe("rozmiar pisma kawałka tekstu", () => {
 
   it("rozmiar bez treści znika", () => {
     expect(inlineToMarkdown(parseInline('<span style="font-size:21px"></span>'))).toBe("");
+  });
+});
+
+/*
+  Ułożenie akapitu. Siedzi w znaczniku obejmującym cały wiersz - tym samym,
+  który pisze aplikacja na tablecie (ParagraphAlign.kt).
+*/
+describe("ułożenie akapitu", () => {
+  const centre = '<p style="text-align:center">';
+  const right = '<p style="text-align:right">';
+
+  it("wyśrodkowany akapit to akapit ze stylem, a nie goły HTML w treści", () => {
+    const html = markdownToHtml(`zwykły\n${centre}na środku</p>\nznowu zwykły`);
+    expect(html).toBe(
+      '<p>zwykły</p><p style="text-align:center">na środku</p><p>znowu zwykły</p>',
+    );
+    expect(html).not.toContain("&lt;p");
+  });
+
+  it("nagłówek, lista i cytat zostają sobą, tylko ułożone", () => {
+    expect(markdownToHtml(`${centre}## Tytuł</p>`)).toBe('<h2 style="text-align:center">Tytuł</h2>');
+    expect(markdownToHtml(`- raz\n${right}- dwa</p>`)).toBe(
+      '<ul><li>raz</li><li style="text-align:right">dwa</li></ul>',
+    );
+    expect(markdownToHtml(`${centre}> cytat</p>`)).toBe(
+      '<blockquote style="text-align:center">cytat</blockquote>',
+    );
+  });
+
+  const cases: [string, string][] = [
+    [`${centre}na środku</p>`, `${centre}na środku</p>`],
+    [`${centre}**gruby** na środku</p>`, `${centre}**gruby** na środku</p>`],
+    [`${right}# Tytuł z prawej</p>\n\ntreść`, `${right}# Tytuł z prawej</p>\n\ntreść`],
+    [`${centre}raz</p>\n${centre}dwa</p>`, `${centre}raz</p>\n${centre}dwa</p>`],
+    [`- raz\n${centre}- dwa</p>`, `- raz\n${centre}- dwa</p>`],
+    [`${centre}> cytat</p>`, `${centre}> cytat</p>`],
+  ];
+  for (const [from, to] of cases) {
+    it(`przechodzi tam i z powrotem: ${from.slice(0, 50)}`, () => {
+      expect(round(from)).toBe(to);
+    });
+  }
+
+  it("czyta ułożenie z przeglądarki - stylem i starym atrybutem", () => {
+    expect(htmlToMarkdown('<p style="text-align: center;">a<br>b</p>')).toBe(
+      `${centre}a</p>\n${centre}b</p>`,
+    );
+    expect(htmlToMarkdown('<p align="right">a</p>')).toBe(`${right}a</p>`);
+    expect(htmlToMarkdown('<h1 style="text-align: center;">T</h1>')).toBe(`${centre}# T</p>`);
+    expect(htmlToMarkdown('<div style="text-align: center;"><p>x</p></div>')).toBe(`${centre}x</p>`);
+  });
+
+  it("zadanie nie dostaje ułożenia - inaczej przestałoby być zadaniem", () => {
+    expect(
+      htmlToMarkdown('<ul data-kind="task"><li data-done="false" style="text-align: center;">x</li></ul>'),
+    ).toBe("- [ ] x");
+  });
+
+  it("do lewej to zwykły akapit - bez znacznika", () => {
+    expect(htmlToMarkdown('<p style="text-align: left;">a</p>')).toBe("a");
+  });
+
+  it("licznik i podgląd liczą samą treść", () => {
+    expect(markdownToPlain(`${centre}## Tytuł</p>`)).toBe("Tytuł");
+  });
+
+  it("stare ułożenie całej notatki przechodzi na akapity", () => {
+    const markdown = "Tytuł\n\n- punkt\n\n![a](assets/a.png)\n\n```\nkod\n```\n\n| a | b |\n| --- | --- |\n\n- [ ] zadanie\n\n---";
+    expect(alignEveryParagraph(markdown, "center")).toBe(
+      `${centre}Tytuł</p>\n\n${centre}- punkt</p>\n\n![a](assets/a.png)\n\n\`\`\`\nkod\n\`\`\`\n\n| a | b |\n| --- | --- |\n\n- [ ] zadanie\n\n---`,
+    );
+    expect(alignEveryParagraph(markdown, "left")).toBe(markdown);
   });
 });
