@@ -7,7 +7,7 @@ import {
   deleteNoteDirectory,
   noteStoragePrefix,
 } from "@/lib/files";
-import { deleteAttachmentFileIfUnused } from "@/lib/attachment-delete";
+import { deleteAttachmentFileIfUnused, pruneDroppedAttachments } from "@/lib/attachment-delete";
 import { fitTitle } from "@/lib/note-title";
 import { apiWords } from "./language";
 
@@ -188,6 +188,10 @@ export async function upsertNoteForUser(
       deletedAt: true,
       favorite: true,
       folderId: true,
+      // Poprzednia treść - po zapisie notatki tekstowej porównujemy, które
+      // załączniki przestały być w niej używane.
+      kind: true,
+      content: true,
     },
   });
 
@@ -304,6 +308,20 @@ export async function upsertNoteForUser(
     // Notatka powstała na nowo pod starym identyfikatorem - nagrobek po niej
     // przestaje obowiązywać.
     if (!existing) await forgetTombstone(note.id);
+
+    /*
+      Zdjęcie albo rysunek usunięty z treści notatki tekstowej schodzi też
+      z załączników. Wcześniej zostawał tam na zawsze i wisiał na stronie
+      w „Plikach przy notatce", choć w notatce go nie było. Sprzątanie nie
+      może zepsuć zapisu - treść już jest na serwerze.
+    */
+    if (existing && note.kind === "TEXT") {
+      try {
+        await pruneDroppedAttachments(userId, note.id, existing.content, content);
+      } catch (problem) {
+        console.error("[note-write] attachment prune", problem);
+      }
+    }
 
     return {
       status: existing ? "saved" : "created",

@@ -642,6 +642,54 @@ function chunkToPasteHtml(chunk: string): string {
   return parts.join("");
 }
 
+/* ------------------------------------------------------------------ */
+/* Ułożenie akapitu                                                     */
+/* ------------------------------------------------------------------ */
+
+/*
+  Ułożenie jednego akapitu (lewo, środek, prawo). Markdown go nie zna, więc -
+  tak samo jak barwa i rozmiar pisma - siedzi w znaczniku HTML obejmującym
+  CAŁY wiersz, na zewnątrz kratek nagłówka, znaku listy i cytatu:
+
+    <p style="text-align:center">## Nagłówek na środku</p>
+
+  Dokładnie ten zapis czyta i pisze aplikacja na tablecie (ParagraphAlign.kt).
+  Dawniej ułożenie było jedno na całą notatkę - kliknięcie „do środka" przy
+  jednym zdaniu przestawiało cały plik.
+*/
+export type ParagraphAlign = "left" | "center" | "right";
+
+const PARAGRAPH_ALIGN = /^<p style="text-align:(left|center|right)">/;
+const PARAGRAPH_CLOSE = "</p>";
+
+/** Wiersz rozebrany na ułożenie i samą treść wiersza. */
+export function splitParagraphAlign(line: string): { align: ParagraphAlign | null; body: string } {
+  const open = PARAGRAPH_ALIGN.exec(line);
+  if (!open) return { align: null, body: line };
+  const rest = line.slice(open[0].length);
+  const body = rest.endsWith(PARAGRAPH_CLOSE) ? rest.slice(0, -PARAGRAPH_CLOSE.length) : rest;
+  return { align: open[1] as ParagraphAlign, body };
+}
+
+/** Wiersz obłożony znacznikiem ułożenia; null zostawia go bez znacznika. */
+export function withParagraphAlign(line: string, align: ParagraphAlign | null): string {
+  return align ? `<p style="text-align:${align}">${line}${PARAGRAPH_CLOSE}` : line;
+}
+
+/** Ułożenie bloku z pola do pisania: styl `text-align` albo stary atrybut `align`. */
+function alignFromElement(attrs: Record<string, string>): ParagraphAlign | null {
+  const style = /(?:^|;)\s*text-align\s*:\s*([a-z-]+)/i.exec(attrs.style ?? "")?.[1];
+  const value = (style ?? attrs.align ?? "").toLowerCase();
+  if (value === "center" || value === "right" || value === "left") return value;
+  if (value === "end") return "right";
+  if (value === "start") return "left";
+  return null;
+}
+
+function alignAttribute(align: ParagraphAlign | null): string {
+  return align ? ` style="text-align:${align}"` : "";
+}
+
 const QUOTE = /^\s*>\s?(.*)$/;
 const RULE = /^\s*(-{3,}|\*{3,}|_{3,})\s*$/;
 const TABLE_ROW = /^\s*\|(.+)\|\s*$/;
@@ -650,7 +698,13 @@ const LIST_LINE = /^(\s*)([-*]|\d+[.)])\s+(.*)$/;
 const TASK_TEXT = /^\[([ xX])\]\s+(.*)$/;
 
 type ListKindMd = "bullet" | "number" | "task";
-type ListEntry = { text: string; done: boolean; indent: number; kind: ListKindMd };
+type ListEntry = {
+  text: string;
+  done: boolean;
+  indent: number;
+  kind: ListKindMd;
+  align?: ParagraphAlign | null;
+};
 
 function listEntry(line: string): ListEntry | null {
   const match = LIST_LINE.exec(line);
@@ -698,10 +752,11 @@ function listToHtml(
     if (entry.kind !== kind) break;
 
     const body = inlineToHtml(parseInline(entry.text), options);
+    const aligned = alignAttribute(entry.align ?? null);
     parts.push(
       kind === "task"
-        ? `<li data-done="${entry.done ? "true" : "false"}">${body}</li>`
-        : `<li>${body}</li>`,
+        ? `<li data-done="${entry.done ? "true" : "false"}"${aligned}>${body}</li>`
+        : `<li${aligned}>${body}</li>`,
     );
     at += 1;
   }
@@ -723,19 +778,28 @@ function tableCells(line: string): string[] {
  * powrotna droga i tak wszystko sprowadza do tego zestawu.
  */
 export function markdownToHtml(markdown: string, options: HtmlOptions = {}): string {
-  const lines = markdown.split("\n");
+  // Ułożenie akapitu zdejmujemy z wiersza od razu - dalej liczy się już sama
+  // budowa wiersza (nagłówek, lista, cytat), a ułożenie wraca jako styl bloku.
+  const split = markdown.split("\n").map(splitParagraphAlign);
+  const lines = split.map((line) => line.body);
+  const aligns = split.map((line) => line.align);
   const out: string[] = [];
   let paragraph: string[] = [];
+  let paragraphAlign: ParagraphAlign | null = null;
 
   const closeParagraph = () => {
     if (paragraph.length === 0) return;
-    out.push(`<p>${inlineToHtml(parseInline(paragraph.join("\n")), options)}</p>`);
+    out.push(
+      `<p${alignAttribute(paragraphAlign)}>${inlineToHtml(parseInline(paragraph.join("\n")), options)}</p>`,
+    );
     paragraph = [];
+    paragraphAlign = null;
   };
 
   let at = 0;
   while (at < lines.length) {
     const line = lines[at];
+    const align = aligns[at];
     const fence = /^\s*(```|\$\$)\s*$/.exec(line);
     if (fence) {
       closeParagraph();
@@ -763,7 +827,7 @@ export function markdownToHtml(markdown: string, options: HtmlOptions = {}): str
     if (heading) {
       closeParagraph();
       out.push(
-        `<h${heading.level}>${inlineToHtml(parseInline(heading.body), options)}</h${heading.level}>`,
+        `<h${heading.level}${alignAttribute(align)}>${inlineToHtml(parseInline(heading.body), options)}</h${heading.level}>`,
       );
       at += 1;
       continue;
@@ -775,7 +839,7 @@ export function markdownToHtml(markdown: string, options: HtmlOptions = {}): str
       while (at < lines.length) {
         const entry = listEntry(lines[at]);
         if (!entry) break;
-        entries.push(entry);
+        entries.push({ ...entry, align: aligns[at] });
         at += 1;
       }
       let index = 0;
@@ -811,13 +875,16 @@ export function markdownToHtml(markdown: string, options: HtmlOptions = {}): str
     if (quote) {
       closeParagraph();
       const body: string[] = [];
-      while (at < lines.length) {
+      // Cytat to jeden blok, dopóki jego wiersze mają to samo ułożenie.
+      while (at < lines.length && aligns[at] === align) {
         const next = QUOTE.exec(lines[at]);
         if (!next) break;
         body.push(next[1]);
         at += 1;
       }
-      out.push(`<blockquote>${inlineToHtml(parseInline(body.join("\n")), options)}</blockquote>`);
+      out.push(
+        `<blockquote${alignAttribute(align)}>${inlineToHtml(parseInline(body.join("\n")), options)}</blockquote>`,
+      );
       continue;
     }
 
@@ -838,6 +905,9 @@ export function markdownToHtml(markdown: string, options: HtmlOptions = {}): str
       continue;
     }
 
+    // Akapit trzyma się razem, dopóki jego wiersze mają to samo ułożenie.
+    if (paragraph.length > 0 && paragraphAlign !== align) closeParagraph();
+    paragraphAlign = align;
     paragraph.push(line);
     at += 1;
   }
@@ -887,7 +957,7 @@ function inlineToPlain(nodes: Inline[]): string {
  * Puste wiersze zostają, żeby dało się policzyć akapity.
  */
 export function markdownToPlain(markdown: string): string {
-  const lines = markdown.split("\n");
+  const lines = markdown.split("\n").map((line) => splitParagraphAlign(line).body);
   const out: string[] = [];
 
   let at = 0;
@@ -1225,7 +1295,7 @@ const BLOCK_TAGS = new Set([
   "article",
 ]);
 
-function listItems(node: HtmlElement, indent: string): string[] {
+function listItems(node: HtmlElement, indent: string, inherited: ParagraphAlign | null = null): string[] {
   const lines: string[] = [];
   const ordered = node.tag === "ol";
   const task = node.attrs["data-kind"] === "task";
@@ -1250,9 +1320,12 @@ function listItems(node: HtmlElement, indent: string): string[] {
         ? `${number++}. `
         : "- ";
     const text = inlineMarkdown(own).replace(/\n/g, " ").trim();
-    lines.push(indent + marker + text);
+    // Zadanie stoi zawsze przy swoim kwadraciku - z ułożeniem aplikacja nie
+    // rozpoznałaby go jako zadania.
+    const align = task ? null : (alignFromElement(child.attrs) ?? inherited);
+    lines.push(withParagraphAlign(indent + marker + text, markedAlign(align)));
     for (const list of nested) {
-      lines.push(...listItems(list, indent + "  "));
+      lines.push(...listItems(list, indent + "  ", align));
     }
   }
 
@@ -1279,14 +1352,24 @@ function splitBlocks(nodes: HtmlNode[]): { own: HtmlNode[]; nested: HtmlNode[] }
 export function htmlToMarkdown(html: string): string {
   const blocks: string[] = [];
 
-  const walk = (nodes: HtmlNode[]) => {
+  /** Każdy niepusty wiersz bloku dostaje znacznik ułożenia bloku. */
+  const aligned = (text: string, align: ParagraphAlign | null) => {
+    const mark = markedAlign(align);
+    if (!mark) return text;
+    return text
+      .split("\n")
+      .map((line) => (line.trim() ? withParagraphAlign(line, mark) : line))
+      .join("\n");
+  };
+
+  const walk = (nodes: HtmlNode[], inherited: ParagraphAlign | null = null) => {
     let inline: HtmlNode[] = [];
 
     const closeInline = () => {
       if (inline.length === 0) return;
       const text = inlineMarkdown(inline).replace(/[ \t]+$/gm, "");
       inline = [];
-      if (text.trim()) blocks.push(text);
+      if (text.trim()) blocks.push(aligned(text, inherited));
     };
 
     for (const node of nodes) {
@@ -1295,6 +1378,7 @@ export function htmlToMarkdown(html: string): string {
         continue;
       }
       closeInline();
+      const align = alignFromElement(node.attrs) ?? inherited;
 
       switch (node.tag) {
         case "hr":
@@ -1313,10 +1397,10 @@ export function htmlToMarkdown(html: string): string {
           // Wyciekłe kratki w treści nagłówka (`<h2># Tytuł</h2>`) schodzą,
           // żeby zapis miał dokładnie jeden znacznik.
           const text = raw.slice(headingPrefixLength(raw)).trim();
-          if (text) blocks.push(`${"#".repeat(level)} ${text}`);
+          if (text) blocks.push(aligned(`${"#".repeat(level)} ${text}`, align));
           // Zdarza się, że przeglądarka wsadzi w nagłówek całą listę. Taki
           // kawałek notatki ma zostać listą, a nie zlać się w jeden wiersz.
-          if (nested.length > 0) walk(nested);
+          if (nested.length > 0) walk(nested, align);
           break;
         }
         case "blockquote": {
@@ -1324,13 +1408,16 @@ export function htmlToMarkdown(html: string): string {
           const text = inlineMarkdown(own);
           if (text.trim()) {
             blocks.push(
-              text
-                .split("\n")
-                .map((line) => `> ${line}`.trimEnd())
-                .join("\n"),
+              aligned(
+                text
+                  .split("\n")
+                  .map((line) => `> ${line}`.trimEnd())
+                  .join("\n"),
+                align,
+              ),
             );
           }
-          if (nested.length > 0) walk(nested);
+          if (nested.length > 0) walk(nested, align);
           break;
         }
         case "pre": {
@@ -1340,7 +1427,7 @@ export function htmlToMarkdown(html: string): string {
         }
         case "ul":
         case "ol": {
-          const lines = listItems(node, "");
+          const lines = listItems(node, "", align);
           if (lines.length > 0) blocks.push(lines.join("\n"));
           break;
         }
@@ -1382,12 +1469,12 @@ export function htmlToMarkdown(html: string): string {
             (child) => isElement(child) && BLOCK_TAGS.has(child.tag),
           );
           if (hasBlocks) {
-            walk(node.children);
+            walk(node.children, align);
           } else {
             const text = inlineMarkdown(node.children).replace(/[ \t]+$/gm, "");
             // Pusty akapit to odstęp - w markdownie robi go już sam rozdział
             // między blokami, więc nie dokładamy niczego.
-            if (text.trim()) blocks.push(text);
+            if (text.trim()) blocks.push(aligned(text, align));
           }
         }
       }
@@ -1398,4 +1485,46 @@ export function htmlToMarkdown(html: string): string {
 
   walk(parseHtml(html));
   return blocks.join("\n\n");
+}
+
+/**
+ * Ułożenie, które trafia do treści. „Do lewej" to ułożenie zwykłe - nie
+ * potrzebuje znacznika, tak samo jak w aplikacji.
+ */
+function markedAlign(align: ParagraphAlign | null): ParagraphAlign | null {
+  return align === "center" || align === "right" ? align : null;
+}
+
+/**
+ * Jedno ułożenie przy każdym akapicie treści - przejście ze starego ułożenia
+ * całej notatki na ułożenie akapitów. Ten sam rachunek robi aplikacja
+ * (TextFormat.alignEveryLine): bloki kodu, tabele, zdjęcia, zadania i linie
+ * zostają bez znacznika, puste wiersze też.
+ */
+export function alignEveryParagraph(markdown: string, align: ParagraphAlign): string {
+  const mark = markedAlign(align);
+  if (!mark) return markdown;
+  let fence: string | null = null;
+  return markdown
+    .split("\n")
+    .map((line) => {
+      const trimmed = line.trim();
+      if (fence) {
+        if (fence === "$$" ? trimmed === "$$" : trimmed.startsWith("```")) fence = null;
+        return line;
+      }
+      if (trimmed.startsWith("```")) {
+        fence = "```";
+        return line;
+      }
+      if (trimmed === "$$") {
+        fence = "$$";
+        return line;
+      }
+      if (!trimmed || PARAGRAPH_ALIGN.test(line)) return line;
+      if (TABLE_ROW.test(line) || RULE.test(line) || readImageLine(line)) return line;
+      if (/^\s*[-*+] \[[ xX]] ?/.test(line)) return line;
+      return withParagraphAlign(line, mark);
+    })
+    .join("\n");
 }

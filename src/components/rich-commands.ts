@@ -600,7 +600,44 @@ export function insertPlainText(text: string): void {
   run("insertHTML", plainTextToPasteHtml(text));
 }
 
-export type Formats = { marks: Set<MarkName>; blocks: Set<BlockName> };
+export type ParagraphSide = "left" | "center" | "right";
+
+export type Formats = {
+  marks: Set<MarkName>;
+  blocks: Set<BlockName>;
+  /** Ułożenie akapitu pod kursorem. */
+  align: ParagraphSide;
+};
+
+const JUSTIFY: Record<ParagraphSide, string> = {
+  left: "justifyLeft",
+  center: "justifyCenter",
+  right: "justifyRight",
+};
+
+/**
+ * Ułożenie akapitów pod kursorem albo w zaznaczeniu - tylko ich, jak
+ * w Wordzie, a nie całej notatki. Idzie przez execCommand, więc cofanie
+ * działa; do treści wraca jako `<p style="text-align:...">` (rich-text.ts).
+ */
+export function alignParagraphs(side: ParagraphSide): void {
+  run(JUSTIFY[side]);
+}
+
+const ALIGNED_BLOCK = /^(P|DIV|H1|H2|H3|H4|H5|H6|LI|BLOCKQUOTE)$/;
+
+/** Ułożenie akapitu, w którym stoi kursor. */
+function alignAtCursor(anchor: Node | null | undefined): ParagraphSide {
+  let current = closest(anchor, (element) => ALIGNED_BLOCK.test(element.tagName));
+  while (current) {
+    const value = (current.style.textAlign || current.getAttribute("align") || "").toLowerCase();
+    if (value === "center") return "center";
+    if (value === "right" || value === "end") return "right";
+    if (value === "left" || value === "start") return "left";
+    current = closest(current.parentNode, (element) => ALIGNED_BLOCK.test(element.tagName));
+  }
+  return "left";
+}
 
 /**
  * Co jest w tej chwili włączone pod kursorem - pasek podświetla wtedy swoje
@@ -637,7 +674,7 @@ export function activeFormats(): Formats {
     else blocks.add(list.tagName === "OL" ? "ol" : "ul");
   }
 
-  return { marks, blocks };
+  return { marks, blocks, align: alignAtCursor(anchor) };
 }
 
 /**

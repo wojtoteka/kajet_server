@@ -22,6 +22,7 @@ import { useNoteFlush } from "@/components/NoteSync";
 import { TITLE_LIMIT } from "@/lib/note-title";
 import {
   activeFormats,
+  alignParagraphs,
   applyColour,
   applyLink,
   clearColour,
@@ -48,7 +49,7 @@ import {
   displayInkColor,
   hexFromArgb,
 } from "@/lib/document";
-import { htmlToMarkdown, normaliseColour } from "@/lib/rich-text";
+import { alignEveryParagraph, htmlToMarkdown, normaliseColour } from "@/lib/rich-text";
 import {
   IMAGE_FULL_WIDTH,
   IMAGE_SMALLEST_WIDTH,
@@ -97,7 +98,7 @@ type ActionResult = {
 };
 type Action = (previous: ActionResult, data: FormData) => Promise<ActionResult>;
 
-const NO_FORMATS: Formats = { marks: new Set(), blocks: new Set() };
+const NO_FORMATS: Formats = { marks: new Set(), blocks: new Set(), align: "left" };
 
 /*
   Barwy pisma pod ręką. To ten sam zestaw, który ma pasek pisaków w aplikacji
@@ -161,7 +162,20 @@ export function TextNoteEditor({
     Notatka stoi w kawałkach, tak jak w aplikacji: zdjęcia są zdjęciami już
     w trakcie pisania, a nie zapisem ![](assets/...).
   */
-  const [blocks, setBlocks] = useState<TextBlock[]>(() => splitTextBlocks(markdown));
+  /*
+    Ułożenie jest cechą akapitu, a nie całej notatki. Notatka, której kiedyś
+    nadano jedno ułożenie dla całości, dostaje je przy każdym akapicie -
+    wygląda tak samo, a od teraz każdy akapit da się przestawić osobno.
+    Tak samo robi aplikacja przy otwarciu takiej notatki.
+  */
+  const wholeNoteAlign = appearance?.align ?? "left";
+  const [blocks, setBlocks] = useState<TextBlock[]>(() =>
+    splitTextBlocks(
+      wholeNoteAlign === "center" || wholeNoteAlign === "right"
+        ? alignEveryParagraph(markdown, wholeNoteAlign)
+        : markdown,
+    ),
+  );
   const body = useMemo(() => joinTextBlocks(blocks), [blocks]);
   // Licznik rośnie w trakcie pisania, a liczy to, co widać na kartce - bez
   // gwiazdek pogrubienia, znaczników barwy i zapisu zdjęć.
@@ -177,7 +191,8 @@ export function TextNoteEditor({
   // Barwa pisma całej notatki - ta sama liczba ARGB, którą tablet trzyma
   // w content.json (0 = barwa domyślna).
   const [textColor, setTextColor] = useState(appearance?.textColor ?? 0);
-  const [align, setAlign] = useState(appearance?.align ?? "left");
+  // Ułożenie całej notatki zostaje zawsze „do lewej" - akapity mają własne.
+  const align = "left";
   const shownSize = fontSize > 0 ? fontSize : TEXT_DEFAULT_SIZE;
 
   // Co jest włączone pod kursorem - pasek podświetla wtedy swoje przyciski.
@@ -916,14 +931,14 @@ export function TextNoteEditor({
           <button
             key={id}
             type="button"
-            className={`compact icon-only${align === id ? " on" : ""}`}
+            className={`compact icon-only${formats.align === id ? " on" : ""}`}
             title={label}
             aria-label={label}
-            aria-pressed={align === id}
+            aria-pressed={formats.align === id}
             onMouseDown={keepCaret}
-            onClick={() => setAlign(id)}
+            onClick={() => command(() => alignParagraphs(id))}
           >
-            <Icon name={icon} filled={align === id} />
+            <Icon name={icon} filled={formats.align === id} />
           </button>
         ))}
       </div>

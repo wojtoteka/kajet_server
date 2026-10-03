@@ -1,5 +1,7 @@
 import { prisma } from "./prisma";
 import { deleteAttachment } from "./files";
+import { droppedAttachments } from "./attachment-usage";
+import { changeUsed } from "./quota";
 
 export type AttachmentRecord = {
   id: string;
@@ -58,4 +60,46 @@ export async function removeAttachmentRecord(
   }
 
   return true;
+}
+
+/**
+ * Sprzątanie po zapisie notatki tekstowej: załączniki, na które treść
+ * przestała wskazywać (usunięte zdjęcie, usunięty rysunek razem z jego
+ * kreskami), znikają z serwera i oddają zajęte miejsce.
+ *
+ * Zwraca nazwy skasowanych plików. Błąd dysku nie psuje zapisu notatki -
+ * plik zostaje i spróbujemy przy następnym zapisie.
+ */
+export async function pruneDroppedAttachments(
+  ownerId: string,
+  noteId: string,
+  previousContent: string | null | undefined,
+  nextContent: string,
+): Promise<string[]> {
+  const attachments = await prisma.attachment.findMany({
+    where: { noteId },
+    select: { id: true, noteId: true, name: true, path: true, sizeBytes: true },
+  });
+  if (!attachments.length) return [];
+
+  const dropped = new Set(
+    droppedAttachments(
+      previousContent,
+      nextContent,
+      attachments.map((attachment) => attachment.name),
+    ),
+  );
+  const removed: string[] = [];
+  for (const attachment of attachments) {
+    if (!dropped.has(attachment.name)) continue;
+    try {
+      if (await removeAttachmentRecord(ownerId, attachment)) {
+        await changeUsed(ownerId, -attachment.sizeBytes);
+        removed.push(attachment.name);
+      }
+    } catch (problem) {
+      console.error("[attachments] prune", problem);
+    }
+  }
+  return removed;
 }

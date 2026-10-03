@@ -46,12 +46,13 @@ vi.mock("@/lib/files", () => ({
 
 vi.mock("@/lib/attachment-delete", () => ({
   deleteAttachmentFileIfUnused: vi.fn(async () => false),
+  pruneDroppedAttachments: vi.fn(async () => []),
 }));
 
 import { prisma } from "@/lib/prisma";
 import { reserveBytes } from "@/lib/quota";
 import { deleteAttachment, deleteNoteDirectory } from "@/lib/files";
-import { deleteAttachmentFileIfUnused } from "@/lib/attachment-delete";
+import { deleteAttachmentFileIfUnused, pruneDroppedAttachments } from "@/lib/attachment-delete";
 
 const owner = "user-1";
 
@@ -426,6 +427,55 @@ describe("upsertNoteForUser", () => {
       version: 1,
       updatedAt: updatedAt.getTime(),
     });
+  });
+
+  it("a text note save tidies attachments the text no longer uses", async () => {
+    vi.mocked(prisma.note.findUnique).mockResolvedValue({
+      id: "note-1",
+      ownerId: owner,
+      version: 2,
+      sizeBytes: 3,
+      hash: "hash:old",
+      deletedAt: null,
+      favorite: false,
+      kind: "TEXT",
+      content: "poprzednia treść",
+    } as never);
+    vi.mocked(prisma.note.upsert).mockResolvedValue({
+      version: 3,
+      updatedAt: new Date("2026-10-03T10:00:00.000Z"),
+    } as never);
+
+    await upsertNoteForUser(owner, note({ content: "nowa treść", baseVersion: 2, kind: "TEXT" }));
+
+    expect(vi.mocked(pruneDroppedAttachments)).toHaveBeenCalledWith(
+      owner,
+      "note-1",
+      "poprzednia treść",
+      "nowa treść",
+    );
+  });
+
+  it("a failed tidy-up does not fail the save", async () => {
+    vi.mocked(prisma.note.findUnique).mockResolvedValue({
+      id: "note-1",
+      ownerId: owner,
+      version: 2,
+      sizeBytes: 3,
+      hash: "hash:old",
+      deletedAt: null,
+      favorite: false,
+      kind: "TEXT",
+      content: "x",
+    } as never);
+    vi.mocked(prisma.note.upsert).mockResolvedValue({
+      version: 3,
+      updatedAt: new Date("2026-10-03T10:00:00.000Z"),
+    } as never);
+    vi.mocked(pruneDroppedAttachments).mockRejectedValueOnce(new Error("dysk"));
+
+    const result = await upsertNoteForUser(owner, note({ content: "y", baseVersion: 2, kind: "TEXT" }));
+    expect(result.status).toBe("saved");
   });
 
   it("rejects a regular save without content", async () => {
