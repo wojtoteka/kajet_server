@@ -146,6 +146,8 @@ function withoutMarkers(line: string): string {
     // rich-text.ts. Otwarcia i domknięcia zdejmujemy osobno, żeby poradzić
     // sobie też z zapisem zagnieżdżonym (barwa w rozmiarze).
     .replace(/<span style="[^"]*">/gi, "")
+    // Nagłówek na kawałku zdania (<span class="h1">) - zostaje sama treść.
+    .replace(/<span class="h[1-6]">/gi, "")
     .replace(/<\/span>/gi, "")
     .replace(/<\/?u>/gi, "")
     // Odnośnik i zdjęcie: zostaje sam opis.

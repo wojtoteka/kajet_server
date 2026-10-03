@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   alignEveryParagraph,
+  headingInBlock,
+  headingLevelsIn,
   headingLine,
   headingPrefixLength,
   htmlToMarkdown,
@@ -562,5 +564,107 @@ describe("ułożenie akapitu", () => {
       `${centre}Tytuł</p>\n\n${centre}- punkt</p>\n\n![a](assets/a.png)\n\n\`\`\`\nkod\n\`\`\`\n\n| a | b |\n| --- | --- |\n\n- [ ] zadanie\n\n---`,
     );
     expect(alignEveryParagraph(markdown, "left")).toBe(markdown);
+  });
+});
+
+describe("nagłówek na kawałku zdania", () => {
+  it("czyta i pisze <span class=\"h1\"> jak aplikacja", () => {
+    expect(parseInline('Ala <span class="h1">ma</span> kota')).toEqual([
+      { kind: "text", text: "Ala " },
+      { kind: "heading", level: 1, children: [{ kind: "text", text: "ma" }] },
+      { kind: "text", text: " kota" },
+    ]);
+    expect(markdownToHtml('Ala <span class="h1">ma</span> kota')).toBe(
+      '<p>Ala <span class="h1">ma</span> kota</p>',
+    );
+  });
+
+  it("wraca znak w znak w zapisie, który pisze aplikacja", () => {
+    for (const markdown of [
+      'Ala <span class="h1">ma</span> kota',
+      '<span class="h2">**gruby nagłówek**</span> i reszta',
+      '<span class="h1">Tytuł </span>notatki',
+      '- <span class="h1">punkt</span>',
+      '- [ ] <span class="h2">zadanie</span>',
+      '<p style="text-align:center">Ala <span class="h3">kot</span></p>',
+      "## Cały wiersz",
+    ]) {
+      expect(round(markdown)).toBe(markdown);
+    }
+  });
+
+  it("cały akapit w jednym poziomie zapisuje się jako zwykły nagłówek markdownu", () => {
+    expect(htmlToMarkdown('<p><span class="h1">Tytuł</span></p>')).toBe("# Tytuł");
+    expect(htmlToMarkdown('<p><span class="h2"><strong>Tytuł</strong></span></p>')).toBe("## **Tytuł**");
+  });
+
+  it("nagłówek z kawałkiem w innym poziomie dzieli się na kawałki", () => {
+    expect(htmlToMarkdown('<h1>Tytuł <span class="h2">dopisek</span></h1>')).toBe(
+      '<span class="h1">Tytuł </span><span class="h2">dopisek</span>',
+    );
+  });
+
+  it("pogrubienie przez granicę nagłówka dzieli się na dwa, nagłówek na zewnątrz", () => {
+    expect(inlineToMarkdown(parseInline('**Ala <span class="h2">ma</span>** kota'))).toBe(
+      '**Ala **<span class="h2">**ma**</span> kota',
+    );
+  });
+
+  it("odnośnik z nagłówkiem w opisie zostaje jednym odnośnikiem", () => {
+    const markdown = 'Zobacz [<span class="h1">tu</span>teraz](https://a.pl)';
+    expect(round(markdown)).toBe(markdown);
+  });
+
+  it("znak zerowej szerokości z pustego nagłówka nie trafia do treści", () => {
+    expect(htmlToMarkdown('<p>Ala<span class="h1">​Tytuł</span></p>')).toBe(
+      'Ala<span class="h1">Tytuł</span>',
+    );
+    expect(htmlToMarkdown('<p>Ala<span class="h1">​</span></p>')).toBe("Ala");
+  });
+
+  it("w liczeniu słów nagłówek to zwykły tekst", () => {
+    expect(markdownToPlain('Ala <span class="h1">ma</span> kota')).toBe("Ala ma kota");
+  });
+});
+
+describe("przycisk H1 na stronie - nagłówek na kawałku bloku", () => {
+  it("zaznaczone słowo w akapicie dostaje nagłówek, reszta zostaje", () => {
+    expect(headingInBlock("Ala ma kota", "p", 4, 6, 1)).toEqual({
+      tag: "p",
+      html: 'Ala <span class="h1">ma</span> kota',
+    });
+  });
+
+  it("cały akapit w jednym poziomie staje się zwykłym nagłówkiem", () => {
+    expect(headingInBlock("<strong>Tytuł</strong>", "p", 0, 5, 2)).toEqual({
+      tag: "h2",
+      html: "<strong>Tytuł</strong>",
+    });
+  });
+
+  it("zdjęcie nagłówka z części <h1> zostawia resztę nagłówkiem w akapicie", () => {
+    expect(headingInBlock("Tytuł notatki", "h1", 6, 13, null)).toEqual({
+      tag: "p",
+      html: '<span class="h1">Tytuł </span>notatki',
+    });
+  });
+
+  it("pogrubienie przez granicę nagłówka zostaje pogrubieniem po obu stronach", () => {
+    const out = headingInBlock("<strong>Ala ma</strong> kota", "p", 4, 6, 3);
+    expect(out.html).toBe('<strong>Ala </strong><span class="h3"><strong>ma</strong></span> kota');
+    expect(htmlToMarkdown(`<p>${out.html}</p>`)).toBe('**Ala **<span class="h3">**ma**</span> kota');
+  });
+
+  it("pozycja listy zostaje pozycją listy", () => {
+    expect(headingInBlock("mleko", "li", 0, 5, 1)).toEqual({
+      tag: "li",
+      html: '<span class="h1">mleko</span>',
+    });
+  });
+
+  it("poziomy w zaznaczeniu mówią, czy przycisk ma zdjąć nagłówek", () => {
+    expect(headingLevelsIn('Ala <span class="h2">ma</span>', "p", 4, 6)).toEqual([2, 2]);
+    expect(headingLevelsIn("Tytuł", "h1", 0, 2)).toEqual([1, 1]);
+    expect(headingLevelsIn("Ala", "p", 0, 3)).toEqual([null, null, null]);
   });
 });

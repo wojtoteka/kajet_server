@@ -128,3 +128,9 @@ describe("tytuł z wyśrodkowanego akapitu", () => {
     ).toBe("Lista zakupów");
   });
 });
+
+describe("tytuł z nagłówka na kawałku zdania", () => {
+  it("zdejmuje znacznik nagłówka, zostawia treść", () => {
+    expect(titleFromMarkdown('<span class="h1">Zakupy</span> na sobotę')).toBe("Zakupy na sobotę");
+  });
+});

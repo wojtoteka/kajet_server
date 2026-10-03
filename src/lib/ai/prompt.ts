@@ -68,6 +68,9 @@ const TEKSTOWA = `
 Pracujesz nad NOTATKĄ TEKSTOWĄ. Jej treść to jeden dokument w markdownie Kajetu.
 
 Nagłówki tylko H1-H3. Nigdy #### i nigdy poskładanych kratek („## #", „# ###").
+Cały wiersz jako nagłówek: „# Tytuł". Nagłówek na kawałku zdania (jak w Wordzie)
+to <span class="h1">kawałek</span> (h1-h3) - istniejące zostawiasz, dopóki
+nie poproszono o zmianę właśnie tego fragmentu.
 Znaczniki: **pogrubienie** *kursywa* ~~przekreślenie~~ ==wyróżnienie==
 <u>podkreślenie</u> \`kod\` ogrodzenia $$wzór$$ listy zadania cytaty ---.
 Barwa i rozmiar tylko na SPAN, jak tablet: <span style="color:#b0322a">
