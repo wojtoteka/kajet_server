@@ -159,15 +159,15 @@ export function applyMindMapOperations(
       const node = nodeAt(id)!;
       node.text = operation.text ?? "";
       /*
-        Rozmiar przeliczamy TYLKO wtedy, gdy węzeł ma go domyślny - czyli
-        nikt go dotąd nie rozciągnął ręcznie. Ustawiony ręcznie zostaje
-        taki, jaki jest: to decyzja człowieka o wyglądzie jego mapy.
+        Węzeł ROŚNIE do nowego hasła, nigdy nie maleje. Dawniej przeliczał
+        się tylko węzeł w rozmiarze domyślnym, więc dłuższe hasło w węźle
+        rozciągniętym kiedyś ręcznie zostawało ucięte i trzeba było je
+        rozciągać drugi raz. Ręczne powiększenie zostaje, bo rośnięcie
+        niczego nie zmniejsza.
       */
-      if ((node.width ?? 160) === 160 && (node.height ?? 64) === 64) {
-        const size = fitNodeSize(node.text);
-        node.width = size.width;
-        node.height = size.height;
-      }
+      const size = fitNodeSize(node.text, node.fontSize || undefined);
+      node.width = Math.max(node.width ?? 160, size.width);
+      node.height = Math.max(node.height ?? 64, size.height);
       continue;
     }
 
