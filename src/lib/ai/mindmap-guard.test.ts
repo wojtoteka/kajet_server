@@ -213,6 +213,35 @@ describe("przenoszenie węzłów", () => {
   });
 });
 
+describe("zmiana napisu", () => {
+  it("węzeł rośnie pod dłuższe hasło także wtedy, gdy był kiedyś rozciągnięty ręcznie", () => {
+    const rozciagniety = { ...node("owoce"), width: 180, height: 70 };
+    const mapa = { ...MAPA, nodes: MAPA.nodes.map((n) => (n.id === "owoce" ? rozciagniety : n)) };
+    const result = applyMindMapOperations(
+      mapa,
+      [{ rodzaj: "zmien_tekst", id: "owoce", text: "Owoce sezonowe kupowane na targu w każdą sobotę" }],
+      PL,
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const owoce = result.nodes.find((n) => n.id === "owoce")!;
+    expect(owoce.width).toBeGreaterThan(180);
+  });
+
+  it("krótsze hasło nie zmniejsza węzła powiększonego ręcznie", () => {
+    const duzy = { ...node("owoce"), width: 320, height: 120 };
+    const mapa = { ...MAPA, nodes: MAPA.nodes.map((n) => (n.id === "owoce" ? duzy : n)) };
+    const result = applyMindMapOperations(mapa, [{ rodzaj: "zmien_tekst", id: "owoce", text: "Owoce" }], PL);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const owoce = result.nodes.find((n) => n.id === "owoce")!;
+    expect(owoce.width).toBe(320);
+    expect(owoce.height).toBe(120);
+  });
+});
+
 describe("paczka operacji wchodzi w całości albo wcale", () => {
   it("błąd na drugiej operacji cofa też pierwszą", () => {
     const operations: MindMapOperation[] = [

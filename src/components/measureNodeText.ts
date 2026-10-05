@@ -2,6 +2,7 @@
 
 import type { MindNode } from "@/lib/document";
 import { cssFont } from "@/lib/document";
+import { NODE_MAX_WIDTH } from "@/lib/mindmap-layout";
 
 /*
   Zmierzenie hasła w węźle mapy - naprawdę, a nie na oko.
@@ -19,8 +20,11 @@ import { cssFont } from "@/lib/document";
 /** `padding: 6px 10px` z węzła, obustronnie. */
 const PAD_X = 20;
 const PAD_Y = 12;
-/** Powyżej tej szerokości hasło schodzi do kolejnego wiersza zamiast rozpychać węzeł. */
-const MAX_WIDTH = 280;
+/**
+ * Powyżej tej szerokości hasło schodzi do kolejnego wiersza zamiast rozpychać
+ * węzeł. Ta sama granica co w oszacowaniu serwera (NODE_MAX_WIDTH).
+ */
+const MAX_WIDTH = NODE_MAX_WIDTH;
 const MIN_WIDTH = 160;
 const MIN_HEIGHT = 64;
 
@@ -74,12 +78,34 @@ export function grownNodeSize(node: MindNode): { width: number; height: number }
   shell.style.width = "auto";
   const wanted = Math.ceil(shell.scrollWidth) + PAD_X;
 
-  const grownWidth = Math.max(width, Math.min(MAX_WIDTH, wanted));
+  let grownWidth = Math.max(width, Math.min(MAX_WIDTH, wanted));
 
   // Potem z łamaniem, już na docelowym wnętrzu: ile wierszy z tego wyszło.
   shell.style.whiteSpace = "pre-wrap";
-  shell.style.width = `${Math.max(1, grownWidth - PAD_X)}px`;
-  const grownHeight = Math.max(height, Math.ceil(shell.scrollHeight) + PAD_Y);
+  const textHeight = (outer: number) => {
+    shell.style.width = `${Math.max(1, outer - PAD_X)}px`;
+    return Math.ceil(shell.scrollHeight);
+  };
+  let needed = textHeight(grownWidth);
+
+  /*
+    Hasło łamie się i tak: węzeł zwężamy, dopóki nie przybywa wierszy - tak
+    samo jak oszacowanie na serwerze. Wiersze wychodzą podobnej długości,
+    zamiast jednego pełnego i jednego słowa pod spodem. Nigdy węziej niż
+    węzeł jest teraz, bo węzeł tylko rośnie.
+  */
+  if (wanted > grownWidth) {
+    for (let narrower = Math.max(width, MIN_WIDTH); narrower < grownWidth; narrower += 20) {
+      const there = textHeight(narrower);
+      if (there <= needed) {
+        grownWidth = narrower;
+        needed = there;
+        break;
+      }
+    }
+  }
+
+  const grownHeight = Math.max(height, needed + PAD_Y);
 
   return { width: grownWidth, height: grownHeight };
 }

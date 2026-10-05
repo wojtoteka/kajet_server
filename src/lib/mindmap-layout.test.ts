@@ -205,7 +205,37 @@ describe("rozmiar węzła pod hasło", () => {
 
   it("szerokość ma górną granicę - inaczej jeden węzeł rozpychałby cały pierścień", () => {
     const { width } = fitNodeSize("bardzo długie hasło ".repeat(10));
-    expect(width).toBeLessThanOrEqual(280);
+    expect(width).toBeLessThanOrEqual(400);
+  });
+
+  /*
+    KajetAI pisze krótkimi, ale pełnymi zdaniami. Przy granicy 280 takie zdanie
+    łamało się na kilka ciasnych wierszy i węzeł trzeba było rozciągać ręcznie.
+  */
+  it("zwykłe zdanie mieści się w jednym, najwyżej dwóch wierszach", () => {
+    const zdanie = "Bitwa pod Grunwaldem w 1410 roku";
+    const { width, height } = fitNodeSize(zdanie);
+    expect(width).toBeGreaterThan(280);
+    expect(height).toBe(64);
+
+    const dluzsze = fitNodeSize("Unia w Krewie połączyła Polskę i Litwę osobą jednego władcy");
+    // Dwa wiersze mieszczą się jeszcze w wysokości domyślnej.
+    expect(dluzsze.height).toBe(64);
+  });
+
+  it("łamane hasło dostaje wyrównaną szerokość, a nie pełną granicę z sierotką", () => {
+    // Odrobinę dłuższe niż jeden wiersz przy granicy: dwa wiersze po połowie
+    // mieszczą się w dużo węższym węźle.
+    const hasło = "Wzrost znaczenia Polski w Europie Środkowej po zwycięstwie";
+    const { width, height } = fitNodeSize(hasło);
+    expect(width).toBeLessThan(400);
+    expect(height).toBe(64);
+  });
+
+  it("większe pismo potrzebuje większego węzła", () => {
+    const zwykle = fitNodeSize("Koalicja polsko-litewska");
+    const duze = fitNodeSize("Koalicja polsko-litewska", 24);
+    expect(duze.width).toBeGreaterThan(zwykle.width);
   });
 
   it("po dojściu do granicy hasło schodzi do kolejnych wierszy", () => {
@@ -235,7 +265,7 @@ describe("rozmiar węzła pod hasło", () => {
   it("napis na cztery wiersze dostaje wysokość czterech wierszy", () => {
     // Tyle wersalików mieści się w węźle o granicznej szerokości dopiero
     // w czwartym wierszu - taki właśnie napis był na zrzucie ucięty.
-    const { height } = fitNodeSize("A".repeat(100));
+    const { height } = fitNodeSize("A".repeat(140));
     expect(height).toBeGreaterThanOrEqual(4 * 15 * 1.3);
   });
 

@@ -53,13 +53,20 @@ const DEFAULT_HEIGHT = 64;
   bo promień liczy się z boków węzłów; dlatego jest górna granica szerokości,
   a dłuższe hasła schodzą do drugiego wiersza.
 
+  Granica to 400, nie 280. KajetAI pisze krótko, ale pełnymi zdaniami, a przy
+  280 zwykłe zdanie łamało się na trzy-cztery ciasne wiersze i trzeba było
+  węzeł rozciągać ręcznie. Hasło, które i tak schodzi do kolejnych wierszy,
+  dostaje szerokość WYRÓWNANĄ: najwęższą, przy której wierszy jest tyle samo
+  co przy granicy. Wiersze wychodzą wtedy podobnej długości, zamiast jednego
+  pełnego i sierotki z jednym słowem pod spodem.
+
   Miar pisma na serwerze nie ma, więc szerokość znaku jest oszacowana - ale nie
   jedną liczbą na wszystkie znaki, bo „WWW" i „ili" są w tym samym kroju
   szerokie zupełnie inaczej. Stąd tabelka niżej. Oszacowanie ma być raczej
   za duże niż za małe: węzeł odrobinę za wysoki nikomu nie przeszkadza,
   a ucięte hasło - bardzo.
 */
-const NODE_MAX_WIDTH = 280;
+export const NODE_MAX_WIDTH = 400;
 const NODE_FONT_SIZE = 15;
 /** `line-height: 1.3` z edytora. */
 const LINE_RATIO = 1.3;
@@ -140,12 +147,24 @@ export function fitNodeSize(
   // Najpierw poszerzamy do granicy - dopiero potem łamiemy na kolejne wiersze.
   // Zaokrąglenie do dwudziestki, żeby węzły nie stały na przypadkowych
   // ułamkach piksela.
-  const width = Math.min(
+  let width = Math.min(
     NODE_MAX_WIDTH,
     Math.max(DEFAULT_WIDTH, Math.ceil((longest + PAD_X) / 20) * 20),
   );
 
-  const lines = linesNeeded(clean, width - PAD_X, fontSize);
+  let lines = linesNeeded(clean, width - PAD_X, fontSize);
+
+  // Hasło i tak się łamie: zwężamy węzeł, dopóki wierszy nie przybywa.
+  if (lines > clean.split("\n").length) {
+    for (let narrower = DEFAULT_WIDTH; narrower < width; narrower += 20) {
+      const there = linesNeeded(clean, narrower - PAD_X, fontSize);
+      if (there <= lines) {
+        width = narrower;
+        lines = there;
+        break;
+      }
+    }
+  }
   const height = Math.max(DEFAULT_HEIGHT, Math.ceil(lines * fontSize * LINE_RATIO + PAD_Y));
 
   return { width, height };
