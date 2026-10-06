@@ -27,7 +27,7 @@
 */
 
 import { createMindEdge, createMindNode } from "@/lib/mindmap-note";
-import { arrangeMindMap, fitNodeSize } from "@/lib/mindmap-layout";
+import { arrangeMindMap, fitNodeSize, makeRoom } from "@/lib/mindmap-layout";
 import type { MindEdge, MindNode } from "@/lib/document";
 import {
   aiMapNoParentForMove,
@@ -106,6 +106,9 @@ export function applyMindMapOperations(
     if (parentId) edges.push(createMindEdge(parentId, childId));
   };
 
+  /** Węzły, które po zmianie napisu urosły w miejscu. */
+  const grown = new Set<string>();
+
   for (const operation of operations) {
     const { rodzaj } = operation;
 
@@ -166,8 +169,11 @@ export function applyMindMapOperations(
         niczego nie zmniejsza.
       */
       const size = fitNodeSize(node.text, node.fontSize || undefined);
-      node.width = Math.max(node.width ?? 160, size.width);
-      node.height = Math.max(node.height ?? 64, size.height);
+      const width = Math.max(node.width ?? 160, size.width);
+      const height = Math.max(node.height ?? 64, size.height);
+      if (width !== node.width || height !== node.height) grown.add(node.id);
+      node.width = width;
+      node.height = height;
       continue;
     }
 
@@ -235,7 +241,9 @@ export function applyMindMapOperations(
     return { ok: true, nodes: arrangeMindMap(nodes, edges), edges };
   }
 
-  return { ok: true, nodes, edges };
+  // Ale węzeł, który urósł pod nowe hasło, nie może wejść na sąsiadów -
+  // odsuwamy tylko te, na które najechał.
+  return { ok: true, nodes: makeRoom(nodes, grown), edges };
 }
 
 /**

@@ -33,7 +33,7 @@ import { useAutosave } from "@/components/useAutosave";
 import { useSavedNote } from "@/components/useSavedNote";
 import { useNoteFlush } from "@/components/NoteSync";
 import { nodeGrowth } from "@/components/measureNodeText";
-import { arrangeMindMap } from "@/lib/mindmap-layout";
+import { arrangeMindMap, makeRoom } from "@/lib/mindmap-layout";
 import { TITLE_LIMIT } from "@/lib/note-title";
 
 type ActionResult = { error?: string; success?: string; version?: number; noteId?: string };
@@ -278,13 +278,19 @@ export function MindMapEditor({
   function updateNode(id: string, patch: Partial<MindNode>, keep = false) {
     if (!keep) remember();
     const mayOverflow = GROWING.some((field) => field in patch);
-    setNodes((list) =>
-      list.map((node) => {
+    setNodes((list) => {
+      let grew = false;
+      const updated = list.map((node) => {
         if (node.id !== id) return node;
         const next = { ...node, ...patch };
-        return mayOverflow ? { ...next, ...(nodeGrowth(next) ?? {}) } : next;
-      }),
-    );
+        if (!mayOverflow) return next;
+        const growth = nodeGrowth(next);
+        if (growth) grew = true;
+        return { ...next, ...(growth ?? {}) };
+      });
+      // Węzeł, który urósł, odsuwa sąsiadów, na których najechał.
+      return grew ? makeRoom(updated, [id]) : updated;
+    });
   }
 
   /** Ta sama zmiana w trakcie ciągnięcia - bez zapisu do historii co klatkę. */

@@ -369,3 +369,90 @@ function reach(w: number, h: number, angle: number): number {
 function span(w: number, h: number, angle: number): number {
   return Math.abs(Math.sin(angle)) * w + Math.abs(Math.cos(angle)) * h;
 }
+
+/*
+  Miejsce dla węzła, który urósł w miejscu.
+
+  Węzeł rośnie pod dłuższe hasło - gdy KajetAI zmieni mu napis albo gdy ktoś
+  w nim pisze - ale układu wtedy nie liczymy od nowa: przesuwanie całej mapy
+  przy poprawianiu literówki byłoby wścibskie. Tyle że rosnący węzeł wchodził
+  wtedy na sąsiadów i zasłaniał im hasła, a rozdzielać trzeba było ręcznie.
+
+  Teraz odsuwamy TYLKO to, na co urośnięty węzeł najechał, i tylko tyle, ile
+  trzeba: w poziomie albo w pionie, w zależności od tego, co wymaga krótszego
+  ruchu, zawsze w stronę od niego. Odsunięty węzeł może z kolei najechać na
+  kolejny - ten też się odsuwa, i tak dalej, jak kostki domina. Węzeł raz
+  ustawiony już się nie rusza, więc nic nie kręci się w kółko, a reszta mapy
+  zostaje dokładnie tam, gdzie była.
+
+  Rachunek jest przepisany jeden do jednego w aplikacji (MindMapLayout.kt).
+*/
+
+/** Prześwit, który zostaje między odsuniętymi węzłami. */
+export const ROOM_GAP = 24;
+
+type Box = { x: number; y: number; w: number; h: number };
+
+function collide(a: Box, b: Box, gap: number): boolean {
+  return a.x < b.x + b.w + gap && b.x < a.x + a.w + gap && a.y < b.y + b.h + gap && b.y < a.y + a.h + gap;
+}
+
+/**
+ * Odsuwa węzły, na które najechały węzły z `grown`. Węzły z `grown` stoją
+ * w miejscu. Gdy nic na nic nie najechało, oddaje tę samą tablicę.
+ */
+export function makeRoom(nodes: MindNode[], grown: Iterable<string>): MindNode[] {
+  const boxes = new Map<string, Box>(
+    nodes.map((node) => [
+      node.id,
+      { x: node.x, y: node.y, w: node.width ?? DEFAULT_WIDTH, h: node.height ?? DEFAULT_HEIGHT },
+    ]),
+  );
+
+  const queue = [...grown].filter((id) => boxes.has(id));
+  const settled = new Set(queue);
+  const moved = new Set<string>();
+
+  for (let at = 0; at < queue.length; at += 1) {
+    const pusher = boxes.get(queue[at])!;
+
+    for (const node of nodes) {
+      if (settled.has(node.id)) continue;
+      const box = boxes.get(node.id)!;
+      if (!collide(pusher, box, ROOM_GAP)) continue;
+
+      // Kierunek od środka tego, co pcha. Ruch po osi, na której wystarczy
+      // mniej - przy równych w bok, bo mapa i tak rozchodzi się na boki.
+      const right = box.x + box.w / 2 >= pusher.x + pusher.w / 2;
+      const down = box.y + box.h / 2 >= pusher.y + pusher.h / 2;
+      const alongX = right ? pusher.x + pusher.w + ROOM_GAP - box.x : box.x + box.w + ROOM_GAP - pusher.x;
+      const alongY = down ? pusher.y + pusher.h + ROOM_GAP - box.y : box.y + box.h + ROOM_GAP - pusher.y;
+      const horizontal = alongX <= alongY;
+      const sign = horizontal ? (right ? 1 : -1) : down ? 1 : -1;
+
+      if (horizontal) box.x += sign * alongX;
+      else box.y += sign * alongY;
+
+      // Dalej w tę samą stronę, póki stoi na którymś z już ustawionych.
+      // Ruch jest w jedną stronę, więc to się zawsze kończy.
+      for (let guard = 0; guard < queue.length; guard += 1) {
+        const blocker = queue.find((id) => collide(boxes.get(id)!, box, ROOM_GAP));
+        if (!blocker) break;
+        const other = boxes.get(blocker)!;
+        if (horizontal) box.x = sign > 0 ? other.x + other.w + ROOM_GAP : other.x - ROOM_GAP - box.w;
+        else box.y = sign > 0 ? other.y + other.h + ROOM_GAP : other.y - ROOM_GAP - box.h;
+      }
+
+      settled.add(node.id);
+      queue.push(node.id);
+      moved.add(node.id);
+    }
+  }
+
+  if (moved.size === 0) return nodes;
+  return nodes.map((node) => {
+    if (!moved.has(node.id)) return node;
+    const box = boxes.get(node.id)!;
+    return { ...node, x: Math.round(box.x), y: Math.round(box.y) };
+  });
+}

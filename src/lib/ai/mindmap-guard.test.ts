@@ -294,3 +294,37 @@ describe("sprawdzanie gotowej mapy", () => {
     expect(checkMindMap({ nodes: [node("a"), node("a")], edges: [] }, PL)).toContain("dwa razy");
   });
 });
+
+describe("zmiana napisu bez zmiany budowy", () => {
+  it("węzeł, który urósł pod dłuższe hasło, odsuwa sąsiada zamiast na niego wejść", () => {
+    const mapa = {
+      nodes: [
+        { ...node("korzen"), x: 0, y: 0 },
+        { ...node("obok"), x: 200, y: 0 },
+      ],
+      edges: [edge("korzen", "obok")],
+    };
+    const result = applyMindMapOperations(
+      mapa,
+      [
+        {
+          rodzaj: "zmien_tekst",
+          id: "korzen",
+          text: "Bardzo długie hasło od KajetAI, które nie mieści się w zwykłym węźle",
+        },
+      ],
+      PL,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const [korzen, obok] = result.nodes;
+    expect(korzen.x).toBe(0);
+    const apart =
+      korzen.x + korzen.width! <= obok.x ||
+      obok.x + obok.width! <= korzen.x ||
+      korzen.y + korzen.height! <= obok.y ||
+      obok.y + obok.height! <= korzen.y;
+    expect(apart).toBe(true);
+  });
+});

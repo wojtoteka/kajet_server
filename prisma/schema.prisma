@@ -555,7 +555,7 @@ model AiCall {
   userId       String
   /// Typ notatki: TEXT, MINDMAP albo CODE.
   kind         String   @db.VarChar(20)
-  /// Nazwa modelu, na przykład gemini-3.6-flash. Ceny różnią się między
+  /// Nazwa modelu, na przykład gemini-3.1-flash-lite. Ceny różnią się między
   /// modelami, więc bez tego rachunku nie da się złożyć.
   model        String   @db.VarChar(60)
   inputTokens  Int      @default(0)

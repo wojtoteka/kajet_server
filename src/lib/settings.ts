@@ -172,7 +172,7 @@ maxConcurrent: number("CODE_MAX_CONCURRENT", 3),
   */
   ai: {
     apiKey: process.env.GEMINI_API_KEY ?? "",
-    model: process.env.GEMINI_MODEL || "gemini-3.6-flash",
+    model: process.env.GEMINI_MODEL || "gemini-3.1-flash-lite",
 
     /**
      * Modele zapasowe, po kolei, gdy główny odmówi obsługi.
@@ -186,8 +186,15 @@ maxConcurrent: number("CODE_MAX_CONCURRENT", 3),
      * Człowiek nie ma prawa tego zauważyć - dostaje zmienioną notatkę i tyle.
      * Ślad zostaje w logu serwera i w kolumnie „model" w rozliczeniach, żeby
      * dało się zobaczyć, że główny model przestał odpowiadać.
+     *
+     * Wszystkie domyślne są na darmowym poziomie Gemini API. Limity darmowe
+     * liczą się osobno dla każdego modelu, więc dłuższy łańcuch to po prostu
+     * więcej zapytań, zanim wszystko odmówi.
      */
-    fallbackModels: (process.env.GEMINI_FALLBACK_MODELS ?? "gemini-3.1-flash-lite,gemini-2.5-flash")
+    fallbackModels: (
+      process.env.GEMINI_FALLBACK_MODELS ??
+      "gemini-3.5-flash-lite,gemini-3.8-flash,gemini-3.7-flash,gemini-2.5-flash-lite"
+    )
       .split(",")
       .map((name) => name.trim())
       .filter(Boolean),
