@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { arrangeMindMap, fitNodeSize } from "@/lib/mindmap-layout";
+import { arrangeMindMap, fitNodeSize, makeRoom, ROOM_GAP } from "@/lib/mindmap-layout";
 import { createMindEdge, createMindNode } from "@/lib/mindmap-note";
 import type { MindEdge, MindNode } from "@/lib/document";
 
@@ -273,5 +273,59 @@ describe("rozmiar węzła pod hasło", () => {
     const jeden = fitNodeSize("Temat");
     const trzy = fitNodeSize("Temat\ndrugi\ntrzeci");
     expect(trzy.height).toBeGreaterThan(jeden.height);
+  });
+});
+
+describe("miejsce dla węzła, który urósł", () => {
+  const at = (id: string, x: number, y: number, width = 160, height = 64): MindNode => ({
+    ...createMindNode({ x, y, text: id }),
+    id,
+    width,
+    height,
+  });
+
+  it("odsuwa sąsiada, na którego urośnięty węzeł najechał, a sam stoi", () => {
+    // „a" urósł z 160 do 400 i wszedł na „b" stojącego obok.
+    const nodes = [at("a", 0, 0, 400, 90), at("b", 220, 0)];
+    const after = makeRoom(nodes, ["a"]);
+
+    expect(after[0]).toEqual(nodes[0]);
+    expect(overlaps(after)).toEqual([]);
+    // W pionie, bo tak bliżej niż w bok, i w górę, bo środek „b" leży
+    // wyżej niż środek „a" - dokładnie o prześwit od krawędzi.
+    expect(after[1].x).toBe(220);
+    expect(after[1].y).toBe(-(64 + ROOM_GAP));
+  });
+
+  it("w bok, gdy tak jest bliżej", () => {
+    const nodes = [at("a", 0, 0, 260, 64), at("b", 220, 10)];
+    const after = makeRoom(nodes, ["a"]);
+    expect(after[1].x).toBe(260 + ROOM_GAP);
+    expect(after[1].y).toBe(10);
+  });
+
+  it("odsuwa po kolei, jak domino, i nie rusza tego, co stoi daleko", () => {
+    const nodes = [at("a", 0, 0, 400, 64), at("b", 200, 0), at("c", 380, 0), at("daleko", 0, 600)];
+    const after = makeRoom(nodes, ["a"]);
+
+    expect(overlaps(after)).toEqual([]);
+    expect(after.find((node) => node.id === "daleko")).toEqual(nodes[3]);
+  });
+
+  it("niczego nie rusza, gdy nic na nic nie najechało", () => {
+    const nodes = [at("a", 0, 0), at("b", 400, 0)];
+    expect(makeRoom(nodes, ["a"])).toBe(nodes);
+  });
+
+  it("rozdziela gęstą mapę bez nachodzenia", () => {
+    const { nodes, edges } = grunwald();
+    const arranged = arrangeMindMap(nodes, edges);
+    // Korzeń dostaje bardzo długie hasło i rośnie w miejscu.
+    const grown = arranged.map((node) =>
+      node.id === "korzen"
+        ? { ...node, x: node.x - 150, y: node.y - 60, width: 460, height: 190 }
+        : node,
+    );
+    expect(overlaps(makeRoom(grown, ["korzen"]))).toEqual([]);
   });
 });
