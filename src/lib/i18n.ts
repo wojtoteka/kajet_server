@@ -548,6 +548,7 @@ export type Words = {
   codeRunOwnerOnly: string;
   thisIsAKajetNote: string;
   liveNow: string;
+  liveNowHint: string;
   liveConnecting: string;
   liveOffline: string;
   liveAlsoHere: string;
@@ -1774,8 +1775,9 @@ const pl: Words = {
   codeRunOwnerOnly:
     "Kod uruchamia tylko osoba, do której należy notatka. Zapisywanie działa jak zwykle.",
   thisIsAKajetNote: "To jest notatka z Kajetu.",
-  liveNow: "Na żywo",
-  liveConnecting: "Łączę z innymi…",
+  liveNow: "Połączono",
+  liveNowHint: "Zmiany innych osób pokazują się tu od razu, bez odświeżania.",
+  liveConnecting: "Łączę…",
   liveOffline: "Bez połączenia - zmiany innych dojdą, gdy wróci sieć",
   liveAlsoHere: "Teraz w notatce:",
   liveChangeFrom: "Zmiana od:",
@@ -3142,7 +3144,8 @@ const en: Words = {
   codeRunOwnerOnly:
     "Only the person the note belongs to can run the code. Saving works as usual.",
   thisIsAKajetNote: "This is a note from Kajet.",
-  liveNow: "Live",
+  liveNow: "Connected",
+  liveNowHint: "Other people's changes show up here right away, without reloading.",
   liveConnecting: "Connecting…",
   liveOffline: "Offline - other people's changes will arrive once you are back online",
   liveAlsoHere: "In this note now:",

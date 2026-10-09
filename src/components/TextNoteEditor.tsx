@@ -833,10 +833,11 @@ export function TextNoteEditor({
           nie mają nazw, bo każde z nich to tylko kawałek notatki. */}
       <input type="hidden" name="markdown" value={body} />
 
-      <LivePresence live={live} />
-
       <div className="field">
-        <label htmlFor="title">{words.noteTitle}</label>
+        <div className="field-head">
+          <label htmlFor="title">{words.noteTitle}</label>
+          <LivePresence live={live} />
+        </div>
         <input
           id="title"
           name="title"

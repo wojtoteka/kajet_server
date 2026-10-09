@@ -503,7 +503,8 @@ input[type="file"]:disabled {
   cursor: not-allowed;
 }
 
-.field > label {
+.field > label,
+.field-head > label {
   color: var(--text-muted);
   font-size: 12px;
   font-weight: 600;
@@ -3229,32 +3230,45 @@ code,
 }
 
 /*
-  Edycja na żywo: kropka stanu połączenia i inicjały osób, które mają
-  notatkę otwartą w tej chwili. Kolory osób to te same osiem barw co
-  w aplikacji (indeks liczony z imienia po stronie serwera).
+  Edycja na żywo: napis o połączeniu i inicjały osób, które mają notatkę
+  otwartą w tej chwili - w jednym wierszu z etykietą „Tytuł", po prawej.
+  Kolory osób to te same osiem barw co w aplikacji (indeks liczony z imienia
+  po stronie serwera).
 */
+.field-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0 var(--space-3);
+  /* Tyle, ile kółko z inicjałem: tytuł nie podskakuje, gdy ktoś wchodzi. */
+  min-height: 22px;
+  margin-bottom: var(--space-1);
+}
+
+.field-head > label {
+  margin-bottom: 0;
+}
+
+/* Notatki już nie ma - komunikat na całą szerokość, nad etykietą. */
+.field-head > .error {
+  flex-basis: 100%;
+  order: -1;
+}
+
 .live-presence {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  justify-content: flex-end;
   flex-wrap: wrap;
-  min-height: 28px;
+  gap: var(--space-2);
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
-.live-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--rule);
-}
-
-.live-dot.live {
-  background: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-haze);
-}
-
-.live-dot.offline {
-  background: var(--warning);
+.live-presence.offline {
+  color: var(--warning);
 }
 
 .live-people {
@@ -3265,10 +3279,10 @@ code,
 .live-person {
   display: inline-grid;
   place-items: center;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: #fff;
   background: var(--accent);

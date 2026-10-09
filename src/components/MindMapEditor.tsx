@@ -783,10 +783,11 @@ export function MindMapEditor({
       <input type="hidden" name="liveClient" value={live.clientId} />
       <input type="hidden" name="mindMapJson" value={payload} />
 
-      <LivePresence live={live} />
-
       <div className="field">
-        <label htmlFor="title">{words.noteTitle}</label>
+        <div className="field-head">
+          <label htmlFor="title">{words.noteTitle}</label>
+          <LivePresence live={live} />
+        </div>
         <input
           id="title"
           name="title"
