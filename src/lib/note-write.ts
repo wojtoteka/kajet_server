@@ -9,6 +9,7 @@ import {
 } from "@/lib/files";
 import { deleteAttachmentFileIfUnused, pruneDroppedAttachments } from "@/lib/attachment-delete";
 import { fitTitle } from "@/lib/note-title";
+import { announceGone, recordContentChange, type ChangeOrigin } from "@/lib/live/changes";
 import { apiWords } from "./language";
 
 /**
@@ -156,13 +157,71 @@ export function planNoteUpsert(
   };
 }
 
+/** Odpowiedź „konflikt" razem z tym, co serwer ma teraz. */
+async function conflictWithServer(noteId: string): Promise<UpsertNoteResult> {
+  const full = await prisma.note.findUniqueOrThrow({
+    where: { id: noteId },
+    select: {
+      id: true,
+      title: true,
+      kind: true,
+      favorite: true,
+      tags: true,
+      content: true,
+      version: true,
+      updatedAt: true,
+      deletedAt: true,
+    },
+  });
+  return {
+    status: "conflict",
+    message: CONFLICT_MESSAGE,
+    onServer: {
+      ...full,
+      updatedAt: full.updatedAt.getTime(),
+      deletedAt: full.deletedAt?.getTime() ?? null,
+    },
+  };
+}
+
+/**
+ * Zapis treści istniejącej notatki pod warunkiem, że od odczytu nikt jej nie
+ * zmienił.
+ *
+ * Wcześniej szło tu zwykłe `upsert`: dwa zapisy tej samej wersji naraz (dwa
+ * urządzenia przy edycji na żywo robią to co chwilę) przechodziły oba, a drugi
+ * po cichu zjadał pierwszy. Warunek na wersji w samym UPDATE sprawia, że
+ * przegrany wyścig trafia w zero wierszy i wraca jako zwykły konflikt -
+ * a ten klient umie już scalić.
+ */
+async function updateIfUnchanged(
+  noteId: string,
+  readVersion: number,
+  data: Parameters<typeof prisma.note.updateMany>[0]["data"],
+): Promise<{ version: number; updatedAt: number } | null> {
+  const updated = await prisma.note.updateMany({
+    where: { id: noteId, version: readVersion },
+    data: { ...data, version: { increment: 1 } },
+  });
+  if (updated.count === 0) return null;
+  const row = await prisma.note.findUnique({
+    where: { id: noteId },
+    select: { updatedAt: true },
+  });
+  return { version: readVersion + 1, updatedAt: (row?.updatedAt ?? new Date()).getTime() };
+}
+
 /**
  * Single write path for tablet sync and (later) web editor server actions.
  * Conflict is a normal result - callers map it to HTTP 200 with status:"conflict".
+ *
+ * [origin] mówi, kto pisze - trafia do edycji na żywo, żeby otwarte karty
+ * wiedziały, czyja to zmiana, a nadawca poznał własne echo.
  */
 export async function upsertNoteForUser(
   userId: string,
   note: OutgoingNote,
+  origin?: ChangeOrigin,
 ): Promise<UpsertNoteResult> {
   if (!note.deleted && typeof note.content !== "string") {
     return {
@@ -226,6 +285,7 @@ export async function upsertNoteForUser(
       data: { deletedAt: new Date(), version: { increment: 1 } },
       select: { version: true, updatedAt: true },
     });
+    announceGone(note.id);
     return {
       status: "saved",
       version: saved.version,
@@ -233,31 +293,7 @@ export async function upsertNoteForUser(
     };
   }
 
-  if (plan.action === "conflict") {
-    const full = await prisma.note.findUniqueOrThrow({
-      where: { id: note.id },
-      select: {
-        id: true,
-        title: true,
-        kind: true,
-        favorite: true,
-        tags: true,
-        content: true,
-        version: true,
-        updatedAt: true,
-        deletedAt: true,
-      },
-    });
-    return {
-      status: "conflict",
-      message: CONFLICT_MESSAGE,
-      onServer: {
-        ...full,
-        updatedAt: full.updatedAt.getTime(),
-        deletedAt: full.deletedAt?.getTime() ?? null,
-      },
-    };
-  }
+  if (plan.action === "conflict") return conflictWithServer(note.id);
 
   const room = await reserveBytes(userId, plan.addedBytes);
   if (!room.ok) {
@@ -270,23 +306,9 @@ export async function upsertNoteForUser(
   }
 
   try {
-    const saved = await prisma.note.upsert({
-      where: { id: note.id },
-      create: {
-        id: note.id,
-        ownerId: userId,
-        folderId: folderId ?? null,
-        title: fitTitle(note.title),
-        kind: note.kind,
-        favorite: note.favorite ?? false,
-        tags: (note.tags ?? []).join("|"),
-        content,
-        sizeBytes: size,
-        hash,
-        version: 1,
-        deletedAt: null,
-      },
-      update: {
+    let saved: { version: number; updatedAt: number };
+    if (existing) {
+      const updated = await updateIfUnchanged(note.id, existing.version, {
         // An absent field leaves the note where it is; "" (root) and unknown
         // folders are already straightened out by resolveFolderId.
         folderId: folderId === undefined ? undefined : folderId,
@@ -296,18 +318,60 @@ export async function upsertNoteForUser(
         content,
         sizeBytes: size,
         hash,
-        version: { increment: 1 },
         // Deletions never reach this branch (they are the "delete" plan), so a
         // write always means the note is alive - also when it climbs out of
         // the bin after a restore on the device.
         deletedAt: null,
-      },
-      select: { version: true, updatedAt: true },
-    });
+      });
+      if (!updated) {
+        await changeUsed(userId, -plan.addedBytes);
+        return conflictWithServer(note.id);
+      }
+      saved = updated;
+    } else {
+      const created = await prisma.note.upsert({
+        where: { id: note.id },
+        create: {
+          id: note.id,
+          ownerId: userId,
+          folderId: folderId ?? null,
+          title: fitTitle(note.title),
+          kind: note.kind,
+          favorite: note.favorite ?? false,
+          tags: (note.tags ?? []).join("|"),
+          content,
+          sizeBytes: size,
+          hash,
+          version: 1,
+          deletedAt: null,
+        },
+        // Dwa urządzenia zakładające tę samą notatkę w tej samej chwili -
+        // drugie dopisuje się do pierwszego, jak dawniej.
+        update: {
+          content,
+          sizeBytes: size,
+          hash,
+          version: { increment: 1 },
+          deletedAt: null,
+        },
+        select: { version: true, updatedAt: true },
+      });
+      saved = { version: created.version, updatedAt: created.updatedAt.getTime() };
+    }
 
     // Notatka powstała na nowo pod starym identyfikatorem - nagrobek po niej
     // przestaje obowiązywać.
     if (!existing) await forgetTombstone(note.id);
+
+    if (!existing || existing.hash !== hash) {
+      await recordContentChange({
+        noteId: note.id,
+        before: existing?.content ?? null,
+        after: content,
+        version: saved.version,
+        origin,
+      });
+    }
 
     /*
       Zdjęcie albo rysunek usunięty z treści notatki tekstowej schodzi też
@@ -326,7 +390,7 @@ export async function upsertNoteForUser(
     return {
       status: existing ? "saved" : "created",
       version: saved.version,
-      updatedAt: saved.updatedAt.getTime(),
+      updatedAt: saved.updatedAt,
     };
   } catch (problem) {
     await changeUsed(userId, -plan.addedBytes);
@@ -382,6 +446,7 @@ export async function setNoteDeletedForUser(
     },
     select: { version: true },
   });
+  if (deleted) announceGone(noteId);
 
   return { status: "ok", version: saved.version };
 }
@@ -431,6 +496,7 @@ export async function upsertCodeNoteForUser(
     folderId?: string | null;
     deleted?: boolean;
   },
+  origin?: ChangeOrigin,
 ): Promise<UpsertNoteResult> {
   // Reuse the sync planner with a synthetic TEXT kind - kind is not part of
   // conflict/quota logic; we force CODE on the actual Prisma write below.
@@ -461,6 +527,7 @@ export async function upsertCodeNoteForUser(
       favorite: true,
       kind: true,
       folderId: true,
+      content: true,
     },
   });
 
@@ -493,37 +560,14 @@ export async function upsertCodeNoteForUser(
       data: { deletedAt: new Date(), version: { increment: 1 } },
       select: { version: true, updatedAt: true },
     });
+    announceGone(note.id);
     return {
       status: "saved",
       version: saved.version,
       updatedAt: saved.updatedAt.getTime(),
     };
   }
-  if (plan.action === "conflict") {
-    const full = await prisma.note.findUniqueOrThrow({
-      where: { id: note.id },
-      select: {
-        id: true,
-        title: true,
-        kind: true,
-        favorite: true,
-        tags: true,
-        content: true,
-        version: true,
-        updatedAt: true,
-        deletedAt: true,
-      },
-    });
-    return {
-      status: "conflict",
-      message: CONFLICT_MESSAGE,
-      onServer: {
-        ...full,
-        updatedAt: full.updatedAt.getTime(),
-        deletedAt: full.deletedAt?.getTime() ?? null,
-      },
-    };
-  }
+  if (plan.action === "conflict") return conflictWithServer(note.id);
 
   const room = await reserveBytes(userId, plan.addedBytes);
   if (!room.ok) {
@@ -536,23 +580,9 @@ export async function upsertCodeNoteForUser(
   }
 
   try {
-    const saved = await prisma.note.upsert({
-      where: { id: note.id },
-      create: {
-        id: note.id,
-        ownerId: userId,
-        folderId: folderId ?? null,
-        title: fitTitle(note.title),
-        kind: "CODE",
-        favorite: note.favorite ?? false,
-        tags: (note.tags ?? []).join("|"),
-        content: note.content,
-        sizeBytes: size,
-        hash,
-        version: 1,
-        deletedAt: note.deleted ? new Date() : null,
-      },
-      update: {
+    let saved: { version: number; updatedAt: number };
+    if (existing) {
+      const updated = await updateIfUnchanged(note.id, existing.version, {
         // Same rule as in upsertNoteForUser: an absent folderId leaves the
         // note in its folder, "" and unknown folders are resolved above.
         folderId: folderId === undefined ? undefined : folderId,
@@ -562,20 +592,59 @@ export async function upsertCodeNoteForUser(
         content: note.content,
         sizeBytes: size,
         hash,
-        version: { increment: 1 },
         deletedAt: note.deleted ? new Date() : null,
-      },
-      select: { version: true, updatedAt: true },
-    });
+      });
+      if (!updated) {
+        await changeUsed(userId, -plan.addedBytes);
+        return conflictWithServer(note.id);
+      }
+      saved = updated;
+    } else {
+      const created = await prisma.note.upsert({
+        where: { id: note.id },
+        create: {
+          id: note.id,
+          ownerId: userId,
+          folderId: folderId ?? null,
+          title: fitTitle(note.title),
+          kind: "CODE",
+          favorite: note.favorite ?? false,
+          tags: (note.tags ?? []).join("|"),
+          content: note.content,
+          sizeBytes: size,
+          hash,
+          version: 1,
+          deletedAt: note.deleted ? new Date() : null,
+        },
+        update: {
+          content: note.content,
+          sizeBytes: size,
+          hash,
+          version: { increment: 1 },
+        },
+        select: { version: true, updatedAt: true },
+      });
+      saved = { version: created.version, updatedAt: created.updatedAt.getTime() };
+    }
 
     // Tak samo jak przy zwykłej notatce: plik z kodem odesłany po
     // przelogowaniu unieważnia nagrobek po sobie.
     if (!existing) await forgetTombstone(note.id);
 
+    if (!existing || existing.hash !== hash) {
+      await recordContentChange({
+        noteId: note.id,
+        before: existing?.content ?? null,
+        after: note.content,
+        version: saved.version,
+        origin,
+      });
+    }
+
     return {
       status: existing ? "saved" : "created",
       version: saved.version,
-      updatedAt: saved.updatedAt.getTime(),
+      updatedAt: saved.updatedAt,
     };
   } catch (problem) {
     await changeUsed(userId, -plan.addedBytes);
@@ -670,6 +739,7 @@ export async function purgeNoteForUser(
   }
 
   await changeUsed(userId, -freed);
+  announceGone(noteId);
 
   return { status: "ok", version: 0 };
 }

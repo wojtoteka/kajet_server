@@ -927,7 +927,7 @@ export async function revokeShare(_previous: Result, data: FormData): Promise<Re
     include: { note: { select: { id: true, ownerId: true } } },
   });
 
-  if (!existing) return { success: (await currentWords()).actShareGone };
+  if (!existing || !existing.note) return { success: (await currentWords()).actShareGone };
   if (existing.note.ownerId !== user.id) {
     return { error: (await currentWords()).apiNoteNotYours };
   }

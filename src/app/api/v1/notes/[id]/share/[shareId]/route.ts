@@ -28,7 +28,7 @@ export const DELETE = wrapApi(
     // pod tym adresem nie istnieje.
     if (!existing || existing.noteId !== noteId) return json({ status: "ok" });
 
-    if (existing.note.ownerId !== result.user.id) {
+    if (!existing.note || existing.note.ownerId !== result.user.id) {
       return error("not-yours", (await apiWords()).apiNoteNotYours, 403);
     }
 

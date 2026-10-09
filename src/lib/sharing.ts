@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import type { Note, Permission } from "@prisma/client";
+import type { Folder, Note, Permission, Share } from "@prisma/client";
 import { prisma } from "./prisma";
 import { auth } from "./auth";
 import { apiWords } from "./language";
@@ -157,13 +157,85 @@ async function denialReason(
   }
 }
 
-export async function tokenAccess(token: string): Promise<AccessResult> {
-  const share = await prisma.share.findUnique({
-    where: { token },
-    include: { note: true },
-  });
+/** Najgłębsze zagnieżdżenie folderów, jakie przejdziemy w górę drzewa. */
+const MAX_FOLDER_DEPTH = 64;
 
-  if (!share || share.note.deletedAt) {
+/**
+ * Czy folder [folderId] leży w [rootId] albo jest nim samym. Idziemy od
+ * folderu w górę po rodzicach - drzewo jednego konta jest płytkie, a pętla
+ * w danych (która nie powinna się zdarzyć) kończy się na limicie.
+ */
+export async function folderWithin(folderId: string | null, rootId: string): Promise<boolean> {
+  let current = folderId;
+  for (let step = 0; current && step < MAX_FOLDER_DEPTH; step += 1) {
+    if (current === rootId) return true;
+    const folder = await prisma.folder.findUnique({
+      where: { id: current },
+      select: { parentId: true },
+    });
+    current = folder?.parentId ?? null;
+  }
+  return false;
+}
+
+/** Identyfikatory folderu i wszystkich nad nim - do szukania udostępnień. */
+export async function folderChain(folderId: string | null): Promise<string[]> {
+  const chain: string[] = [];
+  let current = folderId;
+  for (let step = 0; current && step < MAX_FOLDER_DEPTH; step += 1) {
+    if (chain.includes(current)) break;
+    chain.push(current);
+    const folder = await prisma.folder.findUnique({
+      where: { id: current },
+      select: { parentId: true },
+    });
+    current = folder?.parentId ?? null;
+  }
+  return chain;
+}
+
+export type ShareWithTarget = Share & { note: Note | null; folder: Folder | null };
+
+/**
+ * Notatka, którą otwiera odnośnik. Przy udostępnionej notatce to ona sama;
+ * przy folderze - notatka [noteId], o ile leży w tym folderze albo głębiej
+ * i należy do tego samego właściciela. null znaczy „ten odnośnik tej
+ * notatki nie otwiera".
+ */
+export async function noteBehindShare(
+  share: ShareWithTarget,
+  noteId?: string | null,
+): Promise<Note | null> {
+  if (share.note || share.noteId) {
+    if (noteId && noteId !== (share.noteId ?? share.note?.id)) return null;
+    return share.note;
+  }
+  if (!share.folder || !noteId) return null;
+  const note = await prisma.note.findUnique({ where: { id: noteId } });
+  if (!note || note.ownerId !== share.folder.ownerId) return null;
+  return (await folderWithin(note.folderId, share.folder.id)) ? note : null;
+}
+
+/** Właściciel tego, co udostępniono - notatki albo folderu. */
+export function shareOwnerId(share: ShareWithTarget): string | null {
+  return share.note?.ownerId ?? share.folder?.ownerId ?? null;
+}
+
+async function shareForToken(token: string): Promise<ShareWithTarget | null> {
+  return prisma.share.findUnique({
+    where: { token },
+    include: { note: true, folder: true },
+  });
+}
+
+/**
+ * Dostęp przez odnośnik. [noteId] wskazuje notatkę w udostępnionym folderze;
+ * przy udostępnionej notatce można go pominąć.
+ */
+export async function tokenAccess(token: string, noteId?: string | null): Promise<AccessResult> {
+  const share = await shareForToken(token);
+  const note = share ? await noteBehindShare(share, noteId) : null;
+  if (!share || !note || note.deletedAt) {
     return { ok: false, reason: (await apiWords()).apiLinkDead };
   }
 
@@ -172,7 +244,7 @@ export async function tokenAccess(token: string): Promise<AccessResult> {
 
   const decision = shareAccessDecision(
     share,
-    share.note.ownerId,
+    note.ownerId,
     { userId, email: session?.user?.email ?? null },
     new Date(),
   );
@@ -185,7 +257,7 @@ export async function tokenAccess(token: string): Promise<AccessResult> {
     return {
       ok: true,
       access: {
-        note: share.note,
+        note,
         canEdit: true,
         isOwner: true,
         writerName: session?.user?.login ?? (await apiWords()).ownerWord,
@@ -199,7 +271,7 @@ export async function tokenAccess(token: string): Promise<AccessResult> {
   return {
     ok: true,
     access: {
-      note: share.note,
+      note,
       canEdit: decision.canEdit,
       isOwner: false,
       writerName: session?.user?.login ?? session?.user?.name ?? (await apiWords()).guestWord,
@@ -213,13 +285,13 @@ export async function tokenAccess(token: string): Promise<AccessResult> {
  * cofnięcie udostępnienia albo jego wygaśnięcie odbiera zapis natychmiast -
  * także osobie, która trzyma stronę otwartą.
  */
-export async function tokenWriteAccess(token: string): Promise<AccessResult> {
-  const share = await prisma.share.findUnique({
-    where: { token },
-    include: { note: true },
-  });
-
-  if (!share || share.note.deletedAt) {
+export async function tokenWriteAccess(
+  token: string,
+  noteId?: string | null,
+): Promise<AccessResult> {
+  const share = await shareForToken(token);
+  const note = share ? await noteBehindShare(share, noteId) : null;
+  if (!share || !note || note.deletedAt) {
     return { ok: false, reason: (await apiWords()).apiLinkDead };
   }
 
@@ -228,7 +300,7 @@ export async function tokenWriteAccess(token: string): Promise<AccessResult> {
 
   const decision = shareWriteDecision(
     share,
-    share.note.ownerId,
+    note.ownerId,
     { userId, email: session?.user?.email ?? null },
     new Date(),
   );
@@ -243,7 +315,7 @@ export async function tokenWriteAccess(token: string): Promise<AccessResult> {
   return {
     ok: true,
     access: {
-      note: share.note,
+      note,
       canEdit: true,
       isOwner: decision.isOwner,
       writerName:
@@ -253,8 +325,119 @@ export async function tokenWriteAccess(token: string): Promise<AccessResult> {
   };
 }
 
+export type FolderShareAccess =
+  | {
+      ok: true;
+      share: ShareWithTarget & { folder: Folder };
+      canEdit: boolean;
+      isOwner: boolean;
+      userId: string | null;
+    }
+  | { ok: false; reason: string };
+
+/** Wejście do udostępnionego folderu przez odnośnik (strona folderu). */
+export async function folderTokenAccess(token: string): Promise<FolderShareAccess> {
+  const share = await shareForToken(token);
+  if (!share || !share.folder) return { ok: false, reason: (await apiWords()).apiLinkDead };
+
+  const session = await auth();
+  const userId = session?.user?.id ?? null;
+  const decision = shareAccessDecision(
+    share,
+    share.folder.ownerId,
+    { userId, email: session?.user?.email ?? null },
+    new Date(),
+  );
+  if (!decision.allowed) {
+    return { ok: false, reason: await denialReason(decision.reason, Boolean(share.email)) };
+  }
+  if (!decision.isOwner) touchShare(share.id, share.lastUsedAt);
+  return {
+    ok: true,
+    share: share as ShareWithTarget & { folder: Folder },
+    canEdit: decision.canEdit,
+    isOwner: decision.isOwner,
+    userId,
+  };
+}
+
+export type AcceptOutcome =
+  | { status: "accepted" | "already"; share: ShareWithTarget }
+  /** Odnośnik bez adresu - nic się u nikogo nie zapisuje. */
+  | { status: "link"; share: ShareWithTarget }
+  | { status: "denied"; reason: "dead" | "expired" | "sign-in" | "someone-else" };
+
+/**
+ * Przyjęcie udostępnienia imiennego: notatka (albo folder) trafia do
+ * biblioteki osoby, do której ją wysłano.
+ *
+ * Woła to dopiero człowiek, który naprawdę otworzył odnośnik - strona zaraz
+ * po wyświetleniu (żądaniem POST z przeglądarki), aplikacja po otwarciu
+ * odnośnika. Zwykłe pobranie strony nic tu nie zapisuje, więc skaner linków
+ * w skrzynce pocztowej (i każdy inny automat bez sesji tej osoby) niczego
+ * nie przypnie. Konto musi mieć dokładnie adres z zaproszenia.
+ */
+export async function acceptShare(
+  token: string,
+  viewer: { userId: string | null; email: string | null },
+): Promise<AcceptOutcome> {
+  const share = await shareForToken(token);
+  const ownerId = share ? shareOwnerId(share) : null;
+  if (!share || !ownerId || share.note?.deletedAt) return { status: "denied", reason: "dead" };
+
+  const decision = shareAccessDecision(share, ownerId, viewer, new Date());
+  if (!decision.allowed) return { status: "denied", reason: decision.reason };
+  if (!share.email || decision.isOwner || !viewer.userId) return { status: "link", share };
+
+  if (share.acceptedById === viewer.userId) return { status: "already", share };
+
+  await prisma.share.updateMany({
+    where: { id: share.id },
+    data: { acceptedById: viewer.userId, acceptedAt: new Date(), lastUsedAt: new Date() },
+  });
+  return {
+    status: "accepted",
+    share: { ...share, acceptedById: viewer.userId, acceptedAt: new Date() },
+  };
+}
+
+export type AccountRights = {
+  canEdit: boolean;
+  /** Udostępnienie, przez które konto ma dostęp. */
+  shareId: string;
+};
+
+/**
+ * Dostęp do cudzej notatki przez udostępnienie przyjęte przez to konto -
+ * samej notatki albo któregoś folderu nad nią. Najmocniejsze prawo wygrywa.
+ */
+export async function acceptedShareRights(
+  userId: string,
+  note: { id: string; ownerId: string; folderId: string | null },
+  now = new Date(),
+): Promise<AccountRights | null> {
+  const chain = await folderChain(note.folderId);
+  const shares = await prisma.share.findMany({
+    where: {
+      acceptedById: userId,
+      OR: [{ noteId: note.id }, ...(chain.length > 0 ? [{ folderId: { in: chain } }] : [])],
+    },
+    select: { id: true, permission: true, expiresAt: true, folder: { select: { ownerId: true } } },
+  });
+  let best: AccountRights | null = null;
+  for (const share of shares) {
+    if (share.expiresAt && share.expiresAt < now) continue;
+    // Folder mógł zmienić właściciela tylko w złych danych - nie ryzykujemy.
+    if (share.folder && share.folder.ownerId !== note.ownerId) continue;
+    const canEdit = share.permission === "EDIT";
+    if (!best || (canEdit && !best.canEdit)) best = { canEdit, shareId: share.id };
+  }
+  return best;
+}
+
 export async function createShare(options: {
-  noteId: string;
+  noteId?: string | null;
+  folderId?: string | null;
   sharedById: string;
   permission: Permission;
   email?: string | null;
@@ -266,7 +449,8 @@ export async function createShare(options: {
   const share = await prisma.share.create({
     data: {
       token,
-      noteId: options.noteId,
+      noteId: options.noteId ?? null,
+      folderId: options.noteId ? null : (options.folderId ?? null),
       sharedById: options.sharedById,
       permission: options.permission,
       email: options.email?.trim().toLowerCase() || null,

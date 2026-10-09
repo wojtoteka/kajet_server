@@ -108,6 +108,8 @@ model User {
   issuedCodes   InviteCode[] @relation("IssuedCodes")
   usedCode      InviteCode?  @relation("UsedCode")
   shares        Share[]      @relation("SharedBy")
+  /// Udostępnienia imienne, które to konto przyjęło (kliknęło w odnośnik).
+  acceptedShares Share[]     @relation("AcceptedBy")
   releases      AppRelease[] @relation("UploadedReleases")
   aiTurns       AiTurn[]
   aiCalls       AiCall[]
@@ -263,6 +265,7 @@ model Folder {
   parent   Folder?  @relation("FolderTree", fields: [parentId], references: [id], onDelete: Cascade)
   children Folder[] @relation("FolderTree")
   notes    Note[]
+  shares   Share[]
 
   @@index([ownerId, parentId])
   @@map("folders")
@@ -372,9 +375,20 @@ enum Permission {
 
 /// A shared note. Without an e-mail address it works as a link for anyone who
 /// receives it. With an e-mail address it is personal and we send a notice.
+///
+/// Udostępnia się notatkę ALBO folder (razem z podfolderami i wszystkim, co
+/// w nich jest i co dopiero w nich powstanie) - dokładnie jedno z pól
+/// noteId / folderId jest wypełnione.
+///
+/// Odnośnik bez adresu niczego u odbiorcy nie zapisuje: otwiera się, dopóki
+/// ktoś go trzyma w ręku. Imienny trafia do biblioteki odbiorcy dopiero wtedy,
+/// gdy zalogowany tym adresem człowiek naprawdę go otworzy - patrz
+/// acceptedById. Sam e-mail, a tym bardziej skaner linków w skrzynce, który
+/// wchodzi pod adres bez sesji, nic nie przypina.
 model Share {
   id               String     @id @default(cuid())
-  noteId           String
+  noteId           String?
+  folderId         String?
   token            String     @unique
   permission       Permission @default(READ)
   /// Empty means a link for anyone who has it.
@@ -385,37 +399,57 @@ model Share {
   createdAt        DateTime   @default(now())
   lastUsedAt       DateTime?
 
+  /// Konto, które przyjęło udostępnienie imienne. Od tej chwili notatka albo
+  /// folder stoi w jego bibliotece (na stronie i w aplikacji) z oznaczeniem
+  /// „udostępnione". Puste, dopóki nikt odnośnika nie otworzył.
+  acceptedById     String?
+  acceptedAt       DateTime?
+
   sharedById String
-  sharedBy   User @relation("SharedBy", fields: [sharedById], references: [id], onDelete: Cascade)
-  note       Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  sharedBy   User    @relation("SharedBy", fields: [sharedById], references: [id], onDelete: Cascade)
+  acceptedBy User?   @relation("AcceptedBy", fields: [acceptedById], references: [id], onDelete: SetNull)
+  note       Note?   @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  folder     Folder? @relation(fields: [folderId], references: [id], onDelete: Cascade)
 
   @@index([noteId])
+  @@index([folderId])
   @@index([email])
+  @@index([acceptedById])
   @@map("shares")
 }
 
 // --- Live editing ---
 
-/// A single change sent by one of the people writing.
+/// Jedna zmiana treści notatki - delta z wersji poprzedniej do [version].
 ///
-/// Clients fetch changes newer than the one they already have and apply them
-/// locally. The row of changes is also a record of what happened, so a note can
-/// be rebuilt from it should the full save be lost. Old entries are removed by
-/// the cleanup that folds them into the whole.
+/// Powstaje przy KAŻDYM zapisie treści, niezależnie od drogi (strona,
+/// aplikacja, asystent, edycja na żywo). Otwarta notatka dostaje te delty
+/// na bieżąco, a urządzenie, które na chwilę straciło połączenie, dociąga
+/// brakujące od swojej wersji - zamiast pobierać całą notatkę od nowa.
+///
+/// To nie jest historia na zawsze: sprzątanie zostawia wpisy z kilku dni.
+/// Kto wraca po dłuższej przerwie, dostaje pełną treść.
 model LiveChange {
   id         BigInt   @id @default(autoincrement())
   noteId     String
+  /// Wersja notatki PO tej zmianie.
+  version    Int      @default(0)
   /// Who sent it. Empty for someone without an account editing from a link.
   authorId   String?
   /// Name shown next to the other person's cursor.
   authorName String
-  /// Description of the change in JSON. The shape depends on the note kind.
+  /// Karta przeglądarki albo urządzenie, z którego przyszła zmiana. Nadawca
+  /// poznaje po nim własne echo i nie nakłada swojej zmiany drugi raz.
+  clientId   String   @default("") @db.VarChar(64)
+  /// Delta w JSON (src/lib/live/merge.ts).
   operation  String   @db.LongText
   createdAt  DateTime @default(now())
 
   note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
 
   @@index([noteId, id])
+  @@index([noteId, version])
+  @@index([createdAt])
   @@map("live_changes")
 }
 
