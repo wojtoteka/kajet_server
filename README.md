@@ -122,6 +122,13 @@ Zmiana tylko dokłada: kolumny `folderId`, `acceptedById` i `acceptedAt` w `Shar
 (`noteId` może być teraz puste - udostępnienie folderu), `version` i `clientId`
 w `LiveChange` oraz indeksy. Nic nie jest kasowane.
 
+Najpewniej całość robi `bash scripts/aktualizuj-na-serwerze.sh`: zanim zbuduje, sprawdza
+bazę i przy różnicach staje, a stara wersja chodzi dalej. Gdy nowa wersja ruszy na starej
+bazie (np. po ręcznym `npm run build` i restarcie w pm2), strona pokazuje „Coś się
+popsuło", w dzienniku pm2 stoi „The column `kajet.shares.folderId` does not exist", a przy
+starcie procesu linijka `[baza] BAZA JEST STARSZA NIŻ KOD` z listą braków. Wtedy wystarczy
+`npm run db:apply` i restart procesu - kodu nie trzeba wgrywać ponownie.
+
 **nginx.** Strumień `/api/v1/live/<id>` to Server-Sent Events - jedno długie połączenie na
 otwartą notatkę. Serwer sam wysyła `X-Accel-Buffering: no` i `Cache-Control: no-transform`,
 a co 20 s linijkę „ping", więc zwykły `proxy_pass` wystarczy. Dla pewności można

@@ -17,7 +17,7 @@ import {
   setNoteFavoriteForUser,
   purgeNoteForUser,
 } from "@/lib/note-write";
-import { buildTextNoteContent, parseExistingTextDocument } from "@/lib/text-note";
+import { buildTextNoteContent, parseExistingTextDocument, unixLineEnds } from "@/lib/text-note";
 import {
   buildMindMapNoteContent,
   parseExistingMindMapDocument,
@@ -140,7 +140,8 @@ export async function saveTextNote(_previous: Result, data: FormData): Promise<R
     return { error: parsed.error.issues[0]?.message ?? (await currentWords()).actCheckWhatYouTyped };
   }
 
-  const markdown = parsed.data.markdown;
+  // Formularz przyszedł z "\r\n" w miejscu każdego "\n" - patrz unixLineEnds.
+  const markdown = unixLineEnds(parsed.data.markdown);
   /*
     Pusty tytuł bierzemy z pierwszego wiersza treści - inaczej spis zapełniał
     się notatkami „Bez nazwy", nie do odróżnienia od siebie. Wpisany tytuł
@@ -543,7 +544,7 @@ export async function saveCodeNote(_previous: Result, data: FormData): Promise<R
   const title =
     parsed.data.title.trim() ||
     `program.${LANGUAGES.find((entry) => entry.id === language)?.extension ?? "txt"}`;
-  const source = parsed.data.source;
+  const source = unixLineEnds(parsed.data.source);
   const existingId = parsed.data.noteId;
 
   let noteId = existingId;

@@ -72,6 +72,7 @@ import {
   splitTextBlocks,
   standsInRow,
   textBlockRows,
+  unixLineEnds,
   type ImageAlign,
   type PhotoMove,
   type PhotoNudge,
@@ -136,7 +137,10 @@ function textPiece(document: Json): TextPiece | null {
   const note = document as unknown as NoteDocument;
   return {
     title: note.title ?? "",
-    markdown: note.text?.markdown ?? "",
+    // Notatki zapisane ze strony przed poprawką mają w treści "\r" (patrz
+    // unixLineEnds). Edytor ich nie zna, więc scalamy bez nich - inaczej każdy
+    // wiersz różniłby się od bazy i cudza zmiana wpadałaby w konflikt.
+    markdown: unixLineEnds(note.text?.markdown ?? ""),
     font: note.text?.font ?? "body",
     fontSize: note.text?.fontSize ?? 0,
     textColor: note.text?.textColor ?? 0,
@@ -149,7 +153,7 @@ export function TextNoteEditor({
   noteId,
   version,
   title,
-  markdown,
+  markdown: storedMarkdown,
   appearance,
   autoSave = true,
   bold = false,
@@ -173,6 +177,7 @@ export function TextNoteEditor({
   token?: string;
 }) {
   const words = useWords();
+  const markdown = unixLineEnds(storedMarkdown);
   // safeAction: zapis, który nie doszedł do serwera (stara karta po wdrożeniu,
   // zerwane łącze), wraca jako zwykły błąd zamiast zabierać notatkę z ekranem.
   const [state, submit, busy] = useActionState<ActionResult, FormData>(
@@ -828,10 +833,11 @@ export function TextNoteEditor({
           nie mają nazw, bo każde z nich to tylko kawałek notatki. */}
       <input type="hidden" name="markdown" value={body} />
 
-      <LivePresence live={live} />
-
       <div className="field">
-        <label htmlFor="title">{words.noteTitle}</label>
+        <div className="field-head">
+          <label htmlFor="title">{words.noteTitle}</label>
+          <LivePresence live={live} />
+        </div>
         <input
           id="title"
           name="title"

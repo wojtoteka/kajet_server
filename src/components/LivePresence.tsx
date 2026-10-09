@@ -5,10 +5,13 @@ import { useWords } from "@/components/LanguageProvider";
 import type { LiveNote } from "@/components/useLiveNote";
 
 /*
-  Pasek obecności przy edytorze: czy jesteśmy połączeni na żywo, kto jeszcze
-  ma notatkę otwartą (kropka z inicjałem, w jego stałym kolorze) i - przez
-  chwilę po zmianie - od kogo ta zmiana przyszła. Jak w Dokumentach Google,
-  tylko skromniej: bez kursorów innych osób.
+  Stan edycji na żywo w wierszu etykiety „Tytuł", po prawej: czy jesteśmy
+  połączeni, kto jeszcze ma notatkę otwartą (kółko z inicjałem, w jego
+  stałym kolorze) i - przez chwilę po zmianie - od kogo ta zmiana przyszła.
+  Jak w Dokumentach Google, tylko skromniej: bez kursorów innych osób.
+
+  Sam napis, bez kropki stanu: kropka, która przy otwieraniu notatki
+  zmieniała kolor, wyglądała jak animacja i odciągała wzrok od pisania.
 */
 export function LivePresence<P>({ live }: { live: LiveNote<P> }) {
   const words = useWords();
@@ -31,19 +34,27 @@ export function LivePresence<P>({ live }: { live: LiveNote<P> }) {
     );
   }
 
-  const label =
-    live.status === "live"
+  // Gdy w notatce jest ktoś jeszcze, jego inicjały same mówią, że jesteśmy
+  // połączeni - napis mówi wtedy, czyje to kółka.
+  const together = live.status === "live" && live.people.length > 0;
+  const label = together
+    ? words.liveAlsoHere
+    : live.status === "live"
       ? words.liveNow
       : live.status === "connecting"
         ? words.liveConnecting
         : words.liveOffline;
 
   return (
-    <div className="live-presence" aria-live="polite">
-      <span className={`live-dot ${live.status}`} aria-hidden="true" />
-      <span className="small">{label}</span>
+    <div
+      className={`live-presence ${live.status}`}
+      data-status={live.status}
+      title={live.status === "live" ? words.liveNowHint : undefined}
+      aria-live="polite"
+    >
+      <span>{label}</span>
       {live.people.length > 0 ? (
-        <span className="live-people" aria-label={words.liveAlsoHere}>
+        <span className="live-people" aria-label={together ? undefined : words.liveAlsoHere}>
           {live.people.map((person) => (
             <span
               key={person.client}
@@ -56,7 +67,7 @@ export function LivePresence<P>({ live }: { live: LiveNote<P> }) {
         </span>
       ) : null}
       {fresh && live.lastAuthor ? (
-        <span className="small live-author">
+        <span className="live-author">
           {words.liveChangeFrom} {live.lastAuthor.name}
         </span>
       ) : null}

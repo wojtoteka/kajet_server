@@ -29,7 +29,7 @@ import { acceptShare, folderTokenAccess, folderWithin, tokenWriteAccess } from "
 import { prisma } from "@/lib/prisma";
 import { titleFromMarkdown, titleFromMindMap } from "@/lib/note-title";
 import { upsertNoteForUser, upsertCodeNoteForUser, type UpsertNoteResult } from "@/lib/note-write";
-import { buildTextNoteContent, parseExistingTextDocument } from "@/lib/text-note";
+import { buildTextNoteContent, parseExistingTextDocument, unixLineEnds } from "@/lib/text-note";
 import {
   buildMindMapNoteContent,
   parseExistingMindMapDocument,
@@ -159,7 +159,8 @@ export async function saveSharedTextNote(
   if (!target.ok) return { error: target.error };
   const note = target.note;
 
-  const markdown = parsed.data.markdown;
+  // Formularz przyszedł z "\r\n" w miejscu każdego "\n" - patrz unixLineEnds.
+  const markdown = unixLineEnds(parsed.data.markdown);
   const title = parsed.data.title.trim() || titleFromMarkdown(markdown) || "Bez nazwy";
   const baseVersion =
     parsed.data.baseVersion && parsed.data.baseVersion > 0
@@ -395,7 +396,7 @@ export async function saveSharedCodeNote(
     id: note.id,
     title,
     language,
-    source: parsed.data.source,
+    source: unixLineEnds(parsed.data.source),
     existing: existingMeta,
   });
 

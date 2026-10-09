@@ -44,6 +44,20 @@ export function persistFontSize(stored: number, picked: number): number {
   return storedFontSize(picked);
 }
 
+/**
+ * Końce linii jak w notatce: same "\n".
+ *
+ * Formularz ze strony idzie do serwera jako multipart/form-data, a przeglądarka
+ * zamienia w nim każde "\n" na "\r\n" - tak każe specyfikacja HTML. Notatka
+ * trzyma same "\n" (tak pisze aplikacja i edytor na stronie), więc bez tego
+ * każdy zapis ze strony dokładał do treści "\r". Edycja na żywo porównuje
+ * teksty znak po znaku i na tych "\r" się rozjeżdżała: puste wiersze się
+ * mnożyły, a akapity potrafiły się zdublować.
+ */
+export function unixLineEnds(text: string): string {
+  return text.replace(/\r\n?/g, "\n");
+}
+
 /** Build content.json for a TEXT note in the shape the tablet expects. */
 export function buildTextNoteContent(options: {
   id: string;

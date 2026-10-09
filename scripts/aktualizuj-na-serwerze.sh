@@ -16,8 +16,10 @@
 set -euo pipefail
 
 KATALOG="${1:-/home/Nodejs/kajet}"
-# Nazwa procesu w pm2 (tak stoi produkcja) oraz zapasowo usługa systemd.
-PROCES_PM2="kajet_server"
+# Nazwa procesu w pm2 oraz zapasowo usługa systemd. W pm2 produkcja stała
+# jako „kajet_server", a 9 października 2026 dziennik pm2 pokazał „kajet" -
+# bierzemy pierwszą nazwę, którą pm2 zna. Inną podaj w KAJET_PM2.
+PROCESY_PM2="${KAJET_PM2:-} kajet_server kajet"
 USLUGA_SYSTEMD="kajet"
 
 cd "$KATALOG"
@@ -47,7 +49,7 @@ fi
 # Bierz nazwy, a nie napisy z ekranu: napis z przycisku znika, gdy przycisk
 # zniknie, i skrypt zaczyna krzyczeć na poprawnie wgrany kod. Tak padło
 # „Wygląd obok" - przycisk skasowany razem z trybem podglądu obok.
-for znacznik in "bulkNotesFromLibrary" "hasFreeSeat" "readQuota" "homeAiTitle"; do
+for znacznik in "checkDatabaseSchema" "useLiveNote" "listSharedFolder" "apkCertificateFingerprint"; do
   if ! grep -rq "$znacznik" src/ 2>/dev/null; then
     echo "ŹLE: w $KATALOG/src nie ma nowego kodu (brak: $znacznik)." >&2
     echo "Nowe pliki nie dojechały - wgraj je jeszcze raz i powtórz." >&2
@@ -86,7 +88,7 @@ done
 
 # Schemat bazy musi znać to, czego kod od niego chce. Stary schema.prisma przy
 # nowym kodzie to błąd typów w środku builda, a nie od razu widać dlaczego.
-for kolumna in "inactiveWarnedAt" "DeletedNote" "aiDailyLimit"; do
+for kolumna in "inactiveWarnedAt" "DeletedNote" "aiDailyLimit" "acceptedById"; do
   if ! grep -q "$kolumna" prisma/schema.prisma; then
     echo "ŹLE: prisma/schema.prisma jest starszy niż kod (brak: $kolumna)." >&2
     echo "Wgraj nowy schemat i powtórz." >&2
@@ -162,8 +164,17 @@ echo "==> Buduję (npm run build)"
 npm run build
 
 echo "==> Przeładowuję usługę"
-if command -v pm2 >/dev/null 2>&1 && pm2 describe "$PROCES_PM2" >/dev/null 2>&1; then
-  pm2 restart "$PROCES_PM2" --update-env
+proces_pm2=""
+if command -v pm2 >/dev/null 2>&1; then
+  for nazwa in $PROCESY_PM2; do
+    if pm2 describe "$nazwa" >/dev/null 2>&1; then
+      proces_pm2="$nazwa"
+      break
+    fi
+  done
+fi
+if [ -n "$proces_pm2" ]; then
+  pm2 restart "$proces_pm2" --update-env
   pm2 list
 elif command -v systemctl >/dev/null 2>&1; then
   systemctl restart "$USLUGA_SYSTEMD"
