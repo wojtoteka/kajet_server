@@ -1,8 +1,9 @@
 /*
   Co Next robi raz, przy podnoszeniu procesu serwera.
 
-  Najpierw strefa czasowa, potem sprzątanie: kosz, konta, z których nikt nie
-  korzysta, przeterminowane liczniki zapór i stare zmiany edycji na żywo.
+  Najpierw strefa czasowa, potem sprawdzenie, czy baza nadąża za kodem, potem
+  sprzątanie: kosz, konta, z których nikt nie korzysta, przeterminowane
+  liczniki zapór i stare zmiany edycji na żywo.
   Sprzątania nie trzeba dzięki temu wpisywać do crona: proces i tak chodzi pod
   pm2 przez całą dobę, a sprzątanie wisi na jego zegarze.
 */
@@ -28,6 +29,10 @@ export async function register() {
   */
   const { settings } = await import("@/lib/settings");
   process.env.TZ = settings.timeZone;
+
+  // Bez czekania: start nie stoi na bazie, a braki i tak padną w dzienniku.
+  const { checkDatabaseSchema } = await import("@/lib/schema-check");
+  void checkDatabaseSchema();
 
   const { startTrashSweeper } = await import("@/lib/trash");
   startTrashSweeper();
