@@ -1,6 +1,13 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { tokenAccess } from "@/lib/sharing";
+import { auth } from "@/lib/auth";
+import { folderTokenAccess, tokenAccess } from "@/lib/sharing";
+import { listSharedFolder } from "@/lib/shared-library";
+import { folderIcon, folderTint } from "@/lib/folder-look";
+import { Icon, type IconName } from "@/components/Icon";
+import { ActionForm } from "@/components/ActionForm";
+import { AcceptShare } from "@/components/AcceptShare";
+import { OpenInApp } from "@/components/OpenInApp";
 import { writingSettingsFor } from "@/lib/writing-settings";
 import { textAppearanceFromContent, textMarkdownFromContent } from "@/lib/text-note";
 import { parseMindMapNote } from "@/lib/mindmap-note";
@@ -16,6 +23,8 @@ import { LargeNoteNotice } from "@/components/LargeNoteNotice";
 import { PrintButton } from "@/components/PrintButton";
 import { runCodeAction } from "@/app/note/[id]/actions";
 import {
+  acceptSharedLink,
+  createSharedTextNote,
   saveSharedTextNote,
   saveSharedMindMapNote,
   saveSharedHandwritingNote,
@@ -44,30 +53,207 @@ function kindName(words: Words, kind: string): string {
   }
 }
 
+function Refused({ words, reason }: { words: Words; reason: string }) {
+  return (
+    <main className="page" style={{ maxWidth: 520 }}>
+      <KajetMark />
+      <div className="sheet-ruled" style={{ paddingBlock: 32, paddingInlineEnd: 28 }}>
+        <p className="eyebrow">{words.linkEyebrow}</p>
+        <h1 style={{ marginBottom: 10 }}>{words.cannotShowNote}</h1>
+        <p className="lead">{reason}</p>
+        <Link className="button" href="/signin">
+          {words.signIn}
+        </Link>
+      </div>
+    </main>
+  );
+}
+
+/*
+  Odnośnik do notatki albo do folderu.
+
+  Folder pokazuje swoją zawartość (`?folder=` - podfolder), a notatka
+  z folderu otwiera się pod tym samym odnośnikiem z `?note=`. Notatka musi
+  leżeć w udostępnionym folderze albo głębiej - pilnuje tego tokenAccess.
+
+  Udostępnienie imienne przyjmuje się tutaj, w przeglądarce otwierającego
+  (AcceptShare) - od tej chwili stoi ono w jego bibliotece.
+*/
 export default async function SharedNotePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ token: string }>;
+  searchParams: Promise<{ note?: string; folder?: string }>;
 }) {
   const { token } = await params;
+  const { note: noteParam, folder: folderParam } = await searchParams;
   const words = await currentWords();
-  const result = await tokenAccess(token);
 
-  if (!result.ok) {
+  const kind = await prisma.share.findUnique({
+    where: { token },
+    select: { folderId: true, email: true },
+  });
+  const personal = Boolean(kind?.email);
+
+  if (kind?.folderId && !noteParam) {
     return (
-      <main className="page" style={{ maxWidth: 520 }}>
-        <KajetMark />
-        <div className="sheet-ruled" style={{ paddingBlock: 32, paddingInlineEnd: 28 }}>
-          <p className="eyebrow">{words.linkEyebrow}</p>
-          <h1 style={{ marginBottom: 10 }}>{words.cannotShowNote}</h1>
-          <p className="lead">{result.reason}</p>
-          <Link className="button" href="/signin">
-            {words.signIn}
-          </Link>
-        </div>
-      </main>
+      <SharedFolderView token={token} folderId={folderParam ?? null} personal={personal} />
     );
   }
+
+  return (
+    <SharedNoteView
+      token={token}
+      noteId={kind?.folderId ? (noteParam ?? null) : null}
+      personal={personal}
+    />
+  );
+}
+
+async function SharedFolderView({
+  token,
+  folderId,
+  personal,
+}: {
+  token: string;
+  folderId: string | null;
+  personal: boolean;
+}) {
+  const words = await currentWords();
+  const access = await folderTokenAccess(token);
+  if (!access.ok) return <Refused words={words} reason={access.reason} />;
+
+  const listing = await listSharedFolder(
+    {
+      share: { ...access.share, sharedBy: await sharer(access.share.sharedById) },
+      ownerId: access.share.folder.ownerId,
+      canEdit: access.canEdit,
+    },
+    folderId,
+  );
+  if (!listing) return <Refused words={words} reason={words.apiLinkDead} />;
+  const owner = await sharer(access.share.sharedById);
+  const accept = acceptSharedLink.bind(null, token);
+  const here = (id: string) => `/n/${token}?folder=${encodeURIComponent(id)}`;
+
+  return (
+    <main className="page wide">
+      <KajetMark caption={words.sharedFolderCaption} />
+      {personal ? <AcceptShare accept={accept} /> : null}
+
+      <div className="row-spread" style={{ marginBottom: 18 }}>
+        <div>
+          <p className="eyebrow">
+            {listing.path.map((step, index) => (
+              <span key={step.id}>
+                {index > 0 ? " / " : ""}
+                {index < listing.path.length - 1 ? (
+                  <Link href={here(step.id)}>{step.name}</Link>
+                ) : (
+                  step.name
+                )}
+              </span>
+            ))}
+          </p>
+          <h1 style={{ marginBottom: 4 }}>{listing.folder.name}</h1>
+          <p className="small" style={{ margin: 0 }}>
+            {words.sharedByWord} {owner.name || owner.login} ·{" "}
+            {access.canEdit ? words.mayChangeIt : words.readOnlyMark}
+          </p>
+        </div>
+        <div className="row" style={{ flexWrap: "wrap" }}>
+          <OpenInApp path={`/n/${token}`} />
+          {access.canEdit ? (
+            <ActionForm
+              action={createSharedTextNote.bind(null, token, listing.folder.id)}
+              label={words.newTextNoteHere}
+              icon="note_add"
+              compact
+            />
+          ) : null}
+        </div>
+      </div>
+
+      {listing.folders.length === 0 && listing.notes.length === 0 ? (
+        <p className="lead">{words.sharedFolderEmpty}</p>
+      ) : null}
+
+      {listing.folders.length > 0 ? (
+        <ul className="folder-list" style={{ marginBottom: 18 }}>
+          {listing.folders.map((folder) => (
+            <li key={folder.id}>
+              <Link className="folder-row" href={here(folder.id)} style={folderTint(folder.colorId)}>
+                <Icon name={folderIcon(folder.iconId)} className="folder-mark tinted" filled />
+                <span className="folder-name">{folder.name}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      {listing.notes.length > 0 ? (
+        <ul className="folder-list">
+          {listing.notes.map((note) => (
+            <li key={note.id}>
+              <Link className="folder-row" href={`/n/${token}?note=${encodeURIComponent(note.id)}`}>
+                <Icon name={noteIcon(note.kind)} className="folder-mark" />
+                <span className="folder-name">{note.title || words.untitled}</span>
+                <span className="folder-count small">
+                  {new Date(note.updatedAt).toLocaleDateString(words.locale)}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      <hr className="divider" />
+      <p className="small">
+        {words.thisIsAKajetNote} <Link href="/">{words.seeWhatItIs}</Link>
+      </p>
+    </main>
+  );
+}
+
+function noteIcon(kind: string): IconName {
+  switch (kind) {
+    case "HANDWRITTEN":
+      return "draw";
+    case "MINDMAP":
+      return "account_tree";
+    case "CODE":
+      return "code";
+    default:
+      return "article";
+  }
+}
+
+async function sharer(userId: string): Promise<{ login: string; name: string | null }> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { login: true, name: true },
+  });
+  return user ?? { login: "", name: null };
+}
+
+async function SharedNoteView({
+  token,
+  noteId,
+  personal,
+}: {
+  token: string;
+  noteId: string | null;
+  personal: boolean;
+}) {
+  const words = await currentWords();
+  const result = await tokenAccess(token, noteId);
+
+  if (!result.ok) return <Refused words={words} reason={result.reason} />;
+  const accept = acceptSharedLink.bind(null, token);
+  const inFolder = Boolean(noteId);
+  const session = await auth();
+  const viewerName = session?.user?.login ?? session?.user?.name ?? words.guestWord;
 
   const { note, canEdit, isOwner } = result.access;
   // Także odnośnik tylko do odczytu omija ciężki NotePreview. Inaczej duży
@@ -105,6 +291,7 @@ export default async function SharedNotePage({
   return (
     <main className="page wide">
       <KajetMark caption={words.sharedNoteCaption} />
+      {personal ? <AcceptShare accept={accept} /> : null}
 
       <div className="row-spread" style={{ marginBottom: 18 }}>
         <div>
@@ -116,7 +303,13 @@ export default async function SharedNotePage({
           </p>
         </div>
         <div className="row" style={{ flexWrap: "wrap" }}>
-          <PrintButton href={`/n/${token}/print`} />
+          {inFolder ? (
+            <Link className="button compact" href={`/n/${token}`}>
+              {words.backToSharedFolder}
+            </Link>
+          ) : null}
+          <OpenInApp path={`/n/${token}`} />
+          <PrintButton href={`/n/${token}/print${inFolder ? `?note=${encodeURIComponent(note.id)}` : ""}`} />
           {isOwner ? (
             <Link className="button compact" href={`/note/${note.id}`}>
               {words.openAsOwner}
@@ -130,7 +323,7 @@ export default async function SharedNotePage({
           words={words}
           sizeBytes={display.sizeBytes}
           limitBytes={display.limitBytes}
-          downloadHref={`/n/${token}/download`}
+          downloadHref={`/n/${token}/download${inFolder ? `?note=${encodeURIComponent(note.id)}` : ""}`}
         />
       ) : (
         <>
@@ -161,6 +354,7 @@ export default async function SharedNotePage({
               {words.editingMindMap}
             </p>
             <MindMapEditor
+              token={token}
               action={saveSharedMindMapNote.bind(null, token)}
               noteId={note.id}
               version={note.version}

@@ -246,17 +246,31 @@ export function shareMail(
   fromWhom: string,
   title: string,
   forEditing: boolean,
+  /** Notatka albo cały folder - folder z podfolderami i wszystkim w środku. */
+  what: "note" | "folder" = "note",
 ): Message {
+  const folder = what === "folder";
   return {
     to: address,
-    subject: `${fromWhom} udostępnia Ci notatkę: ${title}`,
-    heading: forEditing ? "Możesz wspólnie pisać tę notatkę" : "Udostępniono Ci notatkę",
+    subject: folder
+      ? `${fromWhom} udostępnia Ci folder: ${title}`
+      : `${fromWhom} udostępnia Ci notatkę: ${title}`,
+    heading: forEditing
+      ? folder
+        ? "Możecie wspólnie pracować w tym folderze"
+        : "Możesz wspólnie pisać tę notatkę"
+      : folder
+        ? "Udostępniono Ci folder"
+        : "Udostępniono Ci notatkę",
     body: [
-      `${fromWhom} udostępnia Ci notatkę „${title}”.`,
+      folder
+        ? `${fromWhom} udostępnia Ci folder „${title}” razem ze wszystkim, co w nim jest.`
+        : `${fromWhom} udostępnia Ci notatkę „${title}”.`,
       forEditing
         ? "Masz prawo do zmian. Jeśli będziecie pisać jednocześnie, zmiany drugiej osoby zobaczysz na bieżąco."
-        : "Możesz ją czytać, ale nie zapiszesz w niej zmian.",
+        : "Możesz czytać, ale nie zapiszesz zmian.",
+      "Po otwarciu odnośnika (zalogowany tym adresem) udostępnienie trafi do Twojej biblioteki - na stronie i w aplikacji Kajet, z oznaczeniem „udostępnione”. Jeśli masz aplikację Kajet, odnośnik otworzy się od razu w niej.",
     ],
-    button: { label: "Otwórz notatkę", url: link },
+    button: { label: folder ? "Otwórz folder" : "Otwórz notatkę", url: link },
   };
 }

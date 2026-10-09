@@ -289,6 +289,7 @@ export const POST = wrapApi(async (request: Request, { params }: Params) => {
     return error("bad-request", words.apiUnknownShape, 400);
   }
   const base = body.base as number;
+  const delta = body.d;
   const token = url.searchParams.get("t") ?? (typeof body.t === "string" ? body.t : null);
 
   const rights = await noteRights(id, viewer, token);
@@ -311,7 +312,7 @@ export const POST = wrapApi(async (request: Request, { params }: Params) => {
   } catch {
     document = {};
   }
-  const next = applyDelta(document, body.d);
+  const next = applyDelta(document, delta);
   if (!isPlainObject(next)) return error("bad-request", words.apiUnknownShape, 400);
   // Delta nie przestawia notatki pod inny identyfikator.
   if (isPlainObject(document) && typeof document.id === "string") next.id = document.id;
@@ -319,10 +320,21 @@ export const POST = wrapApi(async (request: Request, { params }: Params) => {
   const note = rights.note;
   const content = JSON.stringify(next);
   const title = typeof next.title === "string" ? next.title : note.title;
-  // Gwiazdkę i etykiety zmienia tylko właściciel - to jego porządek w bibliotece.
+  /*
+    Gwiazdkę i etykiety zmienia tylko właściciel - to jego porządek
+    w bibliotece - i tylko wtedy, gdy delta naprawdę je rusza. Treść notatki
+    niesie swoją kopię gwiazdki, która bywa starsza niż ta w bazie (gwiazdka
+    przełączona na stronie nie zmienia treści). Wzięta bez pytania cofałaby
+    tamto przełączenie przy każdym słowie dopisanym na tablecie.
+  */
+  const touched = (field: string) =>
+    "o" in delta && Object.prototype.hasOwnProperty.call(delta.o, field);
   const favorite =
-    rights.isOwner && typeof next.favorite === "boolean" ? next.favorite : note.favorite;
-  const tags = rights.isOwner ? tagsOf(next.tags, note.tags) : tagsOf(null, note.tags);
+    rights.isOwner && touched("favorite") && typeof next.favorite === "boolean"
+      ? next.favorite
+      : note.favorite;
+  const tags =
+    rights.isOwner && touched("tags") ? tagsOf(next.tags, note.tags) : tagsOf(null, note.tags);
   const origin = {
     authorId: viewer.userId,
     authorName: viewer.name,

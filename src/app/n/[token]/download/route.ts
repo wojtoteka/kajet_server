@@ -3,11 +3,11 @@ import { tokenAccess } from "@/lib/sharing";
 import { downloadableNote, downloadDisposition } from "@/lib/note-display";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ token: string }> },
 ) {
   const { token } = await params;
-  const result = await tokenAccess(token);
+  const result = await tokenAccess(token, new URL(request.url).searchParams.get("note"));
   if (!result.ok) return new Response(result.reason, { status: 403 });
 
   const file = downloadableNote(result.access.note);

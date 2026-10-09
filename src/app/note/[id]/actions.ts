@@ -56,10 +56,31 @@ import {
   removeAttachmentRecord,
 } from "@/lib/attachment-delete";
 import { reserveBytes, changeUsed } from "@/lib/quota";
+import type { ChangeOrigin } from "@/lib/live/changes";
+
+/**
+ * Kto zapisuje - dla edycji na żywo. Karta przysyła swój identyfikator
+ * w polu `liveClient`, żeby poznać echo własnego zapisu w strumieniu zmian.
+ */
+function liveOrigin(
+  user: { id: string; login: string; name?: string | null },
+  data: FormData,
+): ChangeOrigin {
+  return {
+    authorId: user.id,
+    authorName: user.login || user.name || "",
+    clientId: String(data.get("liveClient") ?? ""),
+  };
+}
 
 export type Result = {
   error?: string;
   success?: string;
+  /**
+   * Zapis odbił się od nowszej wersji. Edytor z edycją na żywo nie pokazuje
+   * wtedy błędu - dociąga zmianę, scala ją i zapisuje jeszcze raz.
+   */
+  conflict?: boolean;
   copyable?: { value: string; label?: string };
   /** Wersja po zapisie - autozapis wysyła ją jako baseVersion kolejnego. */
   version?: number;
@@ -183,7 +204,7 @@ export async function saveTextNote(_previous: Result, data: FormData): Promise<R
     baseVersion,
     favorite,
     tags,
-  });
+  }, liveOrigin(user, data));
 
   if (outcome.status === "error") {
     return { error: outcome.message };
@@ -193,6 +214,7 @@ export async function saveTextNote(_previous: Result, data: FormData): Promise<R
       error:
         outcome.message +
         (await currentWords()).actRefreshAfterConflict,
+      conflict: true,
     };
   }
 
@@ -332,7 +354,7 @@ export async function saveMindMapNote(_previous: Result, data: FormData): Promis
     baseVersion,
     favorite,
     tags,
-  });
+  }, liveOrigin(user, data));
 
   if (outcome.status === "error") return { error: outcome.message };
   if (outcome.status === "conflict") {
@@ -340,6 +362,7 @@ export async function saveMindMapNote(_previous: Result, data: FormData): Promis
       error:
         outcome.message +
         (await currentWords()).actRefreshAfterConflict,
+      conflict: true,
     };
   }
 
@@ -461,7 +484,7 @@ export async function saveHandwritingNote(_previous: Result, data: FormData): Pr
     baseVersion,
     favorite,
     tags,
-  });
+  }, liveOrigin(user, data));
 
   if (outcome.status === "error") return { error: outcome.message };
   if (outcome.status === "conflict") {
@@ -469,6 +492,7 @@ export async function saveHandwritingNote(_previous: Result, data: FormData): Pr
       error:
         outcome.message +
         (await currentWords()).actRefreshAfterConflict,
+      conflict: true,
     };
   }
 
@@ -580,7 +604,7 @@ export async function saveCodeNote(_previous: Result, data: FormData): Promise<R
     baseVersion,
     favorite,
     tags,
-  });
+  }, liveOrigin(user, data));
 
   if (outcome.status === "error") return { error: outcome.message };
   if (outcome.status === "conflict") {
@@ -588,6 +612,7 @@ export async function saveCodeNote(_previous: Result, data: FormData): Promise<R
       error:
         outcome.message +
         (await currentWords()).actRefreshAfterConflict,
+      conflict: true,
     };
   }
 

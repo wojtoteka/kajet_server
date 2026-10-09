@@ -35,6 +35,8 @@ export type LiveNote<P> = {
   clientId: string;
   /** Notatkę skasowano albo odebrano dostęp. */
   gone: boolean;
+  /** Kto ostatnio coś zmienił z zewnątrz - na krótką chwilę przy pasku zapisu. */
+  lastAuthor: { name: string; at: number } | null;
   /** Edytor właśnie wysyła ten kawałek - po echu stanie się bazą. */
   sending: (piece: P) => void;
   /** Zapis odbił się od nowszej wersji - dociągamy, co się zmieniło. */
@@ -82,6 +84,7 @@ export function useLiveNote<P>({
   const [people, setPeople] = useState<LivePerson[]>([]);
   const [knownVersion, setKnownVersion] = useState(version);
   const [gone, setGone] = useState(false);
+  const [lastAuthor, setLastAuthor] = useState<{ name: string; at: number } | null>(null);
 
   const base = useRef<P>(initial);
   const baseDoc = useRef<Json | null>(null);
@@ -116,6 +119,7 @@ export function useLiveNote<P>({
     const merged = merge3(base.current as Json, local as Json, theirs as Json) as P;
     base.current = theirs;
     if (!jsonEqual(merged as Json, local as Json)) replace(merged, { clean, author });
+    if (author) setLastAuthor({ name: author, at: Date.now() });
   }, []);
 
   useEffect(() => {
@@ -240,5 +244,5 @@ export function useLiveNote<P>({
 
   const resync = useCallback(() => reconnect.current(false), []);
 
-  return { status, people, version: knownVersion, clientId, gone, sending, resync };
+  return { status, people, version: knownVersion, clientId, gone, lastAuthor, sending, resync };
 }

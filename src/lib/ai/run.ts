@@ -13,6 +13,7 @@ import { settings } from "@/lib/settings";
 import type { Words } from "@/lib/i18n";
 import { aiNoteTooBig } from "@/lib/i18n";
 import { upsertCodeNoteForUser, upsertNoteForUser } from "@/lib/note-write";
+import type { ChangeOrigin } from "@/lib/live/changes";
 import { aiGate } from "./access";
 import { aiHandles } from "./tools";
 import { viewForModel } from "./note-view";
@@ -22,6 +23,9 @@ import { applyAiCall, derivedTitleFor } from "./apply";
 import { titleIsOwn } from "@/lib/note-title";
 import { checkAiLimit } from "./limits";
 import { recordAiCall } from "./usage";
+
+/** Zmiana od asystenta - otwarte karty widzą ją podpisaną jego imieniem. */
+const AI_ORIGIN: ChangeOrigin = { authorName: "KajetAI" };
 
 export type AiRunner = {
   id: string;
@@ -195,23 +199,31 @@ export async function runAiEdit(input: {
   // w środku, a przy najbliższej synchronizacji jedno nadpisałoby drugie.
   const saved =
     note.kind === "CODE"
-      ? await upsertCodeNoteForUser(user.id, {
-          id: note.id,
-          title: outcome.title,
-          content: outcome.content,
-          baseVersion: note.version,
-          favorite: note.favorite,
-          tags,
-        })
-      : await upsertNoteForUser(user.id, {
-          id: note.id,
-          title: outcome.title,
-          kind: note.kind,
-          content: outcome.content,
-          baseVersion: note.version,
-          favorite: note.favorite,
-          tags,
-        });
+      ? await upsertCodeNoteForUser(
+          user.id,
+          {
+            id: note.id,
+            title: outcome.title,
+            content: outcome.content,
+            baseVersion: note.version,
+            favorite: note.favorite,
+            tags,
+          },
+          AI_ORIGIN,
+        )
+      : await upsertNoteForUser(
+          user.id,
+          {
+            id: note.id,
+            title: outcome.title,
+            kind: note.kind,
+            content: outcome.content,
+            baseVersion: note.version,
+            favorite: note.favorite,
+            tags,
+          },
+          AI_ORIGIN,
+        );
 
   if (saved.status === "error") {
     return {

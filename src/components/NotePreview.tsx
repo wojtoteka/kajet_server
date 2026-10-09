@@ -467,6 +467,6 @@ function MindMap({
 function attachmentUrl(noteId: string, name: string, token?: string): string {
   const encoded = encodeURIComponent(name);
   return token
-    ? `/n/${token}/attachment?name=${encoded}`
+    ? `/n/${token}/attachment?name=${encoded}&note=${encodeURIComponent(noteId)}`
     : `/note/${noteId}/attachment?name=${encoded}`;
 }
