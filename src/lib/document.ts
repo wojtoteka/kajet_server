@@ -196,8 +196,10 @@ export function cssAlign(align: string | undefined): "left" | "center" | "right"
  */
 export function attachmentUrl(noteId: string, name: string, token?: string): string {
   const encoded = encodeURIComponent(name);
+  // Numer notatki jedzie także przy odnośniku: odnośnik do folderu otwiera
+  // wiele notatek i bez niego nie wiadomo, o którą chodzi.
   return token
-    ? `/n/${token}/attachment?name=${encoded}`
+    ? `/n/${token}/attachment?name=${encoded}&note=${encodeURIComponent(noteId)}`
     : `/note/${noteId}/attachment?name=${encoded}`;
 }
 

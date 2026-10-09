@@ -144,6 +144,11 @@ export function FolderList({
                   iconId={folder.iconId}
                 />
 
+                <Link className="button compact" href={`/library/folder/${folder.id}/share`}>
+                  <Icon name="link" size={18} />
+                  {words.shareThisFolder}
+                </Link>
+
                 <ActionForm
                   action={deleteAction}
                   label={words.deleteFolder}

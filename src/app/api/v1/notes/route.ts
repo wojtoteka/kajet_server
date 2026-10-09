@@ -144,7 +144,13 @@ export const PUT = wrapApi(async (request: Request) => {
     return error("bad-request", (await apiWords()).apiNoteUnknownShape, 400);
   }
 
-  const outcome = await upsertNoteForUser(result.user.id, parsed.data);
+  // Aplikacja podpisuje się nagłówkiem X-Kajet-Client - po nim pozna echo
+  // własnego zapisu w strumieniu zmian na żywo.
+  const outcome = await upsertNoteForUser(result.user.id, parsed.data, {
+    authorId: result.user.id,
+    authorName: result.user.login,
+    clientId: request.headers.get("x-kajet-client") ?? "",
+  });
 
   if (outcome.status === "error") {
     return error(outcome.code, outcome.message, outcome.httpStatus);

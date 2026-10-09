@@ -3227,3 +3227,62 @@ code,
     border: none !important;
   }
 }
+
+/*
+  Edycja na żywo: kropka stanu połączenia i inicjały osób, które mają
+  notatkę otwartą w tej chwili. Kolory osób to te same osiem barw co
+  w aplikacji (indeks liczony z imienia po stronie serwera).
+*/
+.live-presence {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  min-height: 28px;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--rule);
+}
+
+.live-dot.live {
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-haze);
+}
+
+.live-dot.offline {
+  background: var(--warning);
+}
+
+.live-people {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.live-person {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent);
+}
+
+.live-person.tone-0 { background: #0f6b5c; }
+.live-person.tone-1 { background: #a6392e; }
+.live-person.tone-2 { background: #2850a0; }
+.live-person.tone-3 { background: #b8860b; }
+.live-person.tone-4 { background: #6b3fa0; }
+.live-person.tone-5 { background: #4a4640; }
+.live-person.tone-6 { background: #1f7a8c; }
+.live-person.tone-7 { background: #8c4a1f; }
+
+.live-author {
+  color: var(--text-muted);
+}

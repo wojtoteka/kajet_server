@@ -13,23 +13,51 @@ import {
   removeAttachmentRecord,
 } from "@/lib/attachment-delete";
 import { apiWords } from "@/lib/language";
+import { noteRights, viewerFromRequest } from "@/lib/live/access";
 
 export { OPTIONS } from "@/lib/api";
 
-export const POST = wrapApi(async (request: Request, { params }: { params: Promise<{ id: string }> }) => {
-  const result = await userFromRequest(request);
-  if ("errorResponse" in result) return result.errorResponse;
-  const user = result.user;
-  const { id: noteId } = await params;
-
+/**
+ * Czyje są pliki tej notatki i czy pytający może je czytać albo dokładać.
+ *
+ * Właściciel jak dotąd. Odbiorca udostępnienia - przyjętego przez jego konto
+ * albo otwartego odnośnikiem (`?t=`) - czyta zdjęcia z notatki, a z prawem do
+ * zmian także je dokłada; miejsce na dysku liczy się wtedy WŁAŚCICIELOWI,
+ * tak samo jak treść zapisana przez udostępnienie.
+ */
+async function attachmentOwner(
+  request: Request,
+  noteId: string,
+  write: boolean,
+): Promise<{ ownerId: string } | Response> {
+  const words = await apiWords();
+  const who = await viewerFromRequest(request);
+  if (!who.ok) {
+    return error(who.reason, words.apiTokenDead, who.reason === "blocked" ? 403 : 401);
+  }
   const note = await prisma.note.findUnique({
     where: { id: noteId },
-    select: { id: true, ownerId: true },
+    select: { ownerId: true },
   });
   if (!note) return error("no-note", "Nie ma takiej notatki na serwerze.", 404);
-  if (note.ownerId !== user.id) {
-    return error("not-yours", (await apiWords()).apiNoteNotYours, 403);
+  if (who.viewer.userId && note.ownerId === who.viewer.userId) return { ownerId: note.ownerId };
+  if (!who.viewer.userId && !new URL(request.url).searchParams.get("t")) {
+    return error("missing", words.apiNotSignedIn, 401);
   }
+
+  const rights = await noteRights(noteId, who.viewer, new URL(request.url).searchParams.get("t"));
+  if (!rights) return error("not-yours", words.apiNoteNotYours, 403);
+  if (write && !rights.canEdit) return error("read-only", words.apiShareReadOnly, 403);
+  return { ownerId: rights.note.ownerId };
+}
+
+export const POST = wrapApi(async (request: Request, { params }: { params: Promise<{ id: string }> }) => {
+  const { id: noteId } = await params;
+  const owner = await attachmentOwner(request, noteId, true);
+  if (owner instanceof Response) return owner;
+  // Pliki leżą w katalogu właściciela i zajmują jego miejsce - także wtedy,
+  // gdy dokłada je ktoś z udostępnienia.
+  const user = { id: owner.ownerId };
 
   let form: FormData;
   try {
@@ -126,18 +154,9 @@ export const POST = wrapApi(async (request: Request, { params }: { params: Promi
 });
 
 export const GET = wrapApi(async (request: Request, { params }: { params: Promise<{ id: string }> }) => {
-  const result = await userFromRequest(request);
-  if ("errorResponse" in result) return result.errorResponse;
   const { id: noteId } = await params;
-
-  const note = await prisma.note.findUnique({
-    where: { id: noteId },
-    select: { ownerId: true },
-  });
-  if (!note) return error("no-note", "Nie ma takiej notatki na serwerze.", 404);
-  if (note.ownerId !== result.user.id) {
-    return error("not-yours", (await apiWords()).apiNoteNotYours, 403);
-  }
+  const owner = await attachmentOwner(request, noteId, false);
+  if (owner instanceof Response) return owner;
 
   const name = new URL(request.url).searchParams.get("name");
 

@@ -50,7 +50,7 @@ const config: NextConfig = {
           { key: "Access-Control-Allow-Methods", value: "GET, POST, PUT, PATCH, DELETE, OPTIONS" },
           {
             key: "Access-Control-Allow-Headers",
-            value: "Authorization, Content-Type, X-Kajet-Device",
+            value: "Authorization, Content-Type, X-Kajet-Device, X-Kajet-Client",
           },
           { key: "Access-Control-Max-Age", value: "86400" },
         ],

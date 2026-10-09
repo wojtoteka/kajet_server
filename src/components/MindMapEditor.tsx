@@ -31,12 +31,22 @@ import { SaveStatus } from "@/components/SaveStatus";
 import { safeAction } from "@/components/safe-action";
 import { useAutosave } from "@/components/useAutosave";
 import { useSavedNote } from "@/components/useSavedNote";
+import { useLiveNote } from "@/components/useLiveNote";
+import { LivePresence } from "@/components/LivePresence";
+import type { Json } from "@/lib/live/merge";
+import type { NoteDocument } from "@/lib/document";
 import { useNoteFlush } from "@/components/NoteSync";
 import { nodeGrowth } from "@/components/measureNodeText";
 import { arrangeMindMap, makeRoom } from "@/lib/mindmap-layout";
 import { TITLE_LIMIT } from "@/lib/note-title";
 
-type ActionResult = { error?: string; success?: string; version?: number; noteId?: string };
+type ActionResult = {
+  error?: string;
+  success?: string;
+  version?: number;
+  noteId?: string;
+  conflict?: boolean;
+};
 type Action = (previous: ActionResult, data: FormData) => Promise<ActionResult>;
 
 const GAP_X = 64;
@@ -77,6 +87,20 @@ function nodeFonts(words: Words): { id: string; label: string }[] {
 
 type Snapshot = { nodes: MindNode[]; edges: MindEdge[] };
 
+/** Część notatki, którą edytor mapy scala na żywo. Widok (przesunięcie,
+ *  przybliżenie) zostaje każdemu jego własny. */
+type MindPiece = { title: string; nodes: MindNode[]; edges: MindEdge[] };
+
+function mindPiece(document: Json): MindPiece | null {
+  if (!document || typeof document !== "object" || Array.isArray(document)) return null;
+  const note = document as unknown as NoteDocument;
+  return {
+    title: note.title ?? "",
+    nodes: note.mindMap?.nodes ?? [],
+    edges: note.mindMap?.edges ?? [],
+  };
+}
+
 export function MindMapEditor({
   action,
   noteId,
@@ -85,7 +109,10 @@ export function MindMapEditor({
   initial,
   autoSave = true,
   submitLabel,
+  token,
 }: {
+  /** Odnośnik, którym ktoś wszedł - edycja na żywo idzie wtedy przez niego. */
+  token?: string;
   action: Action;
   noteId?: string;
   version?: number;
@@ -150,13 +177,58 @@ export function MindMapEditor({
   // wejście na „nowa mapa" zostawiałoby w bibliotece pustą notatkę. Niepusta
   // historia cofania to najprostszy dowód, że coś się w mapie zmieniło.
   const autosaves = Boolean(saved.noteId) || past.length > 0;
+  /*
+    Edycja na żywo: węzły i krawędzie dopisane gdzie indziej (inna karta,
+    tablet) wchodzą do mapy bez odświeżania. Zmiany z obu stron scala
+    merge3 - po identyfikatorach węzłów, więc dwa nowe węzły zostają oba.
+  */
+  const markAfterRender = useRef(false);
+  const live = useLiveNote<MindPiece>({
+    noteId: saved.noteId,
+    token,
+    version: saved.version,
+    initial: { title, nodes: initial.nodes, edges: initial.edges },
+    pieceOf: mindPiece,
+    read: () => ({ title: noteTitle, nodes, edges }),
+    write: (merged, info) => {
+      setNoteTitle(merged.title);
+      setNodes(merged.nodes);
+      setEdges(merged.edges);
+      if (editingId && !merged.nodes.some((node) => node.id === editingId)) setEditingId(null);
+      // Bez własnych niezapisanych zmian nie ma czego odsyłać - to, co
+      // przyszło, serwer już ma.
+      if (info.clean) markAfterRender.current = true;
+    },
+  });
+  const baseVersion = Math.max(saved.version ?? 0, live.version ?? 0);
+
   const { dirty, markSent } = useAutosave({
     formRef,
     enabled: autosaves,
     auto: autoSave,
     busy,
-    save: (data) => startTransition(() => submit(data)),
+    // Ktoś jeszcze pisze w tej notatce - zmiana ma do niego dojść od razu,
+    // nie po sekundzie ciszy. Kto pisze sam, zapisuje jak dotąd.
+    tickMs: live.people.length > 0 ? 300 : undefined,
+    quietMs: live.people.length > 0 ? 300 : undefined,
+    save: (data) => {
+      live.sending({ title: noteTitle, nodes, edges });
+      startTransition(() => submit(data));
+    },
   });
+
+  useEffect(() => {
+    if (!markAfterRender.current) return;
+    markAfterRender.current = false;
+    markSent();
+  }, [nodes, edges, noteTitle, markSent]);
+
+  // Zapis odbił się od nowszej wersji: dociągamy zmianę, scalamy, a autozapis
+  // wyśle całość jeszcze raz - bez straszenia człowieka komunikatem.
+  useEffect(() => {
+    if (state.conflict && live.status !== "off") live.resync();
+  }, [state, live.status, live.resync]);
+  const shownError = state.conflict && live.status !== "off" ? undefined : state.error;
 
   /*
     Zapis na żądanie asystenta. Nie idzie przez `flush` z autozapisu, bo tamten
@@ -171,11 +243,12 @@ export function MindMapEditor({
     // Zapis już leci - jego odpowiedź i tak przyjdzie, nie ma po co wysyłać dwóch.
     if (busy) return true;
     markSent();
+    live.sending({ title: noteTitle, nodes, edges });
     const data = new FormData(form);
     data.set("autosave", "1");
     startTransition(() => submit(data));
     return true;
-  }, [busy, markSent, submit]);
+  }, [busy, markSent, submit, live, noteTitle, nodes, edges]);
   useNoteFlush(saveForAssistant);
 
   /*
@@ -186,6 +259,7 @@ export function MindMapEditor({
     const form = formRef.current;
     if (!form || busy) return;
     markSent();
+    live.sending({ title: noteTitle, nodes, edges });
     startTransition(() => submit(new FormData(form)));
   }
 
@@ -704,9 +778,12 @@ export function MindMapEditor({
     >
       {saved.noteId ? <input type="hidden" name="noteId" value={saved.noteId} /> : null}
       {saved.version != null ? (
-        <input type="hidden" name="baseVersion" value={String(saved.version)} />
+        <input type="hidden" name="baseVersion" value={String(baseVersion)} />
       ) : null}
+      <input type="hidden" name="liveClient" value={live.clientId} />
       <input type="hidden" name="mindMapJson" value={payload} />
+
+      <LivePresence live={live} />
 
       <div className="field">
         <label htmlFor="title">{words.noteTitle}</label>
@@ -1305,11 +1382,12 @@ export function MindMapEditor({
       {/* Powodzenie zapisu pokazuje napis przy przycisku - zielona ramka nad
           mapą przeskakiwałaby przy każdym autozapisie. Pełny błąd też stoi
           tutaj, przy przycisku: na górze spychał całą mapę w dół. */}
-      {state.error ? (
+      {shownError ? (
         <p className="error" style={{ margin: "0 0 10px 0" }}>
-          {state.error}
+          {shownError}
         </p>
       ) : null}
+
 
       <div className="save-row">
         <button type="submit" className="primary" disabled={busy}>
@@ -1322,7 +1400,7 @@ export function MindMapEditor({
           saved={saved.saved}
           autosaves={autosaves}
           autoSaveOff={!autoSave}
-          error={state.error}
+          error={shownError}
         />
       </div>
     </form>

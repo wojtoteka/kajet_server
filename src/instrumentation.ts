@@ -2,9 +2,9 @@
   Co Next robi raz, przy podnoszeniu procesu serwera.
 
   Najpierw strefa czasowa, potem sprzątanie: kosz, konta, z których nikt nie
-  korzysta, i przeterminowane liczniki zapór. Sprzątania nie trzeba dzięki temu
-  wpisywać do crona: proces i tak chodzi pod pm2 przez całą dobę, a sprzątanie
-  wisi na jego zegarze.
+  korzysta, przeterminowane liczniki zapór i stare zmiany edycji na żywo.
+  Sprzątania nie trzeba dzięki temu wpisywać do crona: proces i tak chodzi pod
+  pm2 przez całą dobę, a sprzątanie wisi na jego zegarze.
 */
 
 export async function register() {
@@ -37,4 +37,7 @@ export async function register() {
 
   const { startLimitSweeper } = await import("@/lib/rate-limit");
   startLimitSweeper();
+
+  const { startLiveSweeper } = await import("@/lib/live/changes");
+  startLiveSweeper();
 }

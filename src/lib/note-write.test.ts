@@ -15,6 +15,8 @@ vi.mock("@/lib/prisma", () => ({
       findUniqueOrThrow: vi.fn(),
       upsert: vi.fn(),
       update: vi.fn(),
+      // Zapis istniejącej notatki idzie warunkowo - po wersji, którą czytał.
+      updateMany: vi.fn(async () => ({ count: 1 })),
       delete: vi.fn(),
     },
     attachment: {
@@ -44,6 +46,12 @@ vi.mock("@/lib/files", () => ({
   noteStoragePrefix: (ownerId: string, noteId: string) => `${ownerId}/${noteId}/`,
 }));
 
+// Edycja na żywo dostaje każdą zmianę treści; tu tylko sprawdzamy, że ją dostaje.
+vi.mock("@/lib/live/changes", () => ({
+  recordContentChange: vi.fn(async () => undefined),
+  announceGone: vi.fn(),
+}));
+
 vi.mock("@/lib/attachment-delete", () => ({
   deleteAttachmentFileIfUnused: vi.fn(async () => false),
   pruneDroppedAttachments: vi.fn(async () => []),
@@ -53,6 +61,7 @@ import { prisma } from "@/lib/prisma";
 import { reserveBytes } from "@/lib/quota";
 import { deleteAttachment, deleteNoteDirectory } from "@/lib/files";
 import { deleteAttachmentFileIfUnused, pruneDroppedAttachments } from "@/lib/attachment-delete";
+import { announceGone, recordContentChange } from "@/lib/live/changes";
 
 const owner = "user-1";
 
@@ -398,6 +407,8 @@ describe("upsertNoteForUser", () => {
       }),
     );
     expect(prisma.note.upsert).not.toHaveBeenCalled();
+    // Otwarta notatka w koszu - karty, które ją pokazują, mają się o tym dowiedzieć.
+    expect(announceGone).toHaveBeenCalledWith("note-1");
   });
 
   it("answers gone for a purged note the client still remembers", async () => {
@@ -491,24 +502,25 @@ describe("upsertNoteForUser", () => {
   });
 
   it("increments version on save", async () => {
-    vi.mocked(prisma.note.findUnique).mockResolvedValue({
-      id: "note-1",
-      ownerId: owner,
-      version: 2,
-      sizeBytes: 3,
-      hash: "hash:old",
-      deletedAt: null,
-      favorite: false,
-    } as never);
     const updatedAt = new Date("2026-08-03T13:00:00.000Z");
-    vi.mocked(prisma.note.upsert).mockResolvedValue({
-      version: 3,
-      updatedAt,
-    } as never);
+    vi.mocked(prisma.note.findUnique)
+      .mockResolvedValueOnce({
+        id: "note-1",
+        ownerId: owner,
+        version: 2,
+        sizeBytes: 3,
+        hash: "hash:old",
+        deletedAt: null,
+        favorite: false,
+        content: "old",
+      } as never)
+      .mockResolvedValueOnce({ updatedAt } as never);
+    vi.mocked(prisma.note.updateMany).mockResolvedValue({ count: 1 } as never);
 
     const result = await upsertNoteForUser(
       owner,
       note({ content: "fresh", baseVersion: 2 }),
+      { authorName: "ala", clientId: "karta-1" },
     );
 
     expect(result).toEqual({
@@ -516,14 +528,56 @@ describe("upsertNoteForUser", () => {
       version: 3,
       updatedAt: updatedAt.getTime(),
     });
-    expect(prisma.note.upsert).toHaveBeenCalledWith(
+    expect(prisma.note.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        update: expect.objectContaining({
+        where: { id: "note-1", version: 2 },
+        data: expect.objectContaining({
           version: { increment: 1 },
           content: "fresh",
         }),
       }),
     );
+    expect(prisma.note.upsert).not.toHaveBeenCalled();
+    // Otwarte karty dostają zmianę z autorem - nadawca pozna po nim echo.
+    expect(recordContentChange).toHaveBeenCalledWith({
+      noteId: "note-1",
+      before: "old",
+      after: "fresh",
+      version: 3,
+      origin: { authorName: "ala", clientId: "karta-1" },
+    });
+  });
+
+  it("a concurrent save of the same version turns into a conflict, not a lost update", async () => {
+    vi.mocked(prisma.note.findUnique).mockResolvedValue({
+      id: "note-1",
+      ownerId: owner,
+      version: 4,
+      sizeBytes: 3,
+      hash: "hash:old",
+      deletedAt: null,
+      favorite: false,
+      content: "old",
+    } as never);
+    // Ktoś zapisał wersję 4 między odczytem a zapisem - warunek trafia w zero wierszy.
+    vi.mocked(prisma.note.updateMany).mockResolvedValueOnce({ count: 0 } as never);
+    vi.mocked(prisma.note.findUniqueOrThrow).mockResolvedValue({
+      id: "note-1",
+      title: "Tytuł",
+      kind: "TEXT",
+      favorite: false,
+      tags: "",
+      content: "ich treść",
+      version: 5,
+      updatedAt: new Date(1_700_000_000_000),
+      deletedAt: null,
+    } as never);
+
+    const result = await upsertNoteForUser(owner, note({ content: "moja", baseVersion: 4 }));
+
+    expect(result.status).toBe("conflict");
+    if (result.status === "conflict") expect(result.onServer.content).toBe("ich treść");
+    expect(recordContentChange).not.toHaveBeenCalled();
   });
 
   it("creates with version 1", async () => {

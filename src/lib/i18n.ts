@@ -547,6 +547,29 @@ export type Words = {
   printTooLarge: string;
   codeRunOwnerOnly: string;
   thisIsAKajetNote: string;
+  liveNow: string;
+  liveConnecting: string;
+  liveOffline: string;
+  liveAlsoHere: string;
+  liveChangeFrom: string;
+  liveGone: string;
+  liveAppMark: string;
+  sharedFolderCaption: string;
+  sharedFolderEmpty: string;
+  sharedByWord: string;
+  openInApp: string;
+  addedToLibrary: string;
+  backToSharedFolder: string;
+  sharedWithMe: string;
+  sharedWithMeAbout: string;
+  sharedMark: string;
+  removeFromShared: string;
+  removedFromShared: string;
+  shareThisFolder: string;
+  shareFolderAbout: string;
+  folderSharingHeading: string;
+  newTextNoteHere: string;
+  acceptedMark: string;
   seeWhatItIs: string;
 
 
@@ -1751,6 +1774,29 @@ const pl: Words = {
   codeRunOwnerOnly:
     "Kod uruchamia tylko osoba, do której należy notatka. Zapisywanie działa jak zwykle.",
   thisIsAKajetNote: "To jest notatka z Kajetu.",
+  liveNow: "Na żywo",
+  liveConnecting: "Łączę z innymi…",
+  liveOffline: "Bez połączenia - zmiany innych dojdą, gdy wróci sieć",
+  liveAlsoHere: "Teraz w notatce:",
+  liveChangeFrom: "Zmiana od:",
+  liveGone: "Tej notatki już tu nie ma albo odebrano Ci do niej dostęp. To, co widzisz, nie zapisze się.",
+  liveAppMark: "aplikacja",
+  sharedFolderCaption: "udostępniony folder",
+  sharedFolderEmpty: "W tym folderze nic jeszcze nie ma.",
+  sharedByWord: "Udostępnia:",
+  openInApp: "Otwórz w aplikacji Kajet",
+  addedToLibrary: "Udostępnienie trafiło do Twojej biblioteki - znajdziesz je też w aplikacji Kajet.",
+  backToSharedFolder: "Wróć do folderu",
+  sharedWithMe: "Udostępnione mi",
+  sharedWithMeAbout: "Notatki i foldery udostępnione Ci imiennie. Pojawiają się tu po otwarciu odnośnika z zaproszenia.",
+  sharedMark: "udostępnione",
+  removeFromShared: "Usuń z moich udostępnionych",
+  removedFromShared: "Zdjęte z Twojej listy. Odnośnik dalej działa - otwórz go, żeby wróciło.",
+  shareThisFolder: "Udostępnij folder",
+  shareFolderAbout: "Odbiorca zobaczy folder z podfolderami i wszystkim, co w nim jest - także notatki dodane później. Z prawem do zmian może też dodawać i usuwać notatki (usunięte trafiają do Twojego kosza).",
+  folderSharingHeading: "Udostępnianie folderu",
+  newTextNoteHere: "Nowa notatka tekstowa",
+  acceptedMark: "przyjęte",
   seeWhatItIs: "Zobacz, o co chodzi",
 
   metaConfirm: "Potwierdzenie adresu - Kajet",
@@ -3096,6 +3142,29 @@ const en: Words = {
   codeRunOwnerOnly:
     "Only the person the note belongs to can run the code. Saving works as usual.",
   thisIsAKajetNote: "This is a note from Kajet.",
+  liveNow: "Live",
+  liveConnecting: "Connecting…",
+  liveOffline: "Offline - other people's changes will arrive once you are back online",
+  liveAlsoHere: "In this note now:",
+  liveChangeFrom: "Change from:",
+  liveGone: "This note is gone or your access was taken back. What you see here will not be saved.",
+  liveAppMark: "app",
+  sharedFolderCaption: "shared folder",
+  sharedFolderEmpty: "There is nothing in this folder yet.",
+  sharedByWord: "Shared by:",
+  openInApp: "Open in the Kajet app",
+  addedToLibrary: "This is now in your library - you will also find it in the Kajet app.",
+  backToSharedFolder: "Back to the folder",
+  sharedWithMe: "Shared with me",
+  sharedWithMeAbout: "Notes and folders someone shared with you by name, once you opened the link.",
+  sharedMark: "shared",
+  removeFromShared: "Remove from my shared",
+  removedFromShared: "Removed from your list. The link still works - open it again to bring it back.",
+  shareThisFolder: "Share folder",
+  shareFolderAbout: "They will see the folder with its subfolders and everything in it - including notes added later. With editing rights they may also add and remove notes (removed ones go to your bin).",
+  folderSharingHeading: "Sharing a folder",
+  newTextNoteHere: "New text note",
+  acceptedMark: "accepted",
   seeWhatItIs: "See what it is about",
 
   metaConfirm: "Address confirmation - Kajet",

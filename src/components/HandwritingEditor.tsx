@@ -28,6 +28,7 @@ import {
   strokePath,
   VALUES_PER_POINT,
   type Image,
+  type NoteDocument,
   type Page,
   type Stroke,
 } from "@/lib/document";
@@ -64,6 +65,9 @@ import { SaveStatus } from "@/components/SaveStatus";
 import { safeAction } from "@/components/safe-action";
 import { useAutosave } from "@/components/useAutosave";
 import { useSavedNote } from "@/components/useSavedNote";
+import { useLiveNote } from "@/components/useLiveNote";
+import { LivePresence } from "@/components/LivePresence";
+import type { Json } from "@/lib/live/merge";
 import { TITLE_LIMIT } from "@/lib/note-title";
 
 type ActionResult = {
@@ -72,7 +76,23 @@ type ActionResult = {
   version?: number;
   noteId?: string;
   attachment?: { name: string };
+  /** Zapis odbił się od nowszej wersji - patrz useLiveNote. */
+  conflict?: boolean;
 };
+
+/** Część notatki odręcznej, którą edytor scala na żywo. */
+type InkPiece = { title: string; pages: Page[]; background: string };
+
+function inkPiece(document: Json): InkPiece | null {
+  if (!document || typeof document !== "object" || Array.isArray(document)) return null;
+  const note = document as unknown as NoteDocument;
+  const pages = note.handwriting?.pages;
+  return {
+    title: note.title ?? "",
+    pages: pages && pages.length > 0 ? pages : [emptyPage()],
+    background: note.handwriting?.background ?? "lined",
+  };
+}
 type Action = (previous: ActionResult, data: FormData) => Promise<ActionResult>;
 
 /** „select" nie rysuje - służy do przesuwania wstawionych zdjęć. */
@@ -350,27 +370,69 @@ export function HandwritingEditor({
         (entry.images?.length ?? 0) > 0 ||
         (entry.texts?.length ?? 0) > 0,
     );
+  /*
+    Edycja na żywo: kreski, kształty i pola tekstowe dorysowane gdzie indziej
+    (tablet, druga karta) pojawiają się na kartce bez odświeżania. Każda
+    kreska ma swój identyfikator, więc scalanie nie gubi niczego - kreska
+    narysowana tu i kreska narysowana tam zostają obie.
+  */
+  const markAfterRender = useRef(false);
+  const readPiece = (): InkPiece => ({ title: noteTitle, pages, background });
+  const live = useLiveNote<InkPiece>({
+    noteId: saved.noteId,
+    token,
+    version: saved.version,
+    initial: { title, pages: initial.pages, background: initial.background },
+    pieceOf: inkPiece,
+    read: readPiece,
+    write: (merged, info) => {
+      setNoteTitle(merged.title);
+      setPages(merged.pages);
+      setBackground(merged.background);
+      setPageIndex((index) => Math.min(index, Math.max(0, merged.pages.length - 1)));
+      if (info.clean) markAfterRender.current = true;
+    },
+  });
+  const baseVersion = Math.max(saved.version ?? 0, live.version ?? 0);
+
   const { dirty, markSent } = useAutosave({
     formRef,
     enabled: autosaves,
     auto: autoSave,
     busy,
-    save: (data) => startTransition(() => submit(data)),
+    save: (data) => {
+      live.sending(readPiece());
+      startTransition(() => submit(data));
+    },
     // Kartka z kreskami bywa gruba (nawet kilka megabajtów), a porównanie
     // migawki kosztuje tyle, co jej długość - sprawdzamy więc rzadziej niż
     // przy tekście. Pauza w rysowaniu i tak trwa dłużej niż w pisaniu.
-    tickMs: 900,
-    quietMs: 1800,
+    // Gdy ktoś jeszcze ma kartkę otwartą, kreska ma do niego dojść od razu,
+    // a nie po prawie dwóch sekundach ciszy.
+    tickMs: live.people.length > 0 ? 400 : 900,
+    quietMs: live.people.length > 0 ? 400 : 1800,
   });
 
   /*
     Zapis przyciskiem idzie tą samą drogą co autozapis. Gdyby szedł przez
     action={...} formularza, React po każdym zapisie czyściłby pola formularza.
   */
+  useEffect(() => {
+    if (!markAfterRender.current) return;
+    markAfterRender.current = false;
+    markSent();
+  }, [pages, noteTitle, background, markSent]);
+
+  useEffect(() => {
+    if (state.conflict && live.status !== "off") live.resync();
+  }, [state, live.status, live.resync]);
+  const shownError = state.conflict && live.status !== "off" ? undefined : state.error;
+
   function saveNow() {
     const form = formRef.current;
     if (!form || busy) return;
     markSent();
+    live.sending(readPiece());
     startTransition(() => submit(new FormData(form)));
   }
 
@@ -956,9 +1018,12 @@ export function HandwritingEditor({
     >
       {saved.noteId ? <input type="hidden" name="noteId" value={saved.noteId} /> : null}
       {saved.version != null ? (
-        <input type="hidden" name="baseVersion" value={String(saved.version)} />
+        <input type="hidden" name="baseVersion" value={String(baseVersion)} />
       ) : null}
+      <input type="hidden" name="liveClient" value={live.clientId} />
       <input type="hidden" name="handwritingJson" value={payload} />
+
+      <LivePresence live={live} />
 
       <div className="field">
         <label htmlFor="title">{words.noteTitle}</label>
@@ -1531,7 +1596,7 @@ export function HandwritingEditor({
           saved={saved.saved}
           autosaves={autosaves}
           autoSaveOff={!autoSave}
-          error={state.error}
+          error={shownError}
         />
       </div>
     </form>

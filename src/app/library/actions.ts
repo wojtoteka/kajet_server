@@ -9,6 +9,10 @@ import {
   purgeNoteForUser,
 } from "@/lib/note-write";
 import { FOLDER_COLOURS, FOLDER_ICONS } from "@/lib/folder-look";
+import { z } from "zod";
+import { createShare, shareUrl } from "@/lib/sharing";
+import { send, shareMail } from "@/lib/mail";
+import { settings } from "@/lib/settings";
 import { currentWords } from "@/lib/language";
 import {
   importLibraryFileForUser,
@@ -23,10 +27,17 @@ import {
   folderRenamedMsg,
   trashEmptiedMsg,
   trashEmptiedPartlyMsg,
+  shareMailSentMsg,
   libraryFileUploaded,
 } from "@/lib/i18n";
 
-export type Result = { error?: string; success?: string; noteId?: string };
+export type Result = {
+  error?: string;
+  success?: string;
+  noteId?: string;
+  /** Gotowy odnośnik do skopiowania - po udostępnieniu folderu. */
+  copyable?: { value: string; label?: string };
+};
 
 /** Wgrywa plik tekstowy/kod jako tę samą notatkę CODE, którą synchronizuje aplikacja. */
 export async function uploadLibraryFile(_previous: Result, data: FormData): Promise<Result> {
@@ -362,4 +373,93 @@ export async function deleteFolder(_previous: Result, data: FormData): Promise<R
   return {
     success: folderDeletedMsg(words, folder.name, inside, subfolders),
   };
+}
+
+/**
+ * Odbiorca zdejmuje przyjęte udostępnienie ze swojej biblioteki. U właściciela
+ * nic się nie zmienia, a odnośnik dalej działa - otwarty jeszcze raz przywraca
+ * notatkę na listę.
+ */
+export async function leaveSharedItem(_previous: Result, data: FormData): Promise<Result> {
+  const user = await currentUser();
+  const words = await currentWords();
+  if (!user) return { error: words.apiMustSignIn };
+  const shareId = String(data.get("shareId") ?? "");
+  await prisma.share.updateMany({
+    where: { id: shareId, acceptedById: user.id },
+    data: { acceptedById: null, acceptedAt: null },
+  });
+  revalidatePath("/library");
+  return { success: words.removedFromShared };
+}
+
+const folderShareForm = z.object({
+  folderId: z.string().min(1),
+  permission: z.enum(["READ", "EDIT"]),
+  email: z.string().trim().toLowerCase().email().optional().or(z.literal("")),
+  anonymousAllowed: z.union([z.literal("on"), z.literal("")]).optional(),
+  validDays: z.coerce.number().int().min(0).max(3650).optional(),
+});
+
+/**
+ * Udostępnienie folderu - z podfolderami i wszystkim, co w nim jest albo
+ * dopiero powstanie. Ten sam formularz co przy notatce.
+ */
+export async function shareFolder(_previous: Result, data: FormData): Promise<Result> {
+  const user = await currentUser();
+  const words = await currentWords();
+  if (!user) return { error: words.apiMustSignIn };
+
+  const parsed = folderShareForm.safeParse({
+    folderId: data.get("folderId"),
+    permission: data.get("permission") ?? "READ",
+    email: data.get("email") ?? "",
+    anonymousAllowed: data.get("anonymousAllowed") ?? "",
+    validDays: data.get("validDays") ?? 0,
+  });
+  if (!parsed.success) return { error: words.actCheckWhatYouTyped };
+  const { folderId, permission, email, anonymousAllowed, validDays } = parsed.data;
+
+  const folder = await prisma.folder.findUnique({
+    where: { id: folderId },
+    select: { ownerId: true, name: true },
+  });
+  if (!folder || folder.ownerId !== user.id) return { error: words.actNoSuchFolder };
+
+  const { token } = await createShare({
+    folderId,
+    sharedById: user.id,
+    permission,
+    email: email || null,
+    anonymousAllowed: anonymousAllowed === "on",
+    expiresInDays: validDays && validDays > 0 ? validDays : null,
+  });
+  const link = shareUrl(settings.baseUrl, token);
+  revalidatePath(`/library/folder/${folderId}/share`);
+
+  if (email) {
+    const sent = await send(
+      shareMail(email, link, user.name ?? user.login, folder.name, permission === "EDIT", "folder"),
+    );
+    return sent
+      ? { success: shareMailSentMsg(words, email) }
+      : { success: words.actShareMailFailed, copyable: { value: link, label: words.copyLink } };
+  }
+  return { success: words.actLinkReady, copyable: { value: link, label: words.copyLink } };
+}
+
+export async function revokeFolderShare(_previous: Result, data: FormData): Promise<Result> {
+  const user = await currentUser();
+  const words = await currentWords();
+  if (!user) return { error: words.apiMustSignIn };
+  const id = String(data.get("id") ?? "");
+  const existing = await prisma.share.findUnique({
+    where: { id },
+    select: { folderId: true, folder: { select: { ownerId: true } } },
+  });
+  if (!existing || !existing.folder) return { success: words.actShareGone };
+  if (existing.folder.ownerId !== user.id) return { error: words.actNoSuchFolder };
+  await prisma.share.delete({ where: { id } });
+  revalidatePath(`/library/folder/${existing.folderId}/share`);
+  return { success: words.actShareRevoked };
 }

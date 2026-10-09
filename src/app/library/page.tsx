@@ -16,7 +16,9 @@ import {
   moveNoteToFolder,
   bulkNotesFromLibrary,
   uploadLibraryFile,
+  leaveSharedItem,
 } from "./actions";
+import { acceptedItems } from "@/lib/shared-library";
 import { BulkNotesForm, BULK_FORM_ID } from "@/components/BulkNotesForm";
 import { LibraryFileUpload } from "@/components/LibraryFileUpload";
 import { FolderMoveForm } from "@/components/FolderMoveForm";
@@ -165,6 +167,9 @@ export default async function LibraryPage({
       }),
       prisma.appRelease.count({ where: { current: true } }),
     ]);
+  // Cudze notatki i foldery przyjęte przez to konto - stoją w bibliotece
+  // obok własnych, z oznaczeniem „udostępnione".
+  const sharedWithMe = await acceptedItems(user.id);
 
   // Jak na ekranie konta: bez ograniczeń - pusty pasek, zero miejsca - pełny.
   const percent = storage.unlimited
@@ -384,6 +389,46 @@ export default async function LibraryPage({
             lookAction={setFolderLook}
             deleteAction={deleteFolder}
           />
+
+          {sharedWithMe.length > 0 ? (
+            <>
+              <hr className="divider" />
+              <p className="eyebrow">{words.sharedWithMe}</p>
+              <p className="small" style={{ marginTop: 0 }}>
+                {words.sharedWithMeAbout}
+              </p>
+              <ul className="folder-list">
+                {sharedWithMe.map((item) => (
+                  <li key={item.shareId}>
+                    <div className="folder-line">
+                      <Link className="folder-row" href={`/n/${item.token}`}>
+                        <Icon
+                          name={item.folder ? "folder" : (KIND_ICONS[item.note?.kind ?? ""] ?? "article")}
+                          className="folder-mark"
+                        />
+                        <span className="folder-name">
+                          {item.folder?.name ?? (item.note?.title || words.untitled)}
+                          <span className="small" style={{ display: "block" }}>
+                            {words.sharedMark} · {item.owner} ·{" "}
+                            {item.permission === "edit" ? words.rightEdit : words.rightRead}
+                          </span>
+                        </span>
+                      </Link>
+                      <ActionForm
+                        action={leaveSharedItem}
+                        label={words.removeFromShared}
+                        icon="close"
+                        compact
+                        iconOnly
+                      >
+                        <input type="hidden" name="shareId" value={item.shareId} />
+                      </ActionForm>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
         </aside>
 
         <div>

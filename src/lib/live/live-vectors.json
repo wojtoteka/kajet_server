@@ -1,0 +1,1150 @@
+{
+  "merge": [
+    {
+      "name": "kreski dopisane na dwóch urządzeniach zostają obie",
+      "base": {
+        "pages": [
+          {
+            "id": "p1",
+            "strokes": [
+              {
+                "id": "s1",
+                "points": [
+                  1,
+                  2
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "mine": {
+        "pages": [
+          {
+            "id": "p1",
+            "strokes": [
+              {
+                "id": "s1",
+                "points": [
+                  1,
+                  2
+                ]
+              },
+              {
+                "id": "s2",
+                "points": [
+                  3,
+                  4
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "theirs": {
+        "pages": [
+          {
+            "id": "p1",
+            "strokes": [
+              {
+                "id": "s1",
+                "points": [
+                  1,
+                  2
+                ]
+              },
+              {
+                "id": "s3",
+                "points": [
+                  5,
+                  6
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "merged": {
+        "pages": [
+          {
+            "id": "p1",
+            "strokes": [
+              {
+                "id": "s1",
+                "points": [
+                  1,
+                  2
+                ]
+              },
+              {
+                "id": "s2",
+                "points": [
+                  3,
+                  4
+                ]
+              },
+              {
+                "id": "s3",
+                "points": [
+                  5,
+                  6
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "skasowana tu, przesunięta tam - zostaje przesunięta",
+      "base": {
+        "strokes": [
+          {
+            "id": "s1",
+            "points": [
+              1,
+              1
+            ]
+          },
+          {
+            "id": "s2",
+            "points": [
+              2,
+              2
+            ]
+          }
+        ]
+      },
+      "mine": {
+        "strokes": [
+          {
+            "id": "s2",
+            "points": [
+              2,
+              2
+            ]
+          }
+        ]
+      },
+      "theirs": {
+        "strokes": [
+          {
+            "id": "s1",
+            "points": [
+              9,
+              9
+            ]
+          },
+          {
+            "id": "s2",
+            "points": [
+              2,
+              2
+            ]
+          }
+        ]
+      },
+      "merged": {
+        "strokes": [
+          {
+            "id": "s1",
+            "points": [
+              9,
+              9
+            ]
+          },
+          {
+            "id": "s2",
+            "points": [
+              2,
+              2
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "skasowana tu, nietknięta tam - znika, nowa z serwera zostaje",
+      "base": {
+        "strokes": [
+          {
+            "id": "s1"
+          },
+          {
+            "id": "s2"
+          }
+        ]
+      },
+      "mine": {
+        "strokes": [
+          {
+            "id": "s2"
+          }
+        ]
+      },
+      "theirs": {
+        "strokes": [
+          {
+            "id": "s1"
+          },
+          {
+            "id": "s2"
+          },
+          {
+            "id": "s3"
+          }
+        ]
+      },
+      "merged": {
+        "strokes": [
+          {
+            "id": "s2"
+          },
+          {
+            "id": "s3"
+          }
+        ]
+      }
+    },
+    {
+      "name": "obie strony skasowały to samo",
+      "base": {
+        "nodes": [
+          {
+            "id": "a"
+          },
+          {
+            "id": "b"
+          }
+        ]
+      },
+      "mine": {
+        "nodes": [
+          {
+            "id": "a"
+          }
+        ]
+      },
+      "theirs": {
+        "nodes": [
+          {
+            "id": "a"
+          }
+        ]
+      },
+      "merged": {
+        "nodes": [
+          {
+            "id": "a"
+          }
+        ]
+      }
+    },
+    {
+      "name": "różne akapity zmienione po obu stronach",
+      "base": {
+        "text": {
+          "markdown": "Pierwszy akapit\nDrugi akapit\nTrzeci akapit\n"
+        }
+      },
+      "mine": {
+        "text": {
+          "markdown": "Pierwszy akapit, poprawiony\nDrugi akapit\nTrzeci akapit\n"
+        }
+      },
+      "theirs": {
+        "text": {
+          "markdown": "Pierwszy akapit\nDrugi akapit\nTrzeci akapit, też poprawiony\n"
+        }
+      },
+      "merged": {
+        "text": {
+          "markdown": "Pierwszy akapit, poprawiony\nDrugi akapit\nTrzeci akapit, też poprawiony\n"
+        }
+      }
+    },
+    {
+      "name": "ten sam akapit, różne miejsca - słowa się łączą",
+      "base": {
+        "text": {
+          "markdown": "Ala ma kota\n"
+        }
+      },
+      "mine": {
+        "text": {
+          "markdown": "Ala ma dużego kota\n"
+        }
+      },
+      "theirs": {
+        "text": {
+          "markdown": "Ala ma kota i psa\n"
+        }
+      },
+      "merged": {
+        "text": {
+          "markdown": "Ala ma dużego kota i psa\n"
+        }
+      }
+    },
+    {
+      "name": "to samo słowo zmienione dwa razy - zostają obie wersje",
+      "base": {
+        "text": {
+          "markdown": "Kolor: zielony\nKoniec\n"
+        }
+      },
+      "mine": {
+        "text": {
+          "markdown": "Kolor: niebieski\nKoniec\n"
+        }
+      },
+      "theirs": {
+        "text": {
+          "markdown": "Kolor: czerwony\nKoniec\n"
+        }
+      },
+      "merged": {
+        "text": {
+          "markdown": "Kolor: czerwony\nKolor: niebieski\nKoniec\n"
+        }
+      }
+    },
+    {
+      "name": "dwa nowe akapity na końcu - oba zostają",
+      "base": {
+        "text": {
+          "markdown": "Początek\n"
+        }
+      },
+      "mine": {
+        "text": {
+          "markdown": "Początek\nMój dopisek\n"
+        }
+      },
+      "theirs": {
+        "text": {
+          "markdown": "Początek\nIch dopisek\n"
+        }
+      },
+      "merged": {
+        "text": {
+          "markdown": "Początek\nIch dopisek\nMój dopisek\n"
+        }
+      }
+    },
+    {
+      "name": "hasło węzła zmienione po obu stronach - późniejsza zmiana",
+      "base": {
+        "mindMap": {
+          "nodes": [
+            {
+              "id": "n1",
+              "text": "Pies"
+            }
+          ]
+        }
+      },
+      "mine": {
+        "mindMap": {
+          "nodes": [
+            {
+              "id": "n1",
+              "text": "Kot"
+            }
+          ]
+        }
+      },
+      "theirs": {
+        "mindMap": {
+          "nodes": [
+            {
+              "id": "n1",
+              "text": "Chomik"
+            }
+          ]
+        }
+      },
+      "merged": {
+        "mindMap": {
+          "nodes": [
+            {
+              "id": "n1",
+              "text": "Kot"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "różne pola tego samego węzła",
+      "base": {
+        "mindMap": {
+          "nodes": [
+            {
+              "id": "n1",
+              "text": "Pies",
+              "colorId": "sea",
+              "x": 10
+            }
+          ]
+        }
+      },
+      "mine": {
+        "mindMap": {
+          "nodes": [
+            {
+              "id": "n1",
+              "text": "Pies",
+              "colorId": "red",
+              "x": 10
+            }
+          ]
+        }
+      },
+      "theirs": {
+        "mindMap": {
+          "nodes": [
+            {
+              "id": "n1",
+              "text": "Pies i kot",
+              "colorId": "sea",
+              "x": 40
+            }
+          ]
+        }
+      },
+      "merged": {
+        "mindMap": {
+          "nodes": [
+            {
+              "id": "n1",
+              "text": "Pies i kot",
+              "colorId": "red",
+              "x": 40
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "węzeł skasowany tu, przemianowany tam - zostaje",
+      "base": {
+        "nodes": [
+          {
+            "id": "a",
+            "text": "A"
+          },
+          {
+            "id": "b",
+            "text": "B"
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "fromId": "a",
+            "toId": "b"
+          }
+        ]
+      },
+      "mine": {
+        "nodes": [
+          {
+            "id": "a",
+            "text": "A"
+          }
+        ],
+        "edges": []
+      },
+      "theirs": {
+        "nodes": [
+          {
+            "id": "a",
+            "text": "A"
+          },
+          {
+            "id": "b",
+            "text": "Bardzo ważne"
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "fromId": "a",
+            "toId": "b"
+          }
+        ]
+      },
+      "merged": {
+        "nodes": [
+          {
+            "id": "a",
+            "text": "A"
+          },
+          {
+            "id": "b",
+            "text": "Bardzo ważne"
+          }
+        ],
+        "edges": []
+      }
+    },
+    {
+      "name": "przestawienie kolejności tu, dopisanie tam",
+      "base": {
+        "strokes": [
+          {
+            "id": "s1"
+          },
+          {
+            "id": "s2"
+          },
+          {
+            "id": "s3"
+          }
+        ]
+      },
+      "mine": {
+        "strokes": [
+          {
+            "id": "s3"
+          },
+          {
+            "id": "s1"
+          },
+          {
+            "id": "s2"
+          }
+        ]
+      },
+      "theirs": {
+        "strokes": [
+          {
+            "id": "s1"
+          },
+          {
+            "id": "s2"
+          },
+          {
+            "id": "s3"
+          },
+          {
+            "id": "s4"
+          }
+        ]
+      },
+      "merged": {
+        "strokes": [
+          {
+            "id": "s3"
+          },
+          {
+            "id": "s4"
+          },
+          {
+            "id": "s1"
+          },
+          {
+            "id": "s2"
+          }
+        ]
+      }
+    },
+    {
+      "name": "liczba zmieniona po obu stronach - późniejsza zmiana",
+      "base": {
+        "zoom": 1.5,
+        "viewX": 0
+      },
+      "mine": {
+        "zoom": 2,
+        "viewX": 0
+      },
+      "theirs": {
+        "zoom": 1,
+        "viewX": 30
+      },
+      "merged": {
+        "zoom": 2,
+        "viewX": 30
+      }
+    },
+    {
+      "name": "pole dodane tylko po jednej stronie",
+      "base": {
+        "title": "Notatka"
+      },
+      "mine": {
+        "title": "Notatka",
+        "favorite": true
+      },
+      "theirs": {
+        "title": "Notatka z serwera"
+      },
+      "merged": {
+        "title": "Notatka z serwera",
+        "favorite": true
+      }
+    },
+    {
+      "name": "strona dopisana tu, kreska dopisana tam",
+      "base": {
+        "pages": [
+          {
+            "id": "p1",
+            "strokes": []
+          }
+        ]
+      },
+      "mine": {
+        "pages": [
+          {
+            "id": "p1",
+            "strokes": []
+          },
+          {
+            "id": "p2",
+            "strokes": []
+          }
+        ]
+      },
+      "theirs": {
+        "pages": [
+          {
+            "id": "p1",
+            "strokes": [
+              {
+                "id": "s1"
+              }
+            ]
+          }
+        ]
+      },
+      "merged": {
+        "pages": [
+          {
+            "id": "p1",
+            "strokes": [
+              {
+                "id": "s1"
+              }
+            ]
+          },
+          {
+            "id": "p2",
+            "strokes": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "kod - zmiany w różnych funkcjach",
+      "base": {
+        "code": {
+          "source": "def a():\n    return 1\n\ndef b():\n    return 2\n"
+        }
+      },
+      "mine": {
+        "code": {
+          "source": "def a():\n    return 10\n\ndef b():\n    return 2\n"
+        }
+      },
+      "theirs": {
+        "code": {
+          "source": "def a():\n    return 1\n\ndef b():\n    return 20\n"
+        }
+      },
+      "merged": {
+        "code": {
+          "source": "def a():\n    return 10\n\ndef b():\n    return 20\n"
+        }
+      }
+    },
+    {
+      "name": "wstawka przed wierszem i zmiana tego wiersza",
+      "base": {
+        "text": {
+          "markdown": "A\nB\nC\n"
+        }
+      },
+      "mine": {
+        "text": {
+          "markdown": "A\nNowy\nB\nC\n"
+        }
+      },
+      "theirs": {
+        "text": {
+          "markdown": "A\nB zmienione\nC\n"
+        }
+      },
+      "merged": {
+        "text": {
+          "markdown": "A\nNowy\nB zmienione\nC\n"
+        }
+      }
+    }
+  ],
+  "diff": [
+    {
+      "name": "bez zmian",
+      "base": {
+        "a": 1
+      },
+      "target": {
+        "a": 1
+      },
+      "delta": null
+    },
+    {
+      "name": "pisanie na końcu tekstu",
+      "base": {
+        "text": {
+          "markdown": "Ala ma kota, który lubi spać na parapecie.\nDrugi wiersz"
+        }
+      },
+      "target": {
+        "text": {
+          "markdown": "Ala ma kota, który lubi spać na parapecie.\nDrugi wiersz i dalej"
+        }
+      },
+      "delta": {
+        "o": {
+          "text": {
+            "o": {
+              "markdown": {
+                "t": [
+                  [
+                    55,
+                    0,
+                    " i dalej"
+                  ]
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "skasowanie w środku tekstu",
+      "base": {
+        "t": "Zażółć gęślą jaźń - zdanie, które ma więcej niż sześćdziesiąt cztery znaki."
+      },
+      "target": {
+        "t": "Zażółć jaźń - zdanie, które ma więcej niż sześćdziesiąt cztery znaki."
+      },
+      "delta": {
+        "o": {
+          "t": {
+            "t": [
+              [
+                7,
+                6,
+                ""
+              ]
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "krótki napis",
+      "base": {
+        "t": "Pies"
+      },
+      "target": {
+        "t": "Kot"
+      },
+      "delta": {
+        "o": {
+          "t": {
+            "$": "Kot"
+          }
+        }
+      }
+    },
+    {
+      "name": "nowa kreska",
+      "base": {
+        "strokes": [
+          {
+            "id": "s1",
+            "points": [
+              1,
+              2,
+              3
+            ]
+          }
+        ]
+      },
+      "target": {
+        "strokes": [
+          {
+            "id": "s1",
+            "points": [
+              1,
+              2,
+              3
+            ]
+          },
+          {
+            "id": "s2",
+            "points": [
+              4,
+              5,
+              6
+            ]
+          }
+        ]
+      },
+      "delta": {
+        "o": {
+          "strokes": {
+            "k": {
+              "p": [
+                [
+                  "s1",
+                  "s2",
+                  {
+                    "id": "s2",
+                    "points": [
+                      4,
+                      5,
+                      6
+                    ]
+                  }
+                ]
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "kreska na początku",
+      "base": {
+        "strokes": [
+          {
+            "id": "s1"
+          },
+          {
+            "id": "s2"
+          }
+        ]
+      },
+      "target": {
+        "strokes": [
+          {
+            "id": "s0"
+          },
+          {
+            "id": "s1"
+          },
+          {
+            "id": "s2"
+          }
+        ]
+      },
+      "delta": {
+        "o": {
+          "strokes": {
+            "k": {
+              "p": [
+                [
+                  null,
+                  "s0",
+                  {
+                    "id": "s0"
+                  }
+                ]
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "gumka dzieli kreskę",
+      "base": {
+        "strokes": [
+          {
+            "id": "s1"
+          },
+          {
+            "id": "s2"
+          },
+          {
+            "id": "s3"
+          }
+        ]
+      },
+      "target": {
+        "strokes": [
+          {
+            "id": "s1"
+          },
+          {
+            "id": "s2a"
+          },
+          {
+            "id": "s2b"
+          },
+          {
+            "id": "s3"
+          }
+        ]
+      },
+      "delta": {
+        "o": {
+          "strokes": {
+            "k": {
+              "d": [
+                "s2"
+              ],
+              "p": [
+                [
+                  "s1",
+                  "s2a",
+                  {
+                    "id": "s2a"
+                  }
+                ],
+                [
+                  "s2a",
+                  "s2b",
+                  {
+                    "id": "s2b"
+                  }
+                ]
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "przestawienie",
+      "base": {
+        "nodes": [
+          {
+            "id": "a"
+          },
+          {
+            "id": "b"
+          },
+          {
+            "id": "c"
+          },
+          {
+            "id": "d"
+          }
+        ]
+      },
+      "target": {
+        "nodes": [
+          {
+            "id": "d"
+          },
+          {
+            "id": "b"
+          },
+          {
+            "id": "a"
+          },
+          {
+            "id": "c"
+          }
+        ]
+      },
+      "delta": {
+        "o": {
+          "nodes": {
+            "k": {
+              "p": [
+                [
+                  null,
+                  "d"
+                ],
+                [
+                  "d",
+                  "b"
+                ]
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "przesunięcie węzła",
+      "base": {
+        "nodes": [
+          {
+            "id": "a",
+            "x": 1,
+            "y": 2
+          },
+          {
+            "id": "b",
+            "x": 3
+          }
+        ]
+      },
+      "target": {
+        "nodes": [
+          {
+            "id": "a",
+            "x": 10,
+            "y": 2
+          },
+          {
+            "id": "b",
+            "x": 3
+          }
+        ]
+      },
+      "delta": {
+        "o": {
+          "nodes": {
+            "k": {
+              "u": {
+                "a": {
+                  "o": {
+                    "x": {
+                      "$": 10
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "pole znika i pojawia się",
+      "base": {
+        "a": 1,
+        "b": null
+      },
+      "target": {
+        "b": false,
+        "c": [
+          1,
+          2
+        ]
+      },
+      "delta": {
+        "o": {
+          "a": null,
+          "b": {
+            "$": false
+          },
+          "c": {
+            "$": [
+              1,
+              2
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "tablica bez identyfikatorów",
+      "base": {
+        "tags": [
+          "a",
+          "b"
+        ]
+      },
+      "target": {
+        "tags": [
+          "b",
+          "a",
+          "c"
+        ]
+      },
+      "delta": {
+        "o": {
+          "tags": {
+            "$": [
+              "b",
+              "a",
+              "c"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "zmiana typu",
+      "base": {
+        "x": "tekst"
+      },
+      "target": {
+        "x": {
+          "y": 1
+        }
+      },
+      "delta": {
+        "o": {
+          "x": {
+            "$": {
+              "y": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "wszystko skasowane",
+      "base": {
+        "strokes": [
+          {
+            "id": "s1"
+          },
+          {
+            "id": "s2"
+          }
+        ]
+      },
+      "target": {
+        "strokes": []
+      },
+      "delta": {
+        "o": {
+          "strokes": {
+            "k": {
+              "d": [
+                "s1",
+                "s2"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "znaki spoza BMP",
+      "base": {
+        "t": "Notatka 😀 z emotką, która ma długość większą niż sześćdziesiąt cztery znaki."
+      },
+      "target": {
+        "t": "Notatka 😀😀 z emotką, która ma długość większą niż sześćdziesiąt cztery znaki!"
+      },
+      "delta": {
+        "o": {
+          "t": {
+            "t": [
+              [
+                10,
+                67,
+                "😀 z emotką, która ma długość większą niż sześćdziesiąt cztery znaki!"
+              ]
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

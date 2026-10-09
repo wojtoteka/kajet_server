@@ -22,7 +22,11 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import type { Note } from "@prisma/client";
-import { tokenWriteAccess } from "@/lib/sharing";
+import { randomUUID } from "node:crypto";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { acceptShare, folderTokenAccess, folderWithin, tokenWriteAccess } from "@/lib/sharing";
+import { prisma } from "@/lib/prisma";
 import { titleFromMarkdown, titleFromMindMap } from "@/lib/note-title";
 import { upsertNoteForUser, upsertCodeNoteForUser, type UpsertNoteResult } from "@/lib/note-write";
 import { buildTextNoteContent, parseExistingTextDocument } from "@/lib/text-note";
@@ -39,6 +43,7 @@ import { LANGUAGES } from "@/lib/code-runner";
 import type { MindEdge, MindNode, Page } from "@/lib/document";
 import { currentWords } from "@/lib/language";
 import type { Result } from "@/app/note/[id]/actions";
+import type { ChangeOrigin } from "@/lib/live/changes";
 
 /** Czy to zapis w tle (z useAutosave), czy kliknięcie w „Zapisz". */
 function isAutosave(data: FormData): boolean {
@@ -48,14 +53,20 @@ function isAutosave(data: FormData): boolean {
 /**
  * Wspólny początek każdej akcji: odnośnik musi wpuszczać do zapisu, a notatka
  * być tego rodzaju, którego spodziewa się edytor.
+ *
+ * Notatka wynika z odnośnika. Przy odnośniku do folderu formularz podaje
+ * jeszcze, KTÓRĄ notatkę z folderu zapisujemy - i ten numer też sprawdza
+ * tokenWriteAccess: notatka musi leżeć w udostępnionym folderze albo głębiej.
  */
 async function writableNote(
   token: string,
   kind: Note["kind"],
-): Promise<{ ok: true; note: Note } | { ok: false; error: string }> {
+  data: FormData,
+): Promise<{ ok: true; note: Note; origin: ChangeOrigin } | { ok: false; error: string }> {
   if (!token) return { ok: false, error: (await currentWords()).apiLinkDead };
 
-  const access = await tokenWriteAccess(token);
+  const noteId = String(data.get("noteId") ?? "") || null;
+  const access = await tokenWriteAccess(token, noteId);
   if (!access.ok) return { ok: false, error: access.reason };
 
   const note = access.access.note;
@@ -70,7 +81,15 @@ async function writableNote(
     return { ok: false, error: mismatch[kind] ?? words.actCheckWhatYouTyped };
   }
 
-  return { ok: true, note };
+  return {
+    ok: true,
+    note,
+    origin: {
+      authorId: access.access.userId,
+      authorName: access.access.writerName,
+      clientId: String(data.get("liveClient") ?? ""),
+    },
+  };
 }
 
 /** Wynik z upsertu na odpowiedź akcji - ten sam kształt co u właściciela. */
@@ -86,6 +105,7 @@ async function finishSave(
   if (outcome.status === "conflict") {
     return {
       error: outcome.message + (await currentWords()).actRefreshAfterConflict,
+      conflict: true,
     };
   }
 
@@ -135,7 +155,7 @@ export async function saveSharedTextNote(
     return { error: parsed.error.issues[0]?.message ?? (await currentWords()).actCheckWhatYouTyped };
   }
 
-  const target = await writableNote(token, "TEXT");
+  const target = await writableNote(token, "TEXT", data);
   if (!target.ok) return { error: target.error };
   const note = target.note;
 
@@ -167,7 +187,7 @@ export async function saveSharedTextNote(
     baseVersion,
     favorite: note.favorite,
     tags: noteTags(note),
-  });
+  }, target.origin);
 
   return finishSave(outcome, note.id, isAutosave(data));
 }
@@ -218,7 +238,7 @@ export async function saveSharedMindMapNote(
     return { error: (await currentWords()).actMindMapUnreadable };
   }
 
-  const target = await writableNote(token, "MINDMAP");
+  const target = await writableNote(token, "MINDMAP", data);
   if (!target.ok) return { error: target.error };
   const note = target.note;
 
@@ -248,7 +268,7 @@ export async function saveSharedMindMapNote(
     baseVersion,
     favorite: note.favorite,
     tags: noteTags(note),
-  });
+  }, target.origin);
 
   return finishSave(outcome, note.id, isAutosave(data));
 }
@@ -288,7 +308,7 @@ export async function saveSharedHandwritingNote(
     return { error: (await currentWords()).actHandwritingUnreadable };
   }
 
-  const target = await writableNote(token, "HANDWRITTEN");
+  const target = await writableNote(token, "HANDWRITTEN", data);
   if (!target.ok) return { error: target.error };
   const note = target.note;
 
@@ -315,7 +335,7 @@ export async function saveSharedHandwritingNote(
     baseVersion,
     favorite: note.favorite,
     tags: noteTags(note),
-  });
+  }, target.origin);
 
   return finishSave(outcome, note.id, isAutosave(data));
 }
@@ -347,7 +367,7 @@ export async function saveSharedCodeNote(
     return { error: (await currentWords()).actLanguageUnsupported };
   }
 
-  const target = await writableNote(token, "CODE");
+  const target = await writableNote(token, "CODE", data);
   if (!target.ok) return { error: target.error };
   const note = target.note;
 
@@ -386,7 +406,70 @@ export async function saveSharedCodeNote(
     baseVersion,
     favorite: note.favorite,
     tags: noteTags(note),
-  });
+  }, target.origin);
 
   return finishSave(outcome, note.id, isAutosave(data));
+}
+
+/**
+ * Przyjęcie udostępnienia imiennego - woła je strona odnośnika zaraz po
+ * otwarciu (AcceptShare), już w przeglądarce człowieka. Zwykłe pobranie
+ * strony nic tu nie zapisuje.
+ */
+export async function acceptSharedLink(token: string): Promise<{ accepted: boolean }> {
+  const session = await auth();
+  const outcome = await acceptShare(token, {
+    userId: session?.user?.id ?? null,
+    email: session?.user?.email ?? null,
+  });
+  if (outcome.status === "accepted") revalidatePath("/library");
+  return { accepted: outcome.status === "accepted" };
+}
+
+/**
+ * Nowa notatka tekstowa w udostępnionym folderze - od kogoś z prawem do
+ * zmian. Należy do właściciela folderu i zajmuje jego miejsce.
+ */
+export async function createSharedTextNote(
+  token: string,
+  folderId: string,
+  _previous: Result,
+  _data: FormData,
+): Promise<Result> {
+  const words = await currentWords();
+  const access = await folderTokenAccess(token);
+  if (!access.ok) return { error: access.reason };
+  if (!access.canEdit) return { error: words.apiShareReadOnly };
+  const folder = await prisma.folder.findUnique({
+    where: { id: folderId },
+    select: { ownerId: true },
+  });
+  if (
+    !folder ||
+    folder.ownerId !== access.share.folder.ownerId ||
+    !(await folderWithin(folderId, access.share.folder.id))
+  ) {
+    return { error: words.apiLinkDead };
+  }
+
+  const id = randomUUID();
+  const title = words.untitled;
+  const session = await auth();
+  const outcome = await upsertNoteForUser(
+    access.share.folder.ownerId,
+    {
+      id,
+      title,
+      kind: "TEXT",
+      content: buildTextNoteContent({ id, title, markdown: "" }),
+      folderId,
+      baseVersion: 0,
+    },
+    {
+      authorId: session?.user?.id ?? null,
+      authorName: session?.user?.login ?? words.guestWord,
+    },
+  );
+  if (outcome.status === "error") return { error: outcome.message };
+  redirect(`/n/${token}?note=${id}`);
 }

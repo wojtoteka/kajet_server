@@ -17,6 +17,10 @@ import { tally } from "@/lib/text-tally";
 import { SaveStatus } from "@/components/SaveStatus";
 import { safeAction } from "@/components/safe-action";
 import { useAutosave } from "@/components/useAutosave";
+import { useLiveNote } from "@/components/useLiveNote";
+import { LivePresence } from "@/components/LivePresence";
+import type { Json } from "@/lib/live/merge";
+import type { NoteDocument } from "@/lib/document";
 import { useSavedNote } from "@/components/useSavedNote";
 import { useNoteFlush } from "@/components/NoteSync";
 import { TITLE_LIMIT } from "@/lib/note-title";
@@ -95,6 +99,8 @@ type ActionResult = {
   attachment?: { name: string };
   /** Tytuł podpowiedziany przez serwer z pierwszego wiersza treści. */
   title?: string;
+  /** Zapis odbił się od nowszej wersji - patrz useLiveNote. */
+  conflict?: boolean;
 };
 type Action = (previous: ActionResult, data: FormData) => Promise<ActionResult>;
 
@@ -114,6 +120,27 @@ function textColours(words: Words): { label: string; colour: string }[] {
     { label: words.greenColour, colour: "#1f6b3a" },
     { label: words.brownColour, colour: "#6b4a22" },
   ];
+}
+
+/** Część notatki tekstowej, którą edytor scala na żywo. */
+type TextPiece = {
+  title: string;
+  markdown: string;
+  font: string;
+  fontSize: number;
+  textColor: number;
+};
+
+function textPiece(document: Json): TextPiece | null {
+  if (!document || typeof document !== "object" || Array.isArray(document)) return null;
+  const note = document as unknown as NoteDocument;
+  return {
+    title: note.title ?? "",
+    markdown: note.text?.markdown ?? "",
+    font: note.text?.font ?? "body",
+    fontSize: note.text?.fontSize ?? 0,
+    textColor: note.text?.textColor ?? 0,
+  };
 }
 
 export function TextNoteEditor({
@@ -216,13 +243,71 @@ export function TextNoteEditor({
     setNoteTitle((current) => (current.trim() === "" ? state.title! : current));
   }, [state]);
   const autosaves = Boolean(saved.noteId) || body.trim().length > 0;
+  /*
+    Edycja na żywo: akapity dopisane gdzie indziej wchodzą do notatki bez
+    odświeżania, a pisanie w tym samym akapicie scala się słowami. Pole,
+    w którym stoi kursor, zostaje przy swoim miejscu (RichText).
+  */
+  const markAfterRender = useRef(false);
+  const readPiece = (): TextPiece => ({
+    title: noteTitle,
+    markdown: body,
+    font,
+    fontSize,
+    textColor,
+  });
+  const live = useLiveNote<TextPiece>({
+    noteId: saved.noteId,
+    token,
+    version: saved.version,
+    initial: {
+      title,
+      markdown,
+      font: appearance?.font ?? "body",
+      fontSize: appearance?.fontSize ?? 0,
+      textColor: appearance?.textColor ?? 0,
+    },
+    pieceOf: textPiece,
+    read: readPiece,
+    write: (merged, info) => {
+      setNoteTitle(merged.title);
+      setFont(merged.font);
+      setFontSize(merged.fontSize);
+      setTextColor(merged.textColor);
+      if (merged.markdown !== body) {
+        setBlocks(splitTextBlocks(merged.markdown));
+        setRevision((value) => value + 1);
+      }
+      if (info.clean) markAfterRender.current = true;
+    },
+  });
+  const baseVersion = Math.max(saved.version ?? 0, live.version ?? 0);
+
   const { dirty, markSent } = useAutosave({
     formRef,
     enabled: autosaves,
     auto: autoSave,
     busy,
-    save: (data) => startTransition(() => submit(data)),
+    // Ktoś jeszcze pisze w tej notatce - zmiana ma do niego dojść od razu,
+    // nie po sekundzie ciszy. Kto pisze sam, zapisuje jak dotąd.
+    tickMs: live.people.length > 0 ? 300 : undefined,
+    quietMs: live.people.length > 0 ? 300 : undefined,
+    save: (data) => {
+      live.sending(readPiece());
+      startTransition(() => submit(data));
+    },
   });
+
+  useEffect(() => {
+    if (!markAfterRender.current) return;
+    markAfterRender.current = false;
+    markSent();
+  }, [blocks, noteTitle, font, fontSize, textColor, markSent]);
+
+  useEffect(() => {
+    if (state.conflict && live.status !== "off") live.resync();
+  }, [state, live.status, live.resync]);
+  const shownError = state.conflict && live.status !== "off" ? undefined : state.error;
 
   /*
     Zapis na żądanie asystenta. Nie idzie przez `flush` z autozapisu, bo tamten
@@ -237,11 +322,13 @@ export function TextNoteEditor({
     // Zapis już leci - jego odpowiedź i tak przyjdzie, nie ma po co wysyłać dwóch.
     if (busy) return true;
     markSent();
+    live.sending(readPiece());
     const data = new FormData(form);
     data.set("autosave", "1");
     startTransition(() => submit(data));
     return true;
-  }, [busy, markSent, submit]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [busy, markSent, submit, live, noteTitle, body, font, fontSize, textColor]);
   useNoteFlush(saveForAssistant);
 
   /*
@@ -254,6 +341,7 @@ export function TextNoteEditor({
     const form = formRef.current;
     if (!form || busy) return;
     markSent();
+    live.sending(readPiece());
     startTransition(() => submit(new FormData(form)));
   }
 
@@ -729,8 +817,9 @@ export function TextNoteEditor({
     >
       {saved.noteId ? <input type="hidden" name="noteId" value={saved.noteId} /> : null}
       {saved.version != null ? (
-        <input type="hidden" name="baseVersion" value={String(saved.version)} />
+        <input type="hidden" name="baseVersion" value={String(baseVersion)} />
       ) : null}
+      <input type="hidden" name="liveClient" value={live.clientId} />
       <input type="hidden" name="font" value={font} />
       <input type="hidden" name="fontSize" value={String(fontSize)} />
       <input type="hidden" name="textColor" value={String(textColor)} />
@@ -738,6 +827,8 @@ export function TextNoteEditor({
       {/* Do zapisu idzie cała treść sklejona z bloków - pola do pisania same
           nie mają nazw, bo każde z nich to tylko kawałek notatki. */}
       <input type="hidden" name="markdown" value={body} />
+
+      <LivePresence live={live} />
 
       <div className="field">
         <label htmlFor="title">{words.noteTitle}</label>
@@ -1305,11 +1396,12 @@ export function TextNoteEditor({
           notatką przeskakiwałaby przy każdym autozapisie. Pełny błąd też stoi
           tutaj, przy przycisku: na górze spychał całą notatkę w dół. Tędy idzie
           również odmowa wysłania zdjęcia - wcześniej nie mówiła nic. */}
-      {(state.error ?? uploadState.error) ? (
+      {(shownError ?? uploadState.error) ? (
         <p className="error" style={{ margin: "0 0 10px 0" }}>
-          {state.error ?? uploadState.error}
+          {shownError ?? uploadState.error}
         </p>
       ) : null}
+
 
       <div className="save-row">
         <button type="submit" className="primary" disabled={busy}>
@@ -1321,7 +1413,7 @@ export function TextNoteEditor({
           saved={saved.saved}
           autosaves={autosaves}
           autoSaveOff={!autoSave}
-          error={state.error}
+          error={shownError}
         />
       </div>
     </form>

@@ -69,7 +69,12 @@ export function RichText({
     // Ta sama treść? Nie ruszamy pola - przepisanie zabrałoby kursor.
     if (written.current === html) return;
     written.current = html;
+    // Treść przyszła z zewnątrz (także od innej osoby piszącej na żywo).
+    // Kto właśnie pisze w tym polu, zostaje kursorem przy swoim słowie.
+    const caret = document.activeElement === node ? caretOffset(node) : null;
+    const before = node.textContent ?? "";
     node.innerHTML = html;
+    if (caret !== null) placeCaret(node, shiftedOffset(before, node.textContent ?? "", caret));
     // Notatka kończąca się blokiem kodu wraca jako HTML kończący się na `<pre>`.
     // Bez akapitu pod nim nie ma gdzie postawić kursora, więc pisanie dalej
     // przestaje istnieć zaraz po otwarciu notatki.
@@ -155,4 +160,49 @@ export function RichText({
       }}
     />
   );
+}
+
+/** Miejsce kursora w polu, liczone w znakach widocznego tekstu. */
+function caretOffset(node: HTMLElement): number | null {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return null;
+  const range = selection.getRangeAt(0);
+  if (!node.contains(range.endContainer)) return null;
+  const before = range.cloneRange();
+  before.selectNodeContents(node);
+  before.setEnd(range.endContainer, range.endOffset);
+  return before.toString().length;
+}
+
+/**
+ * Kursor po zmianie z zewnątrz: zmiana za kursorem go nie rusza, zmiana przed
+ * nim przesuwa go o tyle znaków, ile przybyło albo ubyło.
+ */
+export function shiftedOffset(before: string, after: string, caret: number): number {
+  let common = 0;
+  const shorter = Math.min(before.length, after.length);
+  while (common < shorter && before[common] === after[common]) common += 1;
+  if (caret <= common) return caret;
+  return Math.max(common, Math.min(after.length, caret + after.length - before.length));
+}
+
+function placeCaret(node: HTMLElement, offset: number): void {
+  const selection = window.getSelection();
+  if (!selection) return;
+  const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+  let left = offset;
+  let text = walker.nextNode() as Text | null;
+  while (text) {
+    const length = text.data.length;
+    if (left <= length) {
+      const range = document.createRange();
+      range.setStart(text, left);
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      return;
+    }
+    left -= length;
+    text = walker.nextNode() as Text | null;
+  }
 }
