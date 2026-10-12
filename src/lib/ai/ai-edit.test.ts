@@ -384,3 +384,78 @@ describe("dopytanie", () => {
     expect(prisma.aiTurn.create).toHaveBeenCalled();
   });
 });
+
+describe("wstrzymana synchronizacja w aplikacji (detached)", () => {
+  const detached = (extra: Record<string, unknown> = {}) => ({
+    detached: {
+      kind: "TEXT",
+      title: "Zakupy",
+      content: buildTextNoteContent({ id: NOTE_ID, title: "Zakupy", markdown: "- mleko z tabletu" }),
+      pending: [{ request: "dopisz masło", reply: "Dopisano masło." }],
+      ...extra,
+    },
+  });
+
+  it("pracuje na treści z aplikacji i niczego nie zapisuje - ani notatki, ani rozmowy", async () => {
+    const { route, askGemini, upsertNoteForUser, prisma } = await routeWith();
+
+    const body = await (await route.POST(ask("dopisz chleb", detached()), noteParams)).json();
+
+    expect(body.status).toBe("zmieniono");
+    expect(body.version).toBe(0);
+    expect(String(body.content)).toContain("chleb");
+    expect(upsertNoteForUser).not.toHaveBeenCalled();
+    expect(prisma.aiTurn.create).not.toHaveBeenCalled();
+
+    const asked = (askGemini.mock.calls[0] as unknown as [Record<string, unknown>])[0];
+    // Model widzi treść z tabletu, nie tę z bazy...
+    expect(JSON.stringify(asked.material)).toContain("mleko z tabletu");
+    // ...i rozmowę z tej pauzy, choć serwer jej jeszcze nie zna.
+    expect(asked.history).toEqual([{ request: "dopisz masło", reply: "Dopisano masło." }]);
+  });
+
+  it("działa także dla notatki, której serwer jeszcze nie ma", async () => {
+    const { route, upsertNoteForUser } = await routeWith({ note: null });
+
+    const body = await (await route.POST(ask("dopisz chleb", detached()), noteParams)).json();
+
+    expect(body.status).toBe("zmieniono");
+    expect(upsertNoteForUser).not.toHaveBeenCalled();
+  });
+
+  it("nie sprawdza wersji - serwer nie ma prawa odmówić przez starszą kopię u siebie", async () => {
+    const { route } = await routeWith();
+
+    const body = await (
+      await route.POST(ask("dopisz chleb", { baseVersion: 3, ...detached() }), noteParams)
+    ).json();
+
+    expect(body.status).toBe("zmieniono");
+  });
+
+  it("cudzej notatki dalej nie tknie", async () => {
+    const { route, askGemini } = await routeWith({ note: { ownerId: "ktos-inny" } });
+
+    const response = await route.POST(ask("dopisz chleb", detached()), noteParams);
+
+    expect(response.status).toBe(403);
+    expect(askGemini).not.toHaveBeenCalled();
+  });
+
+  it("dopytanie też nie trafia do historii", async () => {
+    const { route, prisma } = await routeWith({
+      answer: {
+        ok: true,
+        toolName: "dopytaj",
+        args: { pytanie: "Który akapit skrócić?" },
+        usage: { input: 80, output: 20 },
+        tookMs: 700,
+      },
+    });
+
+    const body = await (await route.POST(ask("skróć", detached()), noteParams)).json();
+
+    expect(body.status).toBe("pytanie");
+    expect(prisma.aiTurn.create).not.toHaveBeenCalled();
+  });
+});

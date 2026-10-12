@@ -5,6 +5,10 @@
   serwer ją ma, a te same bajty w obie strony po to, żeby zaraz odesłać je do
   Google, byłyby marnowaniem łącza na tablecie.
 
+  Wyjątek: wstrzymana synchronizacja w aplikacji (pole `detached`). Wtedy
+  treść jedzie w żądaniu, bo serwer jej nie ma albo ma starą, i nic nie jest
+  zapisywane - ani notatka, ani rozmowa.
+
   Cała robota siedzi w lib/ai/run.ts, wspólnie z akcją panelu WWW. Tutaj
   zostaje samo rozpoznanie, kto pyta (token urządzenia), i przełożenie wyniku
   na HTTP.
@@ -31,6 +35,21 @@ const body = z.object({
    * to samo - starsze wydania aplikacji nie przyślą go wcale.
    */
   baseVersion: z.number().int().min(0).optional(),
+  /**
+   * Synchronizacja w aplikacji jest wstrzymana: treść notatki jedzie w żądaniu,
+   * a serwer nic nie zapisuje (patrz runAiEdit). Starsze wydania tego nie ślą.
+   */
+  detached: z
+    .object({
+      kind: z.string().min(1).max(20),
+      title: z.string().max(500).default(""),
+      content: z.string().min(1).max(5_000_000),
+      pending: z
+        .array(z.object({ request: z.string().max(2_000), reply: z.string().max(2_000) }))
+        .max(50)
+        .default([]),
+    })
+    .optional(),
 });
 
 export const POST = wrapApi(
@@ -56,6 +75,7 @@ export const POST = wrapApi(
       noteId,
       instruction: parsed.data.instruction,
       baseVersion: parsed.data.baseVersion,
+      detached: parsed.data.detached,
       words,
     });
 
