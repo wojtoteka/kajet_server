@@ -1,5 +1,8 @@
 /*
   GET    /api/v1/notes/[id]/ai-history - rozmowa z asystentem przy tej notatce.
+  POST   /api/v1/notes/[id]/ai-history - dopisanie wymian z czasu, gdy
+         synchronizacja w aplikacji była wstrzymana (ai-edit z `detached`
+         niczego nie zapamiętuje - rozmowa dociera tu po wznowieniu).
   DELETE /api/v1/notes/[id]/ai-history - wyczyszczenie jej.
 
   Bramka jest tu słabsza niż przy zmianie notatki: wystarczy uprawnienie, zgoda
@@ -7,11 +10,12 @@
   sobie to, co zostało z wcześniejszych rozmów.
 */
 
+import { z } from "zod";
 import { error, json, userFromRequest, wrapApi } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { apiWords, type Words } from "@/lib/language";
 import { aiRefusal, aiVisibleFor } from "@/lib/ai/access";
-import { forgetTurns, recentTurns } from "@/lib/ai/history";
+import { forgetTurns, recentTurns, rememberTurn, sweepOldTurns } from "@/lib/ai/history";
 
 export { OPTIONS } from "@/lib/api";
 
@@ -50,6 +54,34 @@ export const GET = wrapApi(async (request: Request, { params }: Params) => {
   if (!check.ok) return check.response;
 
   return json({ turns: await recentTurns(check.userId, check.noteId) });
+});
+
+const appended = z.object({
+  turns: z
+    .array(z.object({ request: z.string().max(2_000), reply: z.string().max(2_000) }))
+    .min(1)
+    .max(50),
+});
+
+export const POST = wrapApi(async (request: Request, { params }: Params) => {
+  const check = await allowed(request, params);
+  if (!check.ok) return check.response;
+
+  let data: unknown;
+  try {
+    data = await request.json();
+  } catch {
+    return error("bad-request", check.words.apiBadRequest, 400);
+  }
+  const parsed = appended.safeParse(data);
+  if (!parsed.success) return error("bad-request", check.words.apiBadRequest, 400);
+
+  // Po kolei, od najstarszej - tak samo jak przy zwykłej rozmowie.
+  for (const turn of parsed.data.turns) {
+    await rememberTurn(check.userId, check.noteId, turn.request, turn.reply);
+  }
+  await sweepOldTurns();
+  return json({ status: "ok", added: parsed.data.turns.length });
 });
 
 export const DELETE = wrapApi(async (request: Request, { params }: Params) => {

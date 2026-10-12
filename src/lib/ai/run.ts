@@ -17,7 +17,7 @@ import type { ChangeOrigin } from "@/lib/live/changes";
 import { aiGate } from "./access";
 import { aiHandles } from "./tools";
 import { viewForModel } from "./note-view";
-import { recentTurns, rememberTurn, sweepOldTurns } from "./history";
+import { recentTurns, rememberTurn, sweepOldTurns, type AiTurnRecord } from "./history";
 import { askGemini, type AiFailure } from "./gemini";
 import { applyAiCall, derivedTitleFor } from "./apply";
 import { titleIsOwn } from "@/lib/note-title";
@@ -57,12 +57,27 @@ export type AiRunResult =
   | { status: "ukryte" }
   | { status: "blad"; code: string; message: string; httpStatus: number };
 
+export type DetachedNote = {
+  kind: string;
+  title: string;
+  content: string;
+  /** Wymiany z tej pauzy, których serwer jeszcze nie zna - od najstarszej. */
+  pending: AiTurnRecord[];
+};
+
 export async function runAiEdit(input: {
   user: AiRunner;
   noteId: string;
   instruction: string;
   /** Zero albo brak znaczy „nie sprawdzaj wersji". */
   baseVersion?: number;
+  /**
+   * Prośba z aplikacji przy WSTRZYMANEJ synchronizacji. Treść przychodzi
+   * w żądaniu, a serwer niczego nie zapisuje - ani notatki, ani rozmowy.
+   * Wynik wraca do aplikacji, a na serwer trafi dopiero z najbliższą
+   * synchronizacją (notatka zwykłą drogą, rozmowa przez POST ai-history).
+   */
+  detached?: DetachedNote;
   words: Words;
 }): Promise<AiRunResult> {
   const { user, noteId, instruction, words } = input;
@@ -82,7 +97,8 @@ export async function runAiEdit(input: {
     return { status: "blad", code: "bad-request", message: words.apiAiNoInstruction, httpStatus: 400 };
   }
 
-  const note = await prisma.note.findUnique({
+  const detached = input.detached;
+  const row = await prisma.note.findUnique({
     where: { id: noteId },
     select: {
       id: true,
@@ -97,6 +113,22 @@ export async function runAiEdit(input: {
     },
   });
 
+  // Bez synchronizacji notatki na serwerze może jeszcze nie być - wtedy
+  // pracujemy na tym, co przysłała aplikacja. Cudza notatka odmawia tak samo.
+  const note = detached
+    ? {
+        id: noteId,
+        ownerId: row?.ownerId ?? user.id,
+        title: detached.title,
+        kind: detached.kind,
+        content: detached.content,
+        version: 0,
+        favorite: false,
+        tags: "",
+        deletedAt: null,
+      }
+    : row;
+
   if (!note || note.deletedAt) {
     return { status: "blad", code: "no-note", message: words.apiNoteNotOnServer, httpStatus: 404 };
   }
@@ -107,7 +139,7 @@ export async function runAiEdit(input: {
     return { status: "blad", code: "wrong-kind", message: words.apiAiWrongKind, httpStatus: 400 };
   }
 
-  const wanted = input.baseVersion ?? 0;
+  const wanted = detached ? 0 : (input.baseVersion ?? 0);
   if (wanted > 0 && wanted !== note.version) {
     return { status: "konflikt", version: note.version };
   }
@@ -134,7 +166,11 @@ export async function runAiEdit(input: {
     return { status: "blad", code: "ai-limit", message: room.message, httpStatus: 429 };
   }
 
-  const history = await recentTurns(user.id, noteId);
+  // Przy pauzie: to, co serwer już pamięta, i dalej wymiany z tej pauzy.
+  const remembered = await recentTurns(user.id, noteId);
+  const history = detached
+    ? [...remembered, ...detached.pending].slice(-settings.ai.historyTurns)
+    : remembered;
 
   const answer = await askGemini({
     kind: note.kind,
@@ -184,8 +220,21 @@ export async function runAiEdit(input: {
   }
 
   if (outcome.kind === "pytanie") {
-    await remember(user.id, noteId, instruction, outcome.pytanie);
+    if (!detached) await remember(user.id, noteId, instruction, outcome.pytanie);
     return { status: "pytanie", pytanie: outcome.pytanie };
+  }
+
+  if (detached) {
+    // Nic nie zapisujemy: zmienioną treść zapisze u siebie aplikacja.
+    return {
+      status: "zmieniono",
+      opis: outcome.opis,
+      title: outcome.title,
+      version: 0,
+      updatedAt: Date.now(),
+      content: outcome.content,
+      before: note.content,
+    };
   }
 
   const tags = note.tags ? note.tags.split("|") : [];
