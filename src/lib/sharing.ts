@@ -121,7 +121,7 @@ export async function ownerAccess(noteId: string): Promise<AccessResult> {
   if (!session?.user?.id) return { ok: false, reason: (await apiWords()).apiMustSignIn };
 
   const note = await prisma.note.findUnique({ where: { id: noteId } });
-  if (!note || note.deletedAt) return { ok: false, reason: "Nie ma takiej notatki." };
+  if (!note || note.deletedAt) return { ok: false, reason: (await apiWords()).actNoSuchNote };
   if (note.ownerId !== session.user.id) {
     return { ok: false, reason: (await apiWords()).apiNoteNotYours };
   }

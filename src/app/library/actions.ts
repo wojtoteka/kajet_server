@@ -13,7 +13,7 @@ import { z } from "zod";
 import { createShare, shareUrl } from "@/lib/sharing";
 import { send, shareMail } from "@/lib/mail";
 import { settings } from "@/lib/settings";
-import { currentWords } from "@/lib/language";
+import { currentLanguage, currentWords } from "@/lib/language";
 import {
   importLibraryFileForUser,
   libraryFileImportMessage,
@@ -439,7 +439,15 @@ export async function shareFolder(_previous: Result, data: FormData): Promise<Re
 
   if (email) {
     const sent = await send(
-      shareMail(email, link, user.name ?? user.login, folder.name, permission === "EDIT", "folder"),
+      shareMail(
+        email,
+        link,
+        user.name ?? user.login,
+        folder.name,
+        permission === "EDIT",
+        "folder",
+        await currentLanguage(),
+      ),
     );
     return sent
       ? { success: shareMailSentMsg(words, email) }

@@ -6,7 +6,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { passwordResetMail, send } from "@/lib/mail";
 import { settings } from "@/lib/settings";
-import { currentWords } from "@/lib/language";
+import { currentLanguage, currentWords } from "@/lib/language";
 import type { Words } from "@/lib/i18n";
 
 export type Result = { error?: string; success?: string };
@@ -48,7 +48,13 @@ export async function requestLink(_previous: Result, data: FormData): Promise<Re
     },
   });
 
-  await send(passwordResetMail(email, `${settings.baseUrl}/password?token=${token}`));
+  await send(
+    passwordResetMail(
+      email,
+      `${settings.baseUrl}/password?token=${token}`,
+      await currentLanguage(),
+    ),
+  );
   return answer;
 }
 

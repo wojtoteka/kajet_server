@@ -39,7 +39,7 @@ async function attachmentOwner(
     where: { id: noteId },
     select: { ownerId: true },
   });
-  if (!note) return error("no-note", "Nie ma takiej notatki na serwerze.", 404);
+  if (!note) return error("no-note", words.apiNoSuchNoteOnServer, 404);
   if (who.viewer.userId && note.ownerId === who.viewer.userId) return { ownerId: note.ownerId };
   if (!who.viewer.userId && !new URL(request.url).searchParams.get("t")) {
     return error("missing", words.apiNotSignedIn, 401);
@@ -70,7 +70,7 @@ export const POST = wrapApi(async (request: Request, { params }: { params: Promi
   const name = String(form.get("name") ?? "").trim();
 
   if (!(file instanceof File) || !name) {
-    return error("bad-request", "Brakuje pliku albo jego nazwy.", 400);
+    return error("bad-request", (await apiWords()).apiFileOrNameMissing, 400);
   }
   if (!mayUpload(file.type)) {
     return error(

@@ -12,7 +12,7 @@ import { settings } from "@/lib/settings";
 import { forgetFile, releasePath, sweepUnused, uploadedFile } from "@/lib/app-release";
 import { apkVersion } from "@/lib/apk";
 import { removeAccount } from "@/lib/account-delete";
-import { currentWords } from "@/lib/language";
+import { currentLanguage, currentWords } from "@/lib/language";
 import type { Words } from "@/lib/i18n";
 import {
   accountBlockedMsg,
@@ -171,7 +171,7 @@ export async function createCode(_previous: Result, data: FormData): Promise<Res
   let note = "";
   if (email) {
     const link = `${settings.baseUrl}/register?code=${encodeURIComponent(code)}`;
-    const sent = await send(inviteMail(email, link, admin.name ?? admin.login));
+    const sent = await send(inviteMail(email, link, admin.name ?? admin.login, await currentLanguage()));
     note = sent ? ` ${inviteSentTo(words, email)}` : ` ${words.actInviteMailFailed}`;
   }
 
@@ -398,7 +398,7 @@ export async function changeEmail(_previous: Result, data: FormData): Promise<Re
     },
   });
   const link = `${settings.baseUrl}/confirm?token=${token}`;
-  const sent = await send(confirmationMail(email, link));
+  const sent = await send(confirmationMail(email, link, await currentLanguage()));
 
   await writeToLog(admin.id, "account.email", `${user.login}: ${user.email} -> ${email}`);
 
@@ -433,7 +433,7 @@ export async function sendPasswordReset(_previous: Result, data: FormData): Prom
   });
 
   const link = `${settings.baseUrl}/password?token=${token}`;
-  const sent = await send(passwordResetMail(user.email, link));
+  const sent = await send(passwordResetMail(user.email, link, await currentLanguage()));
 
   await writeToLog(admin.id, "account.password.link", user.login);
 

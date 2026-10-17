@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { createShare, shareUrl } from "@/lib/sharing";
 import { send, shareMail } from "@/lib/mail";
 import { settings } from "@/lib/settings";
-import { apiWords } from "@/lib/language";
+import { apiLanguage, apiWords } from "@/lib/language";
 
 export { OPTIONS } from "@/lib/api";
 
@@ -141,6 +141,7 @@ export const POST = wrapApi(
           folder.name,
           permission === "EDIT",
           "folder",
+          await apiLanguage(),
         ),
       );
     }

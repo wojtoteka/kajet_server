@@ -5,7 +5,7 @@ import path from "node:path";
 import { randomBytes } from "node:crypto";
 import { settings } from "./settings";
 import { apiWords } from "./language";
-import type { Words } from "./i18n";
+import { outputTruncated, programTimedOut, runnerImageMissing, type Words } from "./i18n";
 
 export type Language = {
   id: string;
@@ -309,9 +309,9 @@ function execute(
         clearTimeout(timer);
 
         done({
-          output: truncate(output),
+          output: truncate(output, words),
           errors: interrupted
-            ? `Program działał dłużej niż ${settings.code.timeoutSeconds} s i został przerwany.`
+            ? programTimedOut(words, settings.code.timeoutSeconds)
             : failureText(problem, errors, words),
           exitCode: interrupted ? null : exitCodeOf(problem),
           interrupted,
@@ -388,7 +388,7 @@ function exitCodeOf(problem: unknown): number | null {
  * (ENOENT, gdy nie ma polecenia docker) - i tylko wtedy tłumaczymy ją zdaniem.
  */
 function failureText(problem: unknown, errors: string, words: Words): string {
-  const stderr = truncate(errors);
+  const stderr = truncate(errors, words);
   if (!problem) return stderr;
 
   const code = (problem as { code?: unknown }).code;
@@ -421,10 +421,10 @@ function refusal(reason: string): RunResult {
   return { output: "", errors: reason, exitCode: null, interrupted: false, timeMs: 0 };
 }
 
-function truncate(text: string): string {
+function truncate(text: string, words: Words): string {
   const limit = settings.code.maxOutputChars;
   if (text.length <= limit) return text;
-  return `${text.slice(0, limit)}\n\n[...] Wynik był dłuższy niż ${limit} znaków i reszta została ucięta.`;
+  return `${text.slice(0, limit)}\n\n${outputTruncated(words, limit)}`;
 }
 
 function readableError(problem: Error, dockerErrors: string, words: Words): string {
@@ -432,20 +432,17 @@ function readableError(problem: Error, dockerErrors: string, words: Words): stri
 
   if (code === "ENOENT") {
     return (
-      "Na tym serwerze nie ma Dockera, a bez niego nie uruchamiamy cudzego kodu. " +
+      words.apiNoDocker +
       words.apiInstallDocker
     );
   }
   if (dockerErrors.includes("Unable to find image") || dockerErrors.includes("pull access denied")) {
-    return (
-      `Nie ma obrazu ${settings.code.image}. Zbuduj go poleceniem: ` +
-      `docker build -t ${settings.code.image} docker/`
-    );
+    return runnerImageMissing(words, settings.code.image);
   }
   if (dockerErrors.includes("permission denied") && dockerErrors.includes("docker.sock")) {
     return (
       words.apiNoDockerRights +
-      "Dodaj go do grupy docker i uruchom serwer ponownie."
+      words.apiAddToDockerGroup
     );
   }
   // An unrecognised failure of execFile has the whole docker command line in
