@@ -35,7 +35,7 @@ import {
 import type { MindEdge, MindNode, Page } from "@/lib/document";
 import { LANGUAGES, run, runnerState } from "@/lib/code-runner";
 import { checkLimit, takeSlot } from "@/lib/run-limits";
-import { currentWords } from "@/lib/language";
+import { currentLanguage, currentWords } from "@/lib/language";
 import {
   attachmentAddedMsg,
   attachmentRemovedMsg,
@@ -925,8 +925,10 @@ export async function share(_previous: Result, data: FormData): Promise<Result> 
         email,
         link,
         user.name ?? user.login,
-        note.title || "Bez nazwy",
+        note.title || (await currentWords()).untitled,
         permission === "EDIT",
+        "note",
+        await currentLanguage(),
       ),
     );
     return sent

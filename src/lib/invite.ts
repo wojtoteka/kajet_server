@@ -39,7 +39,7 @@ export function hasFreeSeat(invite: { seats: number; usedSeats: number }): boole
 /** Czy kodem można teraz założyć konto. */
 export async function checkInvite(rawCode: string): Promise<InviteCheck> {
   const code = rawCode.trim();
-  if (!code) return { error: "Wpisz kod zaproszenia." };
+  if (!code) return { error: (await apiWords()).actGiveInviteCode };
 
   const invite = await prisma.inviteCode.findUnique({ where: { code } });
   if (!invite) {

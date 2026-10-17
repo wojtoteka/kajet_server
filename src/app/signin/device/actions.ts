@@ -17,7 +17,7 @@ export async function approveDevice(
   if (!user) redirect("/signin");
 
   const code = String(data.get("code") ?? "").trim();
-  if (!code) return { error: "Brakuje kodu logowania." };
+  if (!code) return { error: (await currentWords()).apiLoginCodeMissing };
 
   const result = await approveLoginChallenge(code, user);
   if (!result.ok) return { error: result.reason };
@@ -37,7 +37,7 @@ export async function denyDevice(
   if (!user) redirect("/signin");
 
   const code = String(data.get("code") ?? "").trim();
-  if (!code) return { error: "Brakuje kodu logowania." };
+  if (!code) return { error: (await currentWords()).apiLoginCodeMissing };
 
   const result = await denyLoginChallenge(code, user);
   if (!result.ok) return { error: result.reason };

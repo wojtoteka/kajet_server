@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { settings, mailWorks } from "./settings";
+import { DEFAULT_LANGUAGE, type Language } from "./i18n";
 
 const globals = globalThis as unknown as {
   kajetMailTransport?: nodemailer.Transporter;
@@ -34,6 +35,14 @@ export type Message = {
   /** Kod do przepisania ręcznie. Wyświetlany dużym pismem maszynowym. */
   code?: string;
   footer?: string;
+  /** Język wiadomości - tylko do zdań, które dokłada sam szablon HTML. */
+  language?: Language;
+};
+
+/** Zdania, które dokłada szablon HTML niezależnie od treści wiadomości. */
+const FALLBACK_HINT: Record<Language, string> = {
+  pl: "Gdyby przycisk nie działał, otwórz ten adres:",
+  en: "If the button does not work, open this address:",
 };
 
 export async function send(message: Message): Promise<boolean> {
@@ -90,7 +99,7 @@ function asHtml(message: Message): string {
          </a>
        </p>
        <p style="margin:16px 0 0 0;color:#67635A;font-size:13px;">
-         Gdyby przycisk nie działał, otwórz ten adres:<br>
+         ${FALLBACK_HINT[message.language ?? DEFAULT_LANGUAGE]}<br>
          <span style="word-break:break-all;">${escapeHtml(message.button.url)}</span>
        </p>`
     : "";
@@ -101,7 +110,7 @@ function asHtml(message: Message): string {
     : "";
 
   return `<!doctype html>
-<html lang="pl"><head><meta charset="utf-8"></head>
+<html lang="${message.language ?? DEFAULT_LANGUAGE}"><head><meta charset="utf-8"></head>
 <body style="margin:0;padding:0;background:#E7E2D6;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#E7E2D6;padding:32px 16px;">
     <tr><td align="center">
@@ -135,10 +144,34 @@ function escapeHtml(text: string): string {
 }
 
 // --- Ready-made messages ---
+//
+// Każda wiadomość istnieje po polsku i po angielsku. Język wybiera ten, kto
+// wywołuje wiadomość (ciasteczko strony albo nagłówek Accept-Language z
+// aplikacji); bez wyboru - na przykład przy nocnym sprzątaniu kont, gdzie nie
+// ma żądania - zostaje polski.
 
-export function confirmationMail(address: string, link: string): Message {
+export function confirmationMail(
+  address: string,
+  link: string,
+  language: Language = DEFAULT_LANGUAGE,
+): Message {
+  if (language === "en") {
+    return {
+      to: address,
+      language,
+      subject: "Confirm your email address for Kajet",
+      heading: "Confirm your email address",
+      body: [
+        "Someone created a Kajet account with this email address. If that was you, confirm it with the button below.",
+        "The link is valid for 24 hours.",
+      ],
+      button: { label: "Confirm email address", url: link },
+      footer: "If you did not create an account, just ignore this message. Nothing will happen.",
+    };
+  }
   return {
     to: address,
+    language,
     subject: "Potwierdź adres w Kajecie",
     heading: "Potwierdź swój adres",
     body: [
@@ -146,13 +179,33 @@ export function confirmationMail(address: string, link: string): Message {
       "Odnośnik jest ważny przez dobę.",
     ],
     button: { label: "Potwierdź adres", url: link },
-    footer: "Jeśli to nie Ty zakładasz konto, po prostu nie klikaj. Nic się nie stanie.",
+    footer: "Jeśli to nie Ty zakładasz konto, po prostu zignoruj tę wiadomość. Nic się nie stanie.",
   };
 }
 
-export function passwordResetMail(address: string, link: string): Message {
+export function passwordResetMail(
+  address: string,
+  link: string,
+  language: Language = DEFAULT_LANGUAGE,
+): Message {
+  if (language === "en") {
+    return {
+      to: address,
+      language,
+      subject: "New password for Kajet",
+      heading: "Set a new password",
+      body: [
+        "We received a request to change the password for your account.",
+        "The link is valid for one hour and works once.",
+      ],
+      button: { label: "Set a new password", url: link },
+      footer:
+        "If you did not request a password change, ignore this message. Your password will stay the same.",
+    };
+  }
   return {
     to: address,
+    language,
     subject: "Nowe hasło do Kajetu",
     heading: "Ustaw nowe hasło",
     body: [
@@ -176,13 +229,34 @@ export function accountDeletionMail(
   address: string,
   code: string,
   minutes: number,
+  language: Language = DEFAULT_LANGUAGE,
 ): Message {
+  if (language === "en") {
+    return {
+      to: address,
+      language,
+      subject: "Kajet account deletion code",
+      heading: "Confirm account deletion",
+      body: [
+        "Someone asked to delete this Kajet account. If that was you, enter the code below on your account page.",
+        `The code is valid for ${minutes} minutes and works once.`,
+        "Once you enter it, the account is deleted immediately, together with all notes, " +
+          "attachments and shared links. This cannot be undone.",
+      ],
+      code,
+      footer:
+        "If you did not request this, ignore this message and change your password – " +
+        "someone may have gained access to your browser. The account will not be deleted " +
+        "without this code.",
+    };
+  }
   return {
     to: address,
-    subject: "Kod do skasowania konta w Kajecie",
-    heading: "Potwierdź skasowanie konta",
+    language,
+    subject: "Kod potwierdzający usunięcie konta w Kajecie",
+    heading: "Potwierdź usunięcie konta",
     body: [
-      "Ktoś poprosił o skasowanie tego konta w Kajecie. Jeśli to Ty, przepisz " +
+      "Ktoś poprosił o usunięcie tego konta w Kajecie. Jeśli to Ty, przepisz " +
         "poniższy kod na stronie konta.",
       `Kod jest ważny przez ${minutes} minut i działa jeden raz.`,
       "Po jego wpisaniu konto zniknie natychmiast, razem ze wszystkimi notatkami, " +
@@ -190,9 +264,9 @@ export function accountDeletionMail(
     ],
     code,
     footer:
-      "Jeśli to nie Ty prosisz o skasowanie konta, zignoruj tę wiadomość i zmień " +
-      "hasło - ktoś mógł dostać się do Twojej przeglądarki. Bez tego kodu konto " +
-      "nie zostanie skasowane.",
+      "Jeśli to nie Ty prosisz o usunięcie konta, zignoruj tę wiadomość i zmień " +
+      "hasło – ktoś mógł dostać się do Twojej przeglądarki. Bez tego kodu konto " +
+      "nie zostanie usunięte.",
   };
 }
 
@@ -207,33 +281,72 @@ export function inactiveAccountMail(
   link: string,
   days: number,
   graceDays: number,
+  language: Language = DEFAULT_LANGUAGE,
 ): Message {
+  if (language === "en") {
+    return {
+      to: address,
+      language,
+      subject: "Your Kajet account will be deleted",
+      heading: "We have not seen you for a while",
+      body: [
+        `There has been no activity on your Kajet account for ${days} days.`,
+        `If you do not sign in within ${graceDays} days, the account will be deleted ` +
+          "together with all notes, attachments and shared links. This cannot be undone.",
+        "To keep it, just sign in – on the website or in the app. Nothing else is needed.",
+      ],
+      button: { label: "Sign in", url: link },
+      footer:
+        "If you no longer need the account, just ignore this message. " +
+        "We will delete it for you.",
+    };
+  }
   return {
     to: address,
-    subject: "Twoje konto w Kajecie zostanie skasowane",
-    heading: "Nie zaglądałeś tu od dawna",
+    language,
+    subject: "Twoje konto w Kajecie zostanie usunięte",
+    heading: "Dawno Cię tu nie było",
     body: [
-      `Na Twoim koncie w Kajecie nie było żadnego ruchu od ${days} dni.`,
-      `Jeśli nie zalogujesz się w ciągu ${graceDays} dni, konto zostanie skasowane ` +
+      `Na Twoim koncie w Kajecie nie było żadnej aktywności od ${days} dni.`,
+      `Jeśli nie zalogujesz się w ciągu ${graceDays} dni, konto zostanie usunięte ` +
         "razem ze wszystkimi notatkami, załącznikami i udostępnionymi odnośnikami. " +
         "Tego się nie da cofnąć.",
-      "Żeby je zatrzymać, wystarczy się zalogować - na stronie albo w aplikacji. " +
+      "Żeby je zachować, wystarczy się zalogować – na stronie albo w aplikacji. " +
         "Nic więcej nie trzeba robić.",
     ],
     button: { label: "Zaloguj się", url: link },
     footer:
       "Jeśli konto nie jest Ci już potrzebne, po prostu zignoruj tę wiadomość. " +
-      "Skasujemy je za Ciebie.",
+      "Usuniemy je automatycznie.",
   };
 }
 
-export function inviteMail(address: string, link: string, fromWhom: string): Message {
+export function inviteMail(
+  address: string,
+  link: string,
+  fromWhom: string,
+  language: Language = DEFAULT_LANGUAGE,
+): Message {
+  if (language === "en") {
+    return {
+      to: address,
+      language,
+      subject: "Invitation to Kajet",
+      heading: "You have been invited to Kajet",
+      body: [
+        `${fromWhom} has invited you to Kajet – a notebook for handwriting, text and mind maps.`,
+        "The invite code is already in the link. All you need to do is enter your email address and a password.",
+      ],
+      button: { label: "Create an account", url: link },
+    };
+  }
   return {
     to: address,
+    language,
     subject: "Zaproszenie do Kajetu",
     heading: "Masz zaproszenie do Kajetu",
     body: [
-      `${fromWhom} zaprasza Cię do Kajetu - notatnika na pismo odręczne, tekst i mapy myśli.`,
+      `${fromWhom} zaprasza Cię do Kajetu – notatnika na pismo odręczne, tekst i mapy myśli.`,
       "Kod zaproszenia jest już wpisany w odnośniku. Wystarczy podać adres i hasło.",
     ],
     button: { label: "Załóż konto", url: link },
@@ -248,10 +361,38 @@ export function shareMail(
   forEditing: boolean,
   /** Notatka albo cały folder - folder z podfolderami i wszystkim w środku. */
   what: "note" | "folder" = "note",
+  language: Language = DEFAULT_LANGUAGE,
 ): Message {
   const folder = what === "folder";
+  if (language === "en") {
+    return {
+      to: address,
+      language,
+      subject: folder
+        ? `${fromWhom} shared a folder with you: ${title}`
+        : `${fromWhom} shared a note with you: ${title}`,
+      heading: forEditing
+        ? folder
+          ? "You can work on this folder together"
+          : "You can edit this note together"
+        : folder
+          ? "A folder has been shared with you"
+          : "A note has been shared with you",
+      body: [
+        folder
+          ? `${fromWhom} has shared the folder “${title}” with you, along with everything in it.`
+          : `${fromWhom} has shared the note “${title}” with you.`,
+        forEditing
+          ? "You have permission to make changes. If you edit at the same time, you will see the other person’s changes as they happen."
+          : "You can read it, but you cannot save changes.",
+        "Once you open the link (signed in with this address), the share is added to your library – on the website and in the Kajet app, marked “shared”. If you have the Kajet app, the link opens straight in it.",
+      ],
+      button: { label: folder ? "Open folder" : "Open note", url: link },
+    };
+  }
   return {
     to: address,
+    language,
     subject: folder
       ? `${fromWhom} udostępnia Ci folder: ${title}`
       : `${fromWhom} udostępnia Ci notatkę: ${title}`,
@@ -269,7 +410,7 @@ export function shareMail(
       forEditing
         ? "Masz prawo do zmian. Jeśli będziecie pisać jednocześnie, zmiany drugiej osoby zobaczysz na bieżąco."
         : "Możesz czytać, ale nie zapiszesz zmian.",
-      "Po otwarciu odnośnika (zalogowany tym adresem) udostępnienie trafi do Twojej biblioteki - na stronie i w aplikacji Kajet, z oznaczeniem „udostępnione”. Jeśli masz aplikację Kajet, odnośnik otworzy się od razu w niej.",
+      "Po otwarciu odnośnika (zalogowany tym adresem) udostępnienie trafi do Twojej biblioteki – na stronie i w aplikacji Kajet, z oznaczeniem „udostępnione”. Jeśli masz aplikację Kajet, odnośnik otworzy się od razu w niej.",
     ],
     button: { label: folder ? "Otwórz folder" : "Otwórz notatkę", url: link },
   };

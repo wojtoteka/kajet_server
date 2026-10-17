@@ -43,7 +43,7 @@ export const POST = wrapApi(async (request: Request) => {
 export const GET = wrapApi(async (request: Request) => {
   const code = new URL(request.url).searchParams.get("code")?.trim() ?? "";
   if (!code) {
-    return error("bad-request", "Brakuje kodu logowania.", 400);
+    return error("bad-request", (await apiWords()).apiLoginCodeMissing, 400);
   }
 
   const result = await pollLoginChallenge(code);

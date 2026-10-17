@@ -25,7 +25,7 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request): Promise<Response> {
   const admin = await currentAdmin();
   if (!admin) {
-    return Response.json({ error: "To miejsce jest tylko dla administratora." }, { status: 403 });
+    return Response.json({ error: (await currentWords()).actAdminOnly }, { status: 403 });
   }
 
   if (!request.body) {

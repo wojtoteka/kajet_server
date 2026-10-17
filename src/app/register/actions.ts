@@ -8,12 +8,12 @@ import { freeLogin, signIn } from "@/lib/auth";
 import { checkInvite, rememberInvite } from "@/lib/invite";
 import { confirmationMail, send } from "@/lib/mail";
 import { settings } from "@/lib/settings";
-import { currentWords } from "@/lib/language";
+import { currentLanguage, currentWords } from "@/lib/language";
 import type { Words } from "@/lib/i18n";
 
 function form(words: Words) {
   return z.object({
-    code: z.string().trim().min(4, "Wpisz kod zaproszenia."),
+    code: z.string().trim().min(4, words.actGiveInviteCode),
     email: z.string().trim().toLowerCase().email(words.actNotAnEmail),
     login: z
       .string()
@@ -169,5 +169,5 @@ async function sendConfirmation(email: string): Promise<void> {
   });
 
   const link = `${settings.baseUrl}/confirm?token=${token}`;
-  await send(confirmationMail(email, link));
+  await send(confirmationMail(email, link, await currentLanguage()));
 }

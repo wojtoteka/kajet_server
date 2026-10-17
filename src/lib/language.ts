@@ -34,13 +34,17 @@ export async function currentWords(): Promise<Words> {
   jednak testy jednostkowe, gdzie żadnego żądania nie ma - i tam zamiast
   wywrócić się na komunikacie o błędzie po prostu bierzemy język domyślny.
 */
-export async function apiWords(): Promise<Words> {
+export async function apiLanguage(): Promise<Language> {
   let header = "";
   try {
     header = (await headers()).get("accept-language") ?? "";
   } catch {
-    return words(DEFAULT_LANGUAGE);
+    return DEFAULT_LANGUAGE;
   }
   const first = header.split(",")[0]?.trim().slice(0, 2).toLowerCase();
-  return words(knownLanguage(first));
+  return knownLanguage(first);
+}
+
+export async function apiWords(): Promise<Words> {
+  return words(await apiLanguage());
 }
