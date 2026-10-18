@@ -22,10 +22,12 @@ export async function PrintableNote({
   return (
     <main className="page print-page">
       <AutoPrint />
-      <h1 style={{ marginBottom: 4 }}>{note.title || words.untitled}</h1>
-      <p className="small" style={{ marginTop: 0, marginBottom: 20 }}>
-        {note.updatedAt.toLocaleString(words.locale)}
-      </p>
+      <header className="print-head">
+        <h1 style={{ marginBottom: 4 }}>{note.title || words.untitled}</h1>
+        <p className="small" style={{ marginTop: 0, marginBottom: 20 }}>
+          {note.updatedAt.toLocaleString(words.locale)}
+        </p>
+      </header>
       {display.tooLarge ? (
         <p className="lead">{words.printTooLarge}</p>
       ) : (

@@ -3231,6 +3231,41 @@ code,
     break-before: page;
   }
 
+  /*
+    Kartka ma proporcje A4, więc na całą szerokość zajmuje całą wysokość
+    strony. Pierwsza nie mieściła się pod tytułem i datą, a że jej się nie
+    tnie, przeskakiwała na drugą stronę - pierwsza zostawała pusta. Nagłówek
+    ma więc stałą wysokość, a pierwsza kartka zmniejsza się o tyle, żeby
+    zmieścić się pod nim. Kolejne zajmują najwyżej całą stronę. Zapas 2 mm
+    chroni przed pustą stroną z zaokrągleń.
+  */
+  .print-head {
+    height: 20mm;
+    overflow: hidden;
+  }
+
+  .print-head h1 {
+    font-size: 20pt;
+    line-height: 1.2;
+  }
+
+  .print-head p {
+    margin-bottom: 0 !important;
+  }
+
+  .print-page figure svg {
+    max-height: calc(100vh - 2mm);
+  }
+
+  .print-page figure:first-of-type svg {
+    max-height: calc(100vh - 20mm - 2mm);
+  }
+
+  /* Odstęp między kartkami na ekranie przeszedłby na górę nowej strony. */
+  .print-page .column:has(> figure) {
+    gap: 0 !important;
+  }
+
   .print-page svg {
     border: none !important;
   }
