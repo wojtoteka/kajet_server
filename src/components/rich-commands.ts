@@ -767,7 +767,7 @@ export function insertPlainText(text: string): void {
  * przy odczycie taki span jest przezroczysty i zostaje sam tabulator.
  */
 export function insertTab(): void {
-  run("insertText", "	");
+  run("insertText", "\t");
 }
 
 export type ParagraphSide = "left" | "center" | "right";

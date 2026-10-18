@@ -124,6 +124,6 @@ describe("czego nie ruszamy", () => {
 
 describe("tabulator", () => {
   it("Tab wpisuje znak tabulacji", () => {
-    expect(at("kod|", "Tab")).toEqual({ kind: "insert", text: "	", caretBack: 0 });
+    expect(at("kod|", "Tab")).toEqual({ kind: "insert", text: "\t", caretBack: 0 });
   });
 });

@@ -531,7 +531,7 @@ function flatInlineToMarkdown(nodes: Inline[]): string {
  * jaki przeglądarka robi przy wpisaniu Taba. Przy odczycie span znika.
  */
 function tabsToHtml(html: string): string {
-  return html.replace(/	/g, '<span class="tab">	</span>');
+  return html.replace(/\t/g, '<span class="tab">\t</span>');
 }
 
 function escapeHtml(text: string): string {

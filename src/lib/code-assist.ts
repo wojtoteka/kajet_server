@@ -88,7 +88,7 @@ export function assistKey(input: {
   const collapsed = start === end;
 
   // 6. Tabulator, tak samo jak w aplikacji. Zaznaczenie zastępuje, jak każdy znak.
-  if (key === "Tab") return shift ? null : { kind: "insert", text: "	", caretBack: 0 };
+  if (key === "Tab") return shift ? null : { kind: "insert", text: "\t", caretBack: 0 };
 
   if (key === "Enter" && collapsed) return keepIndent(text, start);
 
