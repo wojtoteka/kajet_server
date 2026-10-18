@@ -161,6 +161,8 @@ body {
 }
 
 body {
+  /* Tabulator na szerokość czterech spacji, jak w aplikacji. */
+  tab-size: 4;
   background: var(--desk);
   color: var(--text);
   font-family: var(--font-body);
@@ -1241,6 +1243,11 @@ textarea.mono-field {
 
 .rich-text p {
   margin: 0 0 0.65em 0;
+}
+
+/* Tabulator w akapicie (rich-text.ts) - bez tego zlewa się w spację. */
+.rich-text .tab {
+  white-space: pre;
 }
 
 .rich-text > :last-child {

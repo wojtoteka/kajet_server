@@ -5,6 +5,7 @@ import { htmlToMarkdown, markdownToHtml } from "@/lib/rich-text";
 import {
   ensureWritableEnd,
   insertPlainText,
+  insertTab,
   leaveBlock,
   leaveBlockOnArrowDown,
   leaveBlockOnEnter,
@@ -124,6 +125,12 @@ export function RichText({
           if (tabInTable(event.shiftKey)) {
             event.preventDefault();
             onSelect?.();
+          } else if (!event.shiftKey) {
+            // Poza tabelą Tab wpisuje tabulator, jak w aplikacji. Shift+Tab
+            // zostaje przeglądarce - nim da się wyjść z pola klawiaturą.
+            event.preventDefault();
+            insertTab();
+            readOut(event.currentTarget);
           }
           return;
         }

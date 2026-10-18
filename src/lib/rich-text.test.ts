@@ -668,3 +668,18 @@ describe("przycisk H1 na stronie - nagłówek na kawałku bloku", () => {
     expect(headingLevelsIn("Ala", "p", 0, 3)).toEqual([null, null, null]);
   });
 });
+
+describe("tabulator", () => {
+  it("w akapicie dostaje span, żeby nie zlał się w spację", () => {
+    expect(markdownToHtml("a\tb")).toBe('<p>a<span class="tab">\t</span>b</p>');
+  });
+
+  it("wraca do notatki jako znak tabulacji", () => {
+    expect(round("\tz wcięciem")).toBe("\tz wcięciem");
+    expect(round("**gruby**\tdalej")).toBe("**gruby**\tdalej");
+  });
+
+  it("span wstawiony przez przeglądarkę zostaje samym tabulatorem", () => {
+    expect(htmlToMarkdown('<p>a<span style="white-space:pre">\t</span>b</p>')).toBe("a\tb");
+  });
+});

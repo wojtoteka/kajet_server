@@ -525,6 +525,15 @@ function flatInlineToMarkdown(nodes: Inline[]): string {
     .join("");
 }
 
+/**
+ * Tabulator w akapicie. Zwykły tekst zlewa go w jedną spację, więc dostaje
+ * własny span z `white-space: pre` (klasa `tab` w globals.css) - taki sam,
+ * jaki przeglądarka robi przy wpisaniu Taba. Przy odczycie span znika.
+ */
+function tabsToHtml(html: string): string {
+  return html.replace(/	/g, '<span class="tab">	</span>');
+}
+
 function escapeHtml(text: string): string {
   return text
     .replace(/&/g, "&amp;")
@@ -628,7 +637,7 @@ function inlineToHtml(nodes: Inline[], options: HtmlOptions = {}): string {
     .map((node) => {
       switch (node.kind) {
         case "text":
-          return escapeHtml(node.text);
+          return tabsToHtml(escapeHtml(node.text));
         case "break":
           return "<br>";
         case "code":

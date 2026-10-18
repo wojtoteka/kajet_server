@@ -761,6 +761,15 @@ export function insertPlainText(text: string): void {
   run("insertHTML", plainTextToPasteHtml(text));
 }
 
+/**
+ * Znak tabulacji w miejscu kursora. Chrome i Safari same owijają go
+ * w `<span style="white-space:pre">`, żeby nie zlał się w spację;
+ * przy odczycie taki span jest przezroczysty i zostaje sam tabulator.
+ */
+export function insertTab(): void {
+  run("insertText", "	");
+}
+
 export type ParagraphSide = "left" | "center" | "right";
 
 export type Formats = {
