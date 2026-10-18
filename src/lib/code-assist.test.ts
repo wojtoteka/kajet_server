@@ -119,6 +119,11 @@ describe("wcięcie po Enterze", () => {
 describe("czego nie ruszamy", () => {
   it("skróty klawiszowe i strzałki idą bokiem", () => {
     expect(at("kod|", "ArrowLeft")).toBeNull();
-    expect(at("kod|", "Tab")).toBeNull();
+  });
+});
+
+describe("tabulator", () => {
+  it("Tab wpisuje znak tabulacji", () => {
+    expect(at("kod|", "Tab")).toEqual({ kind: "insert", text: "	", caretBack: 0 });
   });
 });

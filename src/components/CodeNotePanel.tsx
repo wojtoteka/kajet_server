@@ -195,6 +195,7 @@ export function CodeNotePanel({
       start: area.selectionStart,
       end: area.selectionEnd,
       html: currentLanguage === "html",
+      shift: event.shiftKey,
     });
     if (!edit) return;
 

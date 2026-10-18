@@ -2,14 +2,16 @@
   Drobna pomoc przy pisaniu kodu - taka jak w VS Code, ale bez pisania za
   człowieka.
 
-  Robi dokładnie pięć rzeczy i ani jednej więcej:
+  Robi dokładnie sześć rzeczy i ani jednej więcej:
 
    1. domyka nawias albo cudzysłów, zostawiając kursor w środku,
    2. przepuszcza kursor przez domknięcie, które już stoi (żeby nie wychodziło
       „))" po dopisaniu własnego),
    3. kasuje pustą parę jednym cofnięciem,
    4. w HTML domyka znacznik: po wpisaniu `<p>` dostawia `</p>` za kursorem,
-   5. po Enterze przepisuje wcięcie z poprzedniego wiersza.
+   5. po Enterze przepisuje wcięcie z poprzedniego wiersza,
+   6. Tab wpisuje znak tabulacji, zamiast przenosić kursor do następnego
+      pola strony (Shift+Tab dalej wychodzi z pola).
 
   Czego NIE robi: nie podpowiada nazw, nie wstawia szkieletów, pętli ani
   gotowych bloków. Kto pisze `if`, dostaje `if`, a nie trzy linijki, które
@@ -80,9 +82,13 @@ export function assistKey(input: {
   start: number;
   end: number;
   html: boolean;
+  shift?: boolean;
 }): CodeAssistEdit | null {
-  const { key, text, start, end, html } = input;
+  const { key, text, start, end, html, shift } = input;
   const collapsed = start === end;
+
+  // 6. Tabulator, tak samo jak w aplikacji. Zaznaczenie zastępuje, jak każdy znak.
+  if (key === "Tab") return shift ? null : { kind: "insert", text: "	", caretBack: 0 };
 
   if (key === "Enter" && collapsed) return keepIndent(text, start);
 
