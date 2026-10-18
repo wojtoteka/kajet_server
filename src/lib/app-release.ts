@@ -106,7 +106,7 @@ export async function receiveUpload(body: ReadableStream<Uint8Array>): Promise<U
 
   if (size < ZIP_MAGIC.byteLength) {
     await rm(temporary, { force: true });
-    return { ok: false, reason: "Plik jest pusty." };
+    return { ok: false, reason: words.apiFileEmpty };
   }
 
   const hash = digest.digest("hex");

@@ -19,7 +19,7 @@ import {
   useDeletionCode,
 } from "@/lib/deletion-code";
 import { writingColumns, writingSettingsFromForm } from "@/lib/writing-settings";
-import { currentWords } from "@/lib/language";
+import { currentLanguage, currentWords } from "@/lib/language";
 import { aiVisibleFor } from "@/lib/ai/access";
 import { setAiConsent } from "@/lib/ai/consent";
 import { tokensRevokedMsg, type Words } from "@/lib/i18n";
@@ -224,7 +224,9 @@ export async function sendDeletionCode(_previous: Result, _data: FormData): Prom
   if (!user) return { error: (await currentWords()).apiMustSignIn };
 
   const code = await issueDeletionCode(user.email);
-  const sent = await send(accountDeletionMail(user.email, formatCode(code), CODE_MINUTES));
+  const sent = await send(
+    accountDeletionMail(user.email, formatCode(code), CODE_MINUTES, await currentLanguage()),
+  );
 
   // Kod bez wiadomości jest bezużyteczny, a zostawiony w bazie tylko czeka na
   // zgadnięcie. Skoro poczta nie poszła, niech nie zostaje po nim ślad.

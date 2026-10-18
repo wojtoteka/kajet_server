@@ -428,9 +428,9 @@ export async function setNoteDeletedForUser(
     where: { id: noteId },
     select: { id: true, ownerId: true, deletedAt: true, version: true },
   });
-  if (!existing) return { status: "error", message: "Nie ma takiej notatki." };
+  if (!existing) return { status: "error", message: (await apiWords()).actNoSuchNote };
   if (existing.ownerId !== userId) {
-    return { status: "error", message: "To nie jest Twoja notatka." };
+    return { status: "error", message: (await apiWords()).actNotYourNote };
   }
 
   const isDeleted = existing.deletedAt != null;
@@ -462,10 +462,10 @@ export async function setNoteFavoriteForUser(
     select: { id: true, ownerId: true, favorite: true, version: true, deletedAt: true },
   });
   if (!existing || existing.deletedAt) {
-    return { status: "error", message: "Nie ma takiej notatki." };
+    return { status: "error", message: (await apiWords()).actNoSuchNote };
   }
   if (existing.ownerId !== userId) {
-    return { status: "error", message: "To nie jest Twoja notatka." };
+    return { status: "error", message: (await apiWords()).actNotYourNote };
   }
   if (existing.favorite === favorite) {
     return { status: "ok", version: existing.version };
@@ -535,7 +535,7 @@ export async function upsertCodeNoteForUser(
     return {
       status: "error",
       code: "wrong-kind",
-      message: "To nie jest notatka z kodem.",
+      message: (await apiWords()).actNotACodeFile,
       httpStatus: 400,
     };
   }
@@ -670,9 +670,9 @@ export async function purgeNoteForUser(
       attachments: { select: { path: true, sizeBytes: true } },
     },
   });
-  if (!existing) return { status: "error", message: "Nie ma takiej notatki." };
+  if (!existing) return { status: "error", message: (await apiWords()).actNoSuchNote };
   if (existing.ownerId !== userId) {
-    return { status: "error", message: "To nie jest Twoja notatka." };
+    return { status: "error", message: (await apiWords()).actNotYourNote };
   }
   if (!existing.deletedAt) {
     return {

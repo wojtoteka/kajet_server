@@ -274,7 +274,7 @@ export function CodeNotePanel({
             >
               {choices.map((entry) => (
                 <option key={entry.id} value={entry.id}>
-                  {words.locale === "en-US" && entry.nameEn ? entry.nameEn : entry.namePl}
+                  {words.locale === "en-GB" && entry.nameEn ? entry.nameEn : entry.namePl}
                 </option>
               ))}
             </select>

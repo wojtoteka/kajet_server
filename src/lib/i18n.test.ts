@@ -52,4 +52,28 @@ describe("język strony", () => {
     );
     expect(same.length).toBeLessThan(Object.keys(pl).length / 4);
   });
+
+  it("oba języki niosą te same miejsca na wstawiane wartości", () => {
+    const pl = words("pl") as Record<string, string>;
+    const en = words("en") as Record<string, string>;
+    const slots = (text: string) => (text.match(/%s|\$\{[^}]+\}/g) ?? []).sort();
+
+    for (const key of Object.keys(pl)) {
+      expect(slots(en[key]), `miejsca na wartości w „${key}"`).toEqual(slots(pl[key]));
+    }
+  });
+
+  it("w napisach nie zostały resztki starego słownictwa", () => {
+    const stale = /[Ss]kasow|[Ss]kasuj|Wyrzuc/;
+    const en = words("en") as Record<string, string>;
+    const pl = words("pl") as Record<string, string>;
+
+    for (const [key, value] of Object.entries(pl)) {
+      expect(value, `polski napis „${key}"`).not.toMatch(stale);
+    }
+    for (const [key, value] of Object.entries(en)) {
+      // Angielski jest brytyjski: colour, favourite, centre, email.
+      expect(value, `angielski napis „${key}"`).not.toMatch(/\bcolor|\bfavorite|\bcenter\b|\be-mail/i);
+    }
+  });
 });

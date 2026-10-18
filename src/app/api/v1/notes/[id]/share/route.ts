@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { createShare, shareUrl } from "@/lib/sharing";
 import { shareMail, send } from "@/lib/mail";
 import { settings } from "@/lib/settings";
-import { apiWords } from "@/lib/language";
+import { apiLanguage, apiWords } from "@/lib/language";
 
 export { OPTIONS } from "@/lib/api";
 
@@ -88,7 +88,7 @@ export const GET = wrapApi(
     const { id: noteId } = await params;
 
     const note = await ownedNote(result.user.id, noteId);
-    if (note === null) return error("not-found", "Nie ma takiej notatki.", 404);
+    if (note === null) return error("not-found", (await apiWords()).actNoSuchNote, 404);
     if (note === "not-yours") {
       return error("not-yours", (await apiWords()).apiNoteNotYours, 403);
     }
@@ -216,8 +216,10 @@ export const POST = wrapApi(
           email,
           shareUrl(base(), token),
           result.user.name ?? result.user.login,
-          note.title || "Bez nazwy",
+          note.title || (await apiWords()).untitled,
           permission === "EDIT",
+          "note",
+          await apiLanguage(),
         ),
       );
     }
