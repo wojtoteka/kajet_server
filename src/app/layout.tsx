@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo, Bricolage_Grotesque, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import { headers } from "next/headers";
 import "./globals.css";
 import { DESK_DARK, DESK_LIGHT, THEME_BOOT_SCRIPT } from "@/lib/theme";
 import { currentLanguage, currentWords } from "@/lib/language";
@@ -63,6 +64,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // Znacznik języka czyta czytnik ekranu i przeglądarka (podpowiedzi
   // tłumaczenia, dzielenie wyrazów), więc idzie za wyborem człowieka.
   const language = await currentLanguage();
+  // Nonce z CSP (src/middleware.ts) - bez niego skrypt z motywem by nie ruszył.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   return (
     <html
@@ -82,7 +85,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           nikt tego nie widzi, ale regulamin i polityka prywatności to
           kilkadziesiąt ekranów tekstu i przez ten czas świeci motyw systemu.
         */}
-        <script data-cfasync="false" dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+        <script
+          nonce={nonce}
+          data-cfasync="false"
+          dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }}
+        />
         {/*
           Żadnych zapytań do Google: pisma tekstowe niesie next/font (wyżej),
           a pismo ikon leży w repo i wczytuje je globals.css (@font-face przy

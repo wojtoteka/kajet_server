@@ -9,6 +9,7 @@ const maxFileBytes =
 
 const config: NextConfig = {
   reactStrictMode: true,
+  poweredByHeader: false,
 
   // Nginx sits in front of the app and handles compression, so it is not needed here.
   compress: false,
@@ -41,6 +42,16 @@ const config: NextConfig = {
 
   async headers() {
     return [
+      {
+        // Na wszystkim, także na API. CSP, X-Frame-Options, COOP i CORP dostają
+        // tylko strony - ustawia je src/middleware.ts.
+        source: "/:path*",
+        headers: [
+          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        ],
+      },
       {
         // The tablet app connects from a different origin than the site, so
         // the API has to allow it explicitly.

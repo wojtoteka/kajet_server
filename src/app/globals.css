@@ -1198,7 +1198,7 @@ textarea.mono-field {
 /*
   Podgląd HTML: biała kartka jak w przeglądarce, nie arkusz Kajetu.
   `color-scheme: light` odcina ramkę od ciemnego motywu strony, żeby
-  przezroczyste body w srcdoc nie brało ciemnego płótna z layoutu.
+  przezroczyste body w ramce nie brało ciemnego płótna z layoutu.
   Samej treści w ramce tu nie ruszamy - płótno dokumentu ustawia
   wstrzyknięcie w lib/code-preview.ts, a arkusz autora wygrywa.
 */

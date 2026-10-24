@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { FULL_ADDRESS, PREVIEW_MESSAGE, previewDocument } from "./code-preview";
+import {
+  FULL_ADDRESS,
+  PREVIEW_MESSAGE,
+  PREVIEW_READY,
+  PREVIEW_SOURCE,
+  previewDocument,
+  previewFrameDocument,
+} from "./code-preview";
 import { words } from "./i18n";
 
 describe("podgląd HTML z notatki", () => {
@@ -91,5 +98,17 @@ describe("podgląd HTML z notatki", () => {
     expect(FULL_ADDRESS.test("#dalej")).toBe(false);
     expect(FULL_ADDRESS.test("mailto:jan.kowalski@example.com")).toBe(false);
     expect(FULL_ADDRESS.test("druga-strona.html")).toBe(false);
+  });
+
+  it("strona ramki prosi o kod i przyjmuje go tylko od strony nadrzędnej", () => {
+    const document = previewFrameDocument();
+    const js = document.slice(document.indexOf("<script>") + 8, document.lastIndexOf("</script>"));
+
+    expect(() => new Function(js)).not.toThrow();
+    expect(js).toContain(JSON.stringify(PREVIEW_READY));
+    expect(js).toContain(JSON.stringify(PREVIEW_SOURCE));
+    expect(js).toContain("event.source !== window.parent");
+    // Otwarta w osobnej karcie nie słucha nikogo.
+    expect(js).toContain("window.parent === window");
   });
 });

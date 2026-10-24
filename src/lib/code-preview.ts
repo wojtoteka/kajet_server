@@ -36,6 +36,21 @@ export const FULL_ADDRESS = /^(https?:)?\/\//i;
  */
 export const PREVIEW_MESSAGE = "kajet-podglad-konsola";
 
+/*
+  Ramka podglądu nie dostaje kodu w `srcdoc`, tylko ładuje osobną stronę
+  (src/app/code-preview/route.ts) i prosi o kod wiadomością.
+
+  Dokument z `srcdoc` dziedziczy CSP strony, w której stoi ramka, a strona
+  notatki wpuszcza tylko własne skrypty z nonce - kod ucznia przestałby
+  działać. Strona ramki ma własną politykę: odcięte pochodzenie (sandbox)
+  i zgodę na osadzenie wyłącznie przez Kajet. Po załadowaniu mówi
+  PREVIEW_READY, panel odpowiada PREVIEW_SOURCE z kodem, a ramka wpisuje go
+  w siebie przez document.write - wtedy obowiązuje jej polityka, nie strony.
+*/
+export const PREVIEW_FRAME_URL = "/code-preview";
+export const PREVIEW_READY = "kajet-podglad-gotowy";
+export const PREVIEW_SOURCE = "kajet-podglad-kod";
+
 /** Początek dokumentu: `<!DOCTYPE html>`, jeśli autor go napisał. */
 const DOCTYPE = /^(\s*<!doctype[^>]*>)/i;
 
@@ -150,4 +165,39 @@ export function previewDocument(source: string, napisy: Words = words("pl")): st
 
   const poczatek = doctype[1];
   return poczatek + wstrzykniety + source.slice(poczatek.length);
+}
+
+/*
+  Strona ramki podglądu. Słucha jednej wiadomości z kodem i tylko od strony,
+  która ją osadziła - otwarta w osobnej karcie (wtedy `parent === window`)
+  niczego nie przyjmie. `document.open` kasuje nasłuch, więc kolejną zmianę
+  kodu panel rysuje w nowej ramce, tak jak wcześniej robił to `srcdoc`.
+
+  O kod prosi kilka razy, aż go dostanie: ramka w HTML-u z serwera wczytuje
+  się często, zanim React podepnie po stronie panelu nasłuch - pierwsza
+  prośba trafiłaby wtedy w próżnię i podgląd zostałby pusty.
+*/
+export function previewFrameDocument(): string {
+  return `<!DOCTYPE html>
+<meta charset="utf-8">
+<script>
+(function () {
+  if (window.parent === window) return;
+  window.addEventListener("message", function (event) {
+    var dane = event.data;
+    if (event.source !== window.parent || !dane || dane.zrodlo !== ${JSON.stringify(PREVIEW_SOURCE)}) return;
+    clearInterval(prosba);
+    document.open();
+    document.write(String(dane.kod));
+    document.close();
+  });
+  var proby = 0;
+  function popros() {
+    window.parent.postMessage({ zrodlo: ${JSON.stringify(PREVIEW_READY)} }, "*");
+    if (++proby >= 100) clearInterval(prosba);
+  }
+  var prosba = setInterval(popros, 100);
+  popros();
+})();
+</script>`;
 }

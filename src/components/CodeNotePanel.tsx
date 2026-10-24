@@ -11,7 +11,13 @@ import {
   useState,
 } from "react";
 import { assistKey, type CodeAssistEdit } from "@/lib/code-assist";
-import { PREVIEW_MESSAGE, previewDocument } from "@/lib/code-preview";
+import {
+  PREVIEW_FRAME_URL,
+  PREVIEW_MESSAGE,
+  PREVIEW_READY,
+  PREVIEW_SOURCE,
+  previewDocument,
+} from "@/lib/code-preview";
 import { useWords } from "@/components/LanguageProvider";
 import { SaveStatus } from "@/components/SaveStatus";
 import { safeAction } from "@/components/safe-action";
@@ -164,6 +170,33 @@ export function CodeNotePanel({
     window.addEventListener("message", listen);
     return () => window.removeEventListener("message", listen);
   }, []);
+
+  /*
+    Kod do podglądu. Ramka ładuje osobną stronę i sama prosi o kod
+    (PREVIEW_READY), a każda zmiana kodu rysuje się w nowej ramce - jak przy
+    `srcdoc`, tylko pod polityką strony ramki zamiast polityki notatki.
+    Szczegóły w lib/code-preview.ts.
+  */
+  const previewHtml = useMemo(
+    () => (previewLanguage ? previewDocument(deferredSource, words) : ""),
+    [previewLanguage, deferredSource, words],
+  );
+  const [preview, setPreview] = useState({ html: previewHtml, revision: 0 });
+  if (preview.html !== previewHtml) setPreview({ html: previewHtml, revision: preview.revision + 1 });
+
+  useEffect(() => {
+    function answer(event: MessageEvent) {
+      const frame = previewRef.current?.contentWindow;
+      if (!frame || event.source !== frame) return;
+      const note = event.data as { zrodlo?: string } | null;
+      if (!note || note.zrodlo !== PREVIEW_READY) return;
+      // Pochodzenie ramki jest odcięte ("null"), więc adresat to "*".
+      frame.postMessage({ zrodlo: PREVIEW_SOURCE, kod: preview.html }, "*");
+    }
+
+    window.addEventListener("message", answer);
+    return () => window.removeEventListener("message", answer);
+  }, [preview.html]);
 
   // Autozapis jak w aplikacji: kod zapisuje się sam po pauzie w pisaniu.
   // Nowy plik zakłada pierwszy zapis, gdy tylko jest w nim cokolwiek.
@@ -377,11 +410,12 @@ export function CodeNotePanel({
             {words.codePreviewAbout}
           </p>
           <iframe
+            key={preview.revision}
             ref={previewRef}
             className="code-html-preview"
             title={words.htmlPreviewFrame}
             sandbox="allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox"
-            srcDoc={previewDocument(deferredSource, words)}
+            src={PREVIEW_FRAME_URL}
             style={{
               width: "100%",
               minHeight: 360,
