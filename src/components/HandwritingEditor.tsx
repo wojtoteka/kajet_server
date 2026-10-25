@@ -333,6 +333,9 @@ export function HandwritingEditor({
   } | null>(null);
   const erasing = useRef(false);
   const svgRef = useRef<SVGSVGElement | null>(null);
+  // Kółko gumki jak w aplikacji. Przesuwamy je wprost na elemencie, żeby
+  // ruch myszy nie przerysowywał całej kartki.
+  const eraserRingRef = useRef<SVGCircleElement | null>(null);
 
   // Autozapis jak w aplikacji: po pauzie w rysowaniu strona zapisuje się sama.
   // Sam zegar siedzi niżej, bo potrzebuje gotowej treści stron.
@@ -499,8 +502,22 @@ export function HandwritingEditor({
     setPages((list) => list.map((entry, i) => (i === index ? transform(entry) : entry)));
   }
 
+  const eraserRadius = Math.max(8, size * 2.5);
+
+  function showEraserRing(x: number, y: number) {
+    const ring = eraserRingRef.current;
+    if (!ring) return;
+    ring.setAttribute("cx", String(x));
+    ring.setAttribute("cy", String(y));
+    ring.style.visibility = "visible";
+  }
+
+  function hideEraserRing() {
+    eraserRingRef.current?.style.setProperty("visibility", "hidden");
+  }
+
   function applyEraser(x: number, y: number) {
-    const radius = Math.max(8, size * 2.5);
+    const radius = eraserRadius;
     patchPage(pageIndex, (current) => {
       const next: Stroke[] = [];
       for (const stroke of current.strokes ?? []) {
@@ -680,6 +697,7 @@ export function HandwritingEditor({
 
     if (tool === "eraser") {
       erasing.current = true;
+      showEraserRing(x, y);
       applyEraser(x, y);
       return;
     }
@@ -738,6 +756,7 @@ export function HandwritingEditor({
       return;
     }
 
+    if (tool === "eraser") showEraserRing(x, y);
     if (tool === "eraser" && erasing.current) {
       applyEraser(x, y);
       return;
@@ -755,9 +774,11 @@ export function HandwritingEditor({
     setDraft(next);
   }
 
-  function onPointerUp() {
+  function onPointerUp(event: React.PointerEvent) {
     imageMove.current = null;
     erasing.current = false;
+    // Palec nie wisi nad kartką, więc po oderwaniu kółko znika.
+    if (event.pointerType === "touch") hideEraserRing();
     if (shapeDrag.current) {
       shapePointerUp();
       return;
@@ -1412,12 +1433,13 @@ export function HandwritingEditor({
             display: "block",
             margin: "0 auto",
             background: "var(--sheet)",
-            cursor: tool === "eraser" ? "cell" : tool === "select" ? "default" : "crosshair",
+            cursor: tool === "eraser" ? "none" : tool === "select" ? "default" : "crosshair",
           }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
+          onPointerLeave={hideEraserRing}
         >
           <PageBackdrop kind={pageBackground} width={width} height={height} />
 
@@ -1573,6 +1595,19 @@ export function HandwritingEditor({
               />
             );
           })}
+
+          {tool === "eraser" ? (
+            <circle
+              ref={eraserRingRef}
+              r={eraserRadius}
+              fill="none"
+              stroke="var(--accent)"
+              strokeWidth="2"
+              vectorEffect="non-scaling-stroke"
+              pointerEvents="none"
+              style={{ visibility: "hidden" }}
+            />
+          ) : null}
         </svg>
       </div>
 
