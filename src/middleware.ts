@@ -88,8 +88,14 @@ export const config = {
         dla Androida). Wywołania akcji serwera (nagłówek Next-Action) też
         omijają middleware: Next.js buforuje w nim treść żądania tylko do 10 MB,
         a gęsta notatka odręczna albo plik do biblioteki potrafi ważyć więcej.
+
+        Z tego samego powodu omija go wgrywanie APK (/admin/app/upload): plik
+        idzie surowo w ciele zapytania, a klonowanie treści na potrzeby
+        middleware gubiło jej początek - serwer dostawał plik bez nagłówka zipa
+        i odpowiadał „To nie wygląda na plik APK". Odpowiedź to JSON, nie
+        strona, więc CSP nie ma tu czego pilnować.
       */
-      source: "/((?!api/|_next/static|_next/image|code-preview|\\.well-known/|icon\\.svg|favicon\\.ico).*)",
+      source: "/((?!api/|admin/app/upload$|_next/static|_next/image|code-preview|\\.well-known/|icon\\.svg|favicon\\.ico).*)",
       missing: [{ type: "header", key: "next-action" }],
     },
   ],
