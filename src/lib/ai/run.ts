@@ -319,6 +319,7 @@ async function remember(
 function failureMessage(failure: AiFailure, words: Words): string {
   if (failure === "timeout") return words.apiAiTimeout;
   if (failure === "rate-limit") return words.apiAiBusy;
+  if (failure === "overloaded") return words.apiAiOverloaded;
   if (failure === "no-call") return words.apiAiNoAnswer;
   return words.apiAiBroken;
 }

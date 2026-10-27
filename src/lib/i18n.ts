@@ -990,6 +990,7 @@ export type Words = {
   apiAiNoInstruction: string;
   apiAiTimeout: string;
   apiAiBusy: string;
+  apiAiOverloaded: string;
   apiAiBroken: string;
   apiAiNoAnswer: string;
   apiAiHistoryCleared: string;
@@ -2337,6 +2338,9 @@ const pl: Words = {
   apiAiBusy:
     "Google nie przyjmuje dziś więcej zapytań od KajetAI. Spróbuj później – notatka " +
     "została nietknięta.",
+  apiAiOverloaded:
+    "Google jest teraz przeciążony i nie odpowiedział KajetAI. Spróbuj za kilka minut – " +
+    "notatka została nietknięta.",
   apiAiBroken: "KajetAI nie połączył się z Google. Notatka została nietknięta.",
   apiAiNoAnswer: "KajetAI nie zaproponował żadnej zmiany. Napisz polecenie inaczej.",
   apiAiHistoryCleared: "Rozmowa z KajetAI przy tej notatce została wyczyszczona.",
@@ -3719,6 +3723,9 @@ const en: Words = {
   apiAiBusy:
     "Google is not taking any more requests from KajetAI today. Try later – the note was " +
     "left untouched.",
+  apiAiOverloaded:
+    "Google is overloaded right now and did not answer KajetAI. Try again in a few " +
+    "minutes – the note was left untouched.",
   apiAiBroken: "KajetAI could not reach Google. The note was left untouched.",
   apiAiNoAnswer: "KajetAI proposed no change. Try writing the instruction differently.",
   apiAiHistoryCleared: "The conversation with KajetAI about this note has been cleared.",

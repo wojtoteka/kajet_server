@@ -331,6 +331,21 @@ describe("gdy coś pójdzie nie tak, notatka zostaje nietknięta", () => {
     expect(upsertNoteForUser).not.toHaveBeenCalled();
   });
 
+  it("Google jest chwilowo przeciążony", async () => {
+    const { route, upsertNoteForUser } = await routeWith({
+      answer: { ok: false, failure: "overloaded", usage: { input: 0, output: 0 }, tookMs: 900 },
+    });
+
+    const response = await route.POST(ask(), noteParams);
+    const body = await response.json();
+
+    expect(response.status).toBe(502);
+    // Człowiek ma usłyszeć „spróbuj za chwilę", a nie że coś się zepsuło
+    // albo że limit skończył się na cały dzień.
+    expect(body.message).toContain("przeciążony");
+    expect(upsertNoteForUser).not.toHaveBeenCalled();
+  });
+
   it("model oddał kształt, którego nie da się zapisać", async () => {
     const { route, upsertNoteForUser } = await routeWith({
       answer: {

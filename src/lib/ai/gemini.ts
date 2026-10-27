@@ -30,7 +30,7 @@ import type { AiTurnRecord } from "./history";
 export type TokenUse = { input: number; output: number };
 
 /** Krótkie powody niepowodzenia. Trafiają do rozliczeń, więc bez zdań. */
-export type AiFailure = "timeout" | "rate-limit" | "key" | "no-call" | "error";
+export type AiFailure = "timeout" | "rate-limit" | "overloaded" | "key" | "no-call" | "error";
 
 export type GeminiResult =
   | {
@@ -69,9 +69,11 @@ function gemini(): GoogleGenAI {
 /**
  * Awarie, przy których warto sięgnąć po model zapasowy.
  *
- * Tylko te dwie, i to nie przypadkiem. „rate-limit" i „error" przychodzą
- * z Google OD RAZU - wyczerpany limit zapytań albo błąd po ich stronie - więc
- * kolejna próba nic człowieka nie kosztuje w oczekiwaniu.
+ * Tylko te trzy, i to nie przypadkiem. „rate-limit", „overloaded" i „error"
+ * przychodzą z Google OD RAZU - wyczerpany limit zapytań, przeciążony model
+ * albo błąd po ich stronie - więc kolejna próba nic człowieka nie kosztuje
+ * w oczekiwaniu. Przeciążenie dotyczy jednego modelu naraz, więc następny
+ * w łańcuchu zwykle odpowiada.
  *
  * Czego tu świadomie nie ma:
  *  - „key": klucz jest ten sam dla wszystkich modeli, więc następny odbije się
@@ -82,7 +84,7 @@ function gemini(): GoogleGenAI {
  *    awaria dostępności i kolejne podejście kosztowałoby cały rachunek za nic.
  */
 function worthAnotherModel(failure: AiFailure): boolean {
-  return failure === "rate-limit" || failure === "error";
+  return failure === "rate-limit" || failure === "overloaded" || failure === "error";
 }
 
 /**
@@ -246,6 +248,11 @@ function classify(problem: unknown, model: string): AiFailure {
   if (status === 401 || status === 403 || /API key|UNAUTHENTICATED|PERMISSION_DENIED/i.test(text)) {
     return "key";
   }
+  // 503 to Google mówiące „za dużo chętnych na ten model, spróbuj później".
+  // Nie usterka u nas ani u nich, tylko chwilowy tłok - stąd bez wpisu
+  // w log błędów; ślad zostaje w ostrzeżeniu o przejściu na zapasowy
+  // i w rozliczeniach.
+  if (status === 503 || /UNAVAILABLE|overloaded|high demand/i.test(text)) return "overloaded";
   if (/abort|timeout|timed out|ETIMEDOUT/i.test(text)) return "timeout";
 
   // Cała treść zostaje w logu serwera: niesie nazwy modeli, kawałki żądania

@@ -117,6 +117,38 @@ describe("model zapasowy", () => {
     expect(wynik.model).toBe(ZAPASOWY_2);
   });
 
+  it("przy przeciążonym modelu przechodzi na zapasowy i nie zgłasza tego jako błąd", async () => {
+    // Dokładnie to, co Google odpowiada przy tłoku na jednym modelu.
+    const { wynik, uzyteModele } = await zapytaj([
+      blad(
+        503,
+        "gemini-3.1-flash-lite is currently experiencing high demand, spikes in demand are " +
+          "usually temporary. Please try again later.",
+      ),
+      udana(),
+    ]);
+
+    expect(uzyteModele).toEqual([GLOWNY, ZAPASOWY_1]);
+    expect(wynik.ok).toBe(true);
+    expect(wynik.model).toBe(ZAPASOWY_1);
+    // Chwilowy tłok u Google to nie usterka - nie ma czego zgłaszać w logu błędów.
+    expect(console.error).not.toHaveBeenCalled();
+  });
+
+  it("gdy przeciążony jest cały łańcuch, mówi o przeciążeniu, a nie o awarii", async () => {
+    const { wynik, uzyteModele } = await zapytaj([
+      blad(503, "high demand"),
+      blad(503, "high demand"),
+      blad(503, "high demand"),
+    ]);
+
+    expect(uzyteModele).toHaveLength(3);
+    expect(wynik.ok).toBe(false);
+    if (wynik.ok) return;
+    expect(wynik.failure).toBe("overloaded");
+    expect(console.error).not.toHaveBeenCalled();
+  });
+
   it("gdy padnie cały łańcuch, oddaje niepowodzenie ostatniego", async () => {
     const { wynik, uzyteModele } = await zapytaj([
       blad(429, "RESOURCE_EXHAUSTED"),
