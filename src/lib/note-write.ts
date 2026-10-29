@@ -10,6 +10,7 @@ import {
 import { deleteAttachmentFileIfUnused, pruneDroppedAttachments } from "@/lib/attachment-delete";
 import { fitTitle } from "@/lib/note-title";
 import { announceGone, recordContentChange, type ChangeOrigin } from "@/lib/live/changes";
+import { packNoteContent } from "@/lib/note-content";
 import { apiWords } from "./language";
 
 /**
@@ -111,6 +112,11 @@ export function planNoteUpsert(
   ownerId: string,
   /** Folder already resolved by {@link resolveFolderId}; undefined = leave. */
   folderId?: string | null,
+  /**
+   * Ile treść zajmie w bazie - po spakowaniu ({@link packNoteContent}), bo tyle
+   * liczy się do limitu miejsca. Bez tego: rozmiar samego dokumentu.
+   */
+  storedBytes = Buffer.byteLength(note.content ?? "", "utf8"),
 ):
   | { action: "unchanged"; version: number }
   | { action: "conflict" }
@@ -153,7 +159,7 @@ export function planNoteUpsert(
 
   return {
     action: "write",
-    addedBytes: Buffer.byteLength(note.content ?? "", "utf8") - (existing?.sizeBytes ?? 0),
+    addedBytes: storedBytes - (existing?.sizeBytes ?? 0),
   };
 }
 
@@ -193,14 +199,19 @@ async function conflictWithServer(noteId: string): Promise<UpsertNoteResult> {
  * po cichu zjadał pierwszy. Warunek na wersji w samym UPDATE sprawia, że
  * przegrany wyścig trafia w zero wierszy i wraca jako zwykły konflikt -
  * a ten klient umie już scalić.
+ *
+ * Warunek na rozmiarze łapie jeszcze dociskanie starych notatek
+ * (note-packer.ts): pakuje notatkę w miejscu, bez nowej wersji, ale z nowym
+ * sizeBytes. Zapis, który czytał wiersz przed nim, policzyłby miejsce w limicie
+ * od starego rozmiaru - wraca więc jako konflikt i idzie jeszcze raz.
  */
 async function updateIfUnchanged(
   noteId: string,
-  readVersion: number,
+  read: { version: number; sizeBytes: number },
   data: Parameters<typeof prisma.note.updateMany>[0]["data"],
 ): Promise<{ version: number; updatedAt: number } | null> {
   const updated = await prisma.note.updateMany({
-    where: { id: noteId, version: readVersion },
+    where: { id: noteId, version: read.version, sizeBytes: read.sizeBytes },
     data: { ...data, version: { increment: 1 } },
   });
   if (updated.count === 0) return null;
@@ -208,7 +219,7 @@ async function updateIfUnchanged(
     where: { id: noteId },
     select: { updatedAt: true },
   });
-  return { version: readVersion + 1, updatedAt: (row?.updatedAt ?? new Date()).getTime() };
+  return { version: read.version + 1, updatedAt: (row?.updatedAt ?? new Date()).getTime() };
 }
 
 /**
@@ -233,8 +244,11 @@ export async function upsertNoteForUser(
   }
 
   const content = note.content ?? "";
-  const size = Buffer.byteLength(content, "utf8");
   const hash = contentHash(content);
+  // W bazie leży treść spakowana i tyle też waży w limicie miejsca. Skrót
+  // zostaje z dokumentu - po nim urządzenia poznają, czy coś się zmieniło.
+  const stored = await packNoteContent(content);
+  const size = Buffer.byteLength(stored, "utf8");
 
   const existing = await prisma.note.findUnique({
     where: { id: note.id },
@@ -264,7 +278,7 @@ export async function upsertNoteForUser(
   }
 
   const folderId = await resolveFolderId(userId, note.folderId);
-  const plan = planNoteUpsert(existing, note, hash, userId, folderId);
+  const plan = planNoteUpsert(existing, note, hash, userId, folderId, size);
 
   if (plan.action === "forbidden") {
     return {
@@ -308,14 +322,14 @@ export async function upsertNoteForUser(
   try {
     let saved: { version: number; updatedAt: number };
     if (existing) {
-      const updated = await updateIfUnchanged(note.id, existing.version, {
+      const updated = await updateIfUnchanged(note.id, existing, {
         // An absent field leaves the note where it is; "" (root) and unknown
         // folders are already straightened out by resolveFolderId.
         folderId: folderId === undefined ? undefined : folderId,
         title: fitTitle(note.title),
         favorite: note.favorite ?? false,
         tags: (note.tags ?? []).join("|"),
-        content,
+        content: stored,
         sizeBytes: size,
         hash,
         // Deletions never reach this branch (they are the "delete" plan), so a
@@ -339,7 +353,7 @@ export async function upsertNoteForUser(
           kind: note.kind,
           favorite: note.favorite ?? false,
           tags: (note.tags ?? []).join("|"),
-          content,
+          content: stored,
           sizeBytes: size,
           hash,
           version: 1,
@@ -348,7 +362,7 @@ export async function upsertNoteForUser(
         // Dwa urządzenia zakładające tę samą notatkę w tej samej chwili -
         // drugie dopisuje się do pierwszego, jak dawniej.
         update: {
-          content,
+          content: stored,
           sizeBytes: size,
           hash,
           version: { increment: 1 },
@@ -512,8 +526,9 @@ export async function upsertCodeNoteForUser(
     deleted: note.deleted,
   };
 
-  const size = Buffer.byteLength(note.content, "utf8");
   const hash = contentHash(note.content);
+  const stored = await packNoteContent(note.content);
+  const size = Buffer.byteLength(stored, "utf8");
 
   const existing = await prisma.note.findUnique({
     where: { id: note.id },
@@ -541,7 +556,7 @@ export async function upsertCodeNoteForUser(
   }
 
   const folderId = await resolveFolderId(userId, note.folderId);
-  const plan = planNoteUpsert(existing, asSync, hash, userId, folderId);
+  const plan = planNoteUpsert(existing, asSync, hash, userId, folderId, size);
 
   if (plan.action === "forbidden") {
     return {
@@ -582,14 +597,14 @@ export async function upsertCodeNoteForUser(
   try {
     let saved: { version: number; updatedAt: number };
     if (existing) {
-      const updated = await updateIfUnchanged(note.id, existing.version, {
+      const updated = await updateIfUnchanged(note.id, existing, {
         // Same rule as in upsertNoteForUser: an absent folderId leaves the
         // note in its folder, "" and unknown folders are resolved above.
         folderId: folderId === undefined ? undefined : folderId,
         title: fitTitle(note.title),
         favorite: note.favorite ?? false,
         tags: (note.tags ?? []).join("|"),
-        content: note.content,
+        content: stored,
         sizeBytes: size,
         hash,
         deletedAt: note.deleted ? new Date() : null,
@@ -610,14 +625,14 @@ export async function upsertCodeNoteForUser(
           kind: "CODE",
           favorite: note.favorite ?? false,
           tags: (note.tags ?? []).join("|"),
-          content: note.content,
+          content: stored,
           sizeBytes: size,
           hash,
           version: 1,
           deletedAt: note.deleted ? new Date() : null,
         },
         update: {
-          content: note.content,
+          content: stored,
           sizeBytes: size,
           hash,
           version: { increment: 1 },

@@ -19,6 +19,9 @@ własny token, więc telefon nie wylogowuje tabletu.
 który leży w pliku `content.json` w katalogu notatki na tablecie. Baza trzyma ten dokument
 plus to, czego w nim nie ma: właściciela, zajęte miejsce i listę udostępnień. Dzięki temu
 synchronizacja jest porównaniem dwóch dokumentów, a nie tłumaczeniem modelu na model.
+W bazie dokument leży spakowany (brotli) i tyle też liczy się do limitu miejsca - gęsta
+notatka odręczna waży tak kilka razy mniej. Na zewnątrz nic się nie zmienia: każda wersja
+aplikacji i strona dostają zwykły JSON, a notatki zapisane wcześniej serwer pakuje sam w tle.
 
 **Rodzaje notatek.** Tekstowa (Markdown z tabelami, obrazkami i skalowaniem szerokości),
 odręczna, mapa myśli, notatka z kodem, podgląd HTML. Każda ma edytor po stronie www, więc

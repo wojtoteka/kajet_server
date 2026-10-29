@@ -1,7 +1,36 @@
+import { promisify } from "node:util";
+import { gunzip } from "node:zlib";
 import { NextResponse } from "next/server";
 import type { User } from "@prisma/client";
 import { userFromHeaders } from "./app-token";
 import { apiWords } from "./language";
+
+/*
+  Aplikacja może wysłać notatkę spakowaną gzipem (Content-Encoding: gzip) -
+  gęsta notatka odręczna kurczy się tak kilka razy, a idzie często przez
+  telefon. Robi to dopiero wtedy, gdy zobaczy ten nagłówek w odpowiedzi
+  serwera: starszy serwer gzipa nie zna i odrzuciłby taką notatkę.
+*/
+export const UPLOAD_ENCODING_HEADER = "x-kajet-upload-encoding";
+
+/** Najwięcej, ile wolno rozpakować z jednego żądania - kilka kB gzipa nie rozdmucha się w gigabajty. */
+const MAX_UNPACKED_BODY = 64 * 1024 * 1024;
+
+const unzip = promisify(gunzip);
+
+/**
+ * Ciało żądania jako JSON, zwykłe albo spakowane gzipem. Rzuca przy
+ * nieczytelnym JSON-ie, nieznanym kodowaniu i za dużej treści - wołający
+ * odpowiada wtedy „złe żądanie", jak przy zwykłym `request.json()`.
+ */
+export async function readJson(request: Request): Promise<unknown> {
+  const encoding = request.headers.get("content-encoding")?.trim().toLowerCase() ?? "";
+  if (encoding === "" || encoding === "identity") return request.json();
+  if (encoding !== "gzip") throw new Error(`unsupported content-encoding: ${encoding}`);
+  const packed = Buffer.from(await request.arrayBuffer());
+  const text = (await unzip(packed, { maxOutputLength: MAX_UNPACKED_BODY })).toString("utf8");
+  return JSON.parse(text);
+}
 
 export function json(
   data: unknown,
@@ -17,6 +46,7 @@ export function json(
     status,
     headers: {
       "content-type": "application/json; charset=utf-8",
+      [UPLOAD_ENCODING_HEADER]: "gzip",
       ...headers,
     },
   });

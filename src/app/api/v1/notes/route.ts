@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { error, userFromRequest, json, wrapApi } from "@/lib/api";
+import { error, userFromRequest, json, readJson, wrapApi } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import {
   SYNC_KINDS,
@@ -93,17 +93,20 @@ export const GET = wrapApi(async (request: Request) => {
 
   // Przycięcie strony do budżetu bajtów - tylko gdy naprawdę wieziemy treść.
   // Samo sprawdzenie „co się zmieniło" (withContent=no) waży tyle co nic.
+  // Liczy się dokument, który pojedzie, a nie sizeBytes: w bazie treść leży
+  // spakowana i waży kilka razy mniej niż JSON w odpowiedzi.
   let page = notes;
   let cutShort = false;
   if (withContent) {
     let carried = 0;
     const fitting: typeof notes = [];
     for (const note of notes) {
-      if (fitting.length > 0 && carried + note.sizeBytes > PAGE_BYTES) {
+      const weight = Buffer.byteLength(note.content ?? "", "utf8");
+      if (fitting.length > 0 && carried + weight > PAGE_BYTES) {
         cutShort = true;
         break;
       }
-      carried += note.sizeBytes;
+      carried += weight;
       fitting.push(note);
     }
     page = fitting;
@@ -134,7 +137,8 @@ export const PUT = wrapApi(async (request: Request) => {
 
   let data: unknown;
   try {
-    data = await request.json();
+    // Aplikacja od 26.11.03 wysyła notatkę spakowaną gzipem - patrz readJson.
+    data = await readJson(request);
   } catch {
     return error("bad-request", (await apiWords()).apiBadRequest, 400);
   }

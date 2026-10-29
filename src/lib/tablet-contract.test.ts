@@ -1,6 +1,7 @@
+import { gzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import { outgoingNoteSchema, SYNC_KINDS } from "./note-write";
-import { json } from "./api";
+import { error, json, readJson } from "./api";
 import { crashBody } from "./crash-report";
 import { LONGEST_REPORT } from "./crash-limits";
 import {
@@ -181,6 +182,46 @@ describe("tablet contract", () => {
     // Storage in CloudClient.kt declares quota/used as String.
     expect(body.storage.quota).toBe("524288000");
     expect(body.storage.used).toBe("1234");
+  });
+
+  it("tells the tablet it may send notes gzipped", () => {
+    // CloudClient.kt waits for exactly this header before it packs an upload;
+    // an older server never sends it and keeps getting plain JSON.
+    expect(json({ ok: true }).headers.get("X-Kajet-Upload-Encoding")).toBe("gzip");
+    expect(error("bad-request", "x", 400).headers.get("X-Kajet-Upload-Encoding")).toBe("gzip");
+  });
+
+  it("reads the note body the tablet sends gzipped", async () => {
+    const body =
+      '{"id":"n1","title":"Fizyka","kind":"HANDWRITTEN","content":"{\\"id\\":\\"n1\\"}","baseVersion":3}';
+    const request = new Request("http://kajet/api/v1/notes", {
+      method: "PUT",
+      headers: { "content-type": "application/json", "content-encoding": "gzip" },
+      body: gzipSync(Buffer.from(body, "utf8")),
+    });
+
+    const parsed = outgoingNoteSchema.safeParse(await readJson(request));
+
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.content).toBe('{"id":"n1"}');
+  });
+
+  it("still reads the plain body older tablets send", async () => {
+    const request = new Request("http://kajet/api/v1/notes", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: '{"id":"n1","title":"","kind":"TEXT","content":"{}","baseVersion":0}',
+    });
+    expect(outgoingNoteSchema.safeParse(await readJson(request)).success).toBe(true);
+  });
+
+  it("turns away a body in an encoding it does not know", async () => {
+    const request = new Request("http://kajet/api/v1/notes", {
+      method: "PUT",
+      headers: { "content-encoding": "br" },
+      body: "{}",
+    });
+    await expect(readJson(request)).rejects.toThrow();
   });
 });
 

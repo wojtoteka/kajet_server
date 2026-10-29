@@ -3,7 +3,8 @@
 
   Najpierw strefa czasowa, potem sprawdzenie, czy baza nadąża za kodem, potem
   sprzątanie: kosz, konta, z których nikt nie korzysta, przeterminowane
-  liczniki zapór i stare zmiany edycji na żywo.
+  liczniki zapór i stare zmiany edycji na żywo. Na końcu pakowanie notatek,
+  które leżą w bazie jeszcze rozpakowane.
   Sprzątania nie trzeba dzięki temu wpisywać do crona: proces i tak chodzi pod
   pm2 przez całą dobę, a sprzątanie wisi na jego zegarze.
 */
@@ -45,4 +46,7 @@ export async function register() {
 
   const { startLiveSweeper } = await import("@/lib/live/changes");
   startLiveSweeper();
+
+  const { startNotePacker } = await import("@/lib/note-packer");
+  startNotePacker();
 }

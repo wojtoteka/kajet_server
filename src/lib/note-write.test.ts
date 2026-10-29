@@ -62,6 +62,7 @@ import { reserveBytes } from "@/lib/quota";
 import { deleteAttachment, deleteNoteDirectory } from "@/lib/files";
 import { deleteAttachmentFileIfUnused, pruneDroppedAttachments } from "@/lib/attachment-delete";
 import { announceGone, recordContentChange } from "@/lib/live/changes";
+import { isPacked, unpackNoteContent } from "@/lib/note-content";
 
 const owner = "user-1";
 
@@ -530,7 +531,8 @@ describe("upsertNoteForUser", () => {
     });
     expect(prisma.note.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: "note-1", version: 2 },
+        // Rozmiar też: dociskanie starych notatek zmienia go bez nowej wersji.
+        where: { id: "note-1", version: 2, sizeBytes: 3 },
         data: expect.objectContaining({
           version: { increment: 1 },
           content: "fresh",
@@ -603,6 +605,30 @@ describe("upsertNoteForUser", () => {
         create: expect.objectContaining({ version: 1 }),
       }),
     );
+  });
+
+  it("stores a large note packed and counts the packed size against the quota", async () => {
+    vi.mocked(prisma.note.findUnique).mockResolvedValue(null);
+    vi.mocked(prisma.note.upsert).mockResolvedValue({ version: 1, updatedAt: new Date() } as never);
+    const points = Array.from({ length: 4000 }, (_, i) => (i * 0.37).toFixed(2)).join(",");
+    const content = `{"handwriting":{"pages":[{"strokes":[{"points":[${points}]}]}]}}`;
+
+    await upsertNoteForUser(owner, note({ kind: "HANDWRITTEN", content, baseVersion: 0 }));
+
+    const create = vi.mocked(prisma.note.upsert).mock.calls[0][0].create as {
+      content: string;
+      sizeBytes: number;
+      hash: string;
+    };
+    expect(isPacked(create.content)).toBe(true);
+    expect(unpackNoteContent(create.content)).toBe(content);
+    expect(create.sizeBytes).toBe(Buffer.byteLength(create.content, "utf8"));
+    expect(create.sizeBytes).toBeLessThan(Buffer.byteLength(content, "utf8") / 2);
+    // Skrót z dokumentu, nie z tego, co leży w bazie - urządzenia porównują dokument.
+    expect(create.hash).toBe(`hash:${content}`);
+    expect(reserveBytes).toHaveBeenCalledWith(owner, create.sizeBytes);
+    // Edycja na żywo dostaje dokument, nie spakowany zapis.
+    expect(recordContentChange).toHaveBeenCalledWith(expect.objectContaining({ after: content }));
   });
 });
 
