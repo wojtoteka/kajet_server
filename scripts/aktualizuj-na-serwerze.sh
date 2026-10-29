@@ -49,7 +49,7 @@ fi
 # Bierz nazwy, a nie napisy z ekranu: napis z przycisku znika, gdy przycisk
 # zniknie, i skrypt zaczyna krzyczeć na poprawnie wgrany kod. Tak padło
 # „Wygląd obok" - przycisk skasowany razem z trybem podglądu obok.
-for znacznik in "checkDatabaseSchema" "useLiveNote" "listSharedFolder" "apkCertificateFingerprint"; do
+for znacznik in "checkDatabaseSchema" "useLiveNote" "listSharedFolder" "apkCertificateFingerprint" "startNotePacker"; do
   if ! grep -rq "$znacznik" src/ 2>/dev/null; then
     echo "ŹLE: w $KATALOG/src nie ma nowego kodu (brak: $znacznik)." >&2
     echo "Nowe pliki nie dojechały - wgraj je jeszcze raz i powtórz." >&2
