@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
+import { libraryHref, newNoteFolderFor, newNoteHref } from "@/lib/new-note-folder";
 import { KajetMark } from "@/components/KajetMark";
 import { MindMapEditor } from "@/components/MindMapEditor";
 import { NoteLive } from "@/components/NoteLive";
@@ -20,9 +21,16 @@ export async function generateMetadata() {
   return { title: (await currentWords()).metaNewMindMap };
 }
 
-export default async function NewMindMapPage() {
+export default async function NewMindMapPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ folder?: string }>;
+}) {
   const user = await currentUser();
-  if (!user) redirect("/signin?next=/note/new/mindmap");
+  // Folder, w którym stoi biblioteka - notatka powstaje w nim, jak w aplikacji.
+  const requestedFolder = (await searchParams).folder;
+  if (!user) redirect(`/signin?next=${encodeURIComponent(newNoteHref("/note/new/mindmap", requestedFolder))}`);
+  const folder = await newNoteFolderFor(user.id, requestedFolder);
 
   const words = await currentWords();
   const seed = defaultMindMapSeed();
@@ -39,7 +47,7 @@ export default async function NewMindMapPage() {
             {words.newMindMapAbout}
           </p>
         </div>
-        <Link className="button compact" href="/library">
+        <Link className="button compact" href={libraryHref(folder.folderId)}>
           {words.cancel}
         </Link>
       </div>
@@ -72,6 +80,7 @@ export default async function NewMindMapPage() {
           initial={{ ...seed, viewX: 0, viewY: 0, zoom: 1 }}
           autoSave={readWritingSettings(user).autoSave}
           submitLabel={words.createMapButton}
+          newNoteFolder={folder}
         />
       </NoteLive>
     </main>

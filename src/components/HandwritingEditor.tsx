@@ -1,5 +1,7 @@
 "use client";
 
+import { NewNoteFolderField } from "@/components/NewNoteFolderField";
+import type { NewNoteFolder } from "@/lib/new-note-folder";
 import {
   startTransition,
   useActionState,
@@ -237,6 +239,7 @@ export function HandwritingEditor({
   initial,
   autoSave = true,
   submitLabel,
+  newNoteFolder,
   attachments = [],
   token,
 }: {
@@ -250,6 +253,11 @@ export function HandwritingEditor({
   /** Ustawienie konta: kartka zapisuje się sama po pauzie w rysowaniu. */
   autoSave?: boolean;
   submitLabel: string;
+  /**
+   * Tylko przy zakładaniu notatki: wybór folderu, w którym ma powstać.
+   * Znika po pierwszym zapisie - dalej folder zmienia się w bibliotece.
+   */
+  newNoteFolder?: NewNoteFolder;
   /** Pliki przy notatce - z nich bierzemy zdjęcia do wstawienia na stronę. */
   attachments?: { name: string; mime: string }[];
   /** Odnośnik do udostępnienia - zdjęcia idą wtedy jego trasą, nie właściciela. */
@@ -1059,6 +1067,7 @@ export function HandwritingEditor({
           placeholder={words.untitled}
         />
       </div>
+      {!saved.noteId && newNoteFolder ? <NewNoteFolderField {...newNoteFolder} /> : null}
 
       <div className="editor-toolbar" role="toolbar" aria-label={words.handwritingToolbar}>
         {(

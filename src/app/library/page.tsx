@@ -34,6 +34,7 @@ import {
   type Words,
 } from "@/lib/i18n";
 import { LIBRARY_FILE_ACCEPT } from "@/lib/library-file";
+import { newNoteHref } from "@/lib/new-note-folder";
 
 export async function generateMetadata() {
   return { title: (await currentWords()).libraryTitle };
@@ -193,6 +194,14 @@ export default async function LibraryPage({
     return text ? `/library?${text}` : "/library";
   }
 
+  /*
+    Nowa notatka powstaje w folderze, w którym akurat stoimy - tak jak
+    w aplikacji. Strona nowej notatki dostaje go w adresie i pokazuje wybór
+    folderu już na nim ustawiony.
+  */
+  const newNoteFolderId = folderFilter && folderFilter !== "__none" ? folderFilter : null;
+  const newHref = (path: string) => newNoteHref(path, newNoteFolderId);
+
   // Spis do wyboru folderu przy notatce - bez licznika, za to z barwą i ikoną.
   const folderChoices = folders.map((folder) => ({
     id: folder.id,
@@ -250,19 +259,19 @@ export default async function LibraryPage({
       */}
       <div className="row-spread library-toolbar" style={{ marginBottom: 20 }}>
         <div className="row library-actions" style={{ flexWrap: "wrap" }}>
-          <Link className="button compact primary" href="/note/new">
+          <Link className="button compact primary" href={newHref("/note/new")}>
             <Icon name="post_add" size={18} />
             {words.newText}
           </Link>
-          <Link className="button compact" href="/note/new/mindmap">
+          <Link className="button compact" href={newHref("/note/new/mindmap")}>
             <Icon name="account_tree" size={18} />
             {words.mindMap}
           </Link>
-          <Link className="button compact" href="/note/new/handwriting">
+          <Link className="button compact" href={newHref("/note/new/handwriting")}>
             <Icon name="draw" size={18} />
             {words.handwritten}
           </Link>
-          <Link className="button compact" href="/note/new/code">
+          <Link className="button compact" href={newHref("/note/new/code")}>
             <Icon name="code" size={18} />
             {words.newCode}
           </Link>
@@ -465,11 +474,11 @@ export default async function LibraryPage({
                 {words.emptyAbout}
               </p>
               <div className="row">
-                <Link className="button primary" href="/note/new">
+                <Link className="button primary" href={newHref("/note/new")}>
                   <Icon name="article" size={18} />
                   {words.textNote}
                 </Link>
-                <Link className="button" href="/note/new/code">
+                <Link className="button" href={newHref("/note/new/code")}>
                   <Icon name="code" size={18} />
                   {words.codeFile}
                 </Link>
