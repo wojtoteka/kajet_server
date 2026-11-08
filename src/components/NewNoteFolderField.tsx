@@ -27,26 +27,31 @@ export function NewNoteFolderField({ folders, folderId }: NewNoteFolder) {
   return (
     <div className="field">
       <label htmlFor="new-note-folder">{words.folder}</label>
-      <span
-        style={{
-          ...folderTint(current?.colorId ?? "bez"),
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-        }}
-      >
+      {/*
+        Znaczek folderu siedzi W polu, przy lewej krawędzi - stojąc obok,
+        odstawał od reszty formularza i rozbijał równą krawędź z tytułem.
+        Ma barwę wybranego folderu, więc od razu widać, dokąd trafi notatka.
+      */}
+      <div style={{ ...folderTint(current?.colorId ?? "bez"), position: "relative" }}>
         <Icon
           name={current ? folderIcon(current.iconId) : "folder_off"}
           size={18}
           filled={Boolean(current)}
           className={`folder-mark${current ? " tinted" : ""}`}
+          style={{
+            position: "absolute",
+            left: 12,
+            top: "50%",
+            transform: "translateY(-50%)",
+            pointerEvents: "none",
+          }}
         />
         <select
           id="new-note-folder"
           name="folderId"
           value={chosen}
           onChange={(event) => setChosen(event.target.value)}
-          style={{ flex: 1 }}
+          style={{ paddingLeft: 42 }}
         >
           <option value="__none">{words.noFolder}</option>
           {folders.map((folder) => (
@@ -55,7 +60,7 @@ export function NewNoteFolderField({ folders, folderId }: NewNoteFolder) {
             </option>
           ))}
         </select>
-      </span>
+      </div>
     </div>
   );
 }
