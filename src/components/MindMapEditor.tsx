@@ -1,5 +1,7 @@
 "use client";
 
+import { NewNoteFolderField } from "@/components/NewNoteFolderField";
+import type { NewNoteFolder } from "@/lib/new-note-folder";
 import {
   startTransition,
   useActionState,
@@ -109,6 +111,7 @@ export function MindMapEditor({
   initial,
   autoSave = true,
   submitLabel,
+  newNoteFolder,
   token,
 }: {
   /** Odnośnik, którym ktoś wszedł - edycja na żywo idzie wtedy przez niego. */
@@ -121,6 +124,11 @@ export function MindMapEditor({
   /** Ustawienie konta: mapa zapisuje się sama po chwili spokoju. */
   autoSave?: boolean;
   submitLabel: string;
+  /**
+   * Tylko przy zakładaniu notatki: wybór folderu, w którym ma powstać.
+   * Znika po pierwszym zapisie - dalej folder zmienia się w bibliotece.
+   */
+  newNoteFolder?: NewNoteFolder;
 }) {
   const words = useWords();
   // safeAction: zapis, który nie doszedł do serwera (stara karta po wdrożeniu,
@@ -798,6 +806,7 @@ export function MindMapEditor({
           placeholder={words.untitled}
         />
       </div>
+      {!saved.noteId && newNoteFolder ? <NewNoteFolderField {...newNoteFolder} /> : null}
 
       {/* --- Pasek: co zrobić z mapą --- */}
       <div className="editor-toolbar" role="toolbar" aria-label={words.mindMapToolbar}>

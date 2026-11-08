@@ -109,6 +109,25 @@ function isAutosave(data: FormData): boolean {
   return String(data.get("autosave") ?? "") === "1";
 }
 
+/**
+ * Folder, do którego trafia NOWA notatka - tak jak w aplikacji, gdzie notatka
+ * powstaje w folderze, w którym akurat się stoi. Strona nowej notatki przysyła
+ * go w polu `folderId` (pusty albo "__none" znaczy: bez folderu).
+ *
+ * Przy zapisie notatki, która już istnieje, pole jest pomijane: folder
+ * zmienia się w bibliotece, a otwarty edytor nie może cofać notatki do
+ * folderu, z którym ją kiedyś otwarto. Cudzy albo nieistniejący folder
+ * odsiewa resolveFolderId - notatka ląduje wtedy poza folderami.
+ */
+function newNoteFolder(data: FormData, existingId: string | undefined): string | null | undefined {
+  if (existingId) return undefined;
+  const raw = data.get("folderId");
+  if (raw == null) return undefined;
+  const value = String(raw).trim();
+  if (!value || value === "__none" || value.length > 64) return null;
+  return value;
+}
+
 const textNoteForm = z.object({
   noteId: z.string().min(1).max(64).optional(),
   title: z.string().max(300),
@@ -205,6 +224,7 @@ export async function saveTextNote(_previous: Result, data: FormData): Promise<R
     baseVersion,
     favorite,
     tags,
+    folderId: newNoteFolder(data, existingId),
   }, liveOrigin(user, data));
 
   if (outcome.status === "error") {
@@ -355,6 +375,7 @@ export async function saveMindMapNote(_previous: Result, data: FormData): Promis
     baseVersion,
     favorite,
     tags,
+    folderId: newNoteFolder(data, existingId),
   }, liveOrigin(user, data));
 
   if (outcome.status === "error") return { error: outcome.message };
@@ -485,6 +506,7 @@ export async function saveHandwritingNote(_previous: Result, data: FormData): Pr
     baseVersion,
     favorite,
     tags,
+    folderId: newNoteFolder(data, existingId),
   }, liveOrigin(user, data));
 
   if (outcome.status === "error") return { error: outcome.message };
@@ -605,6 +627,7 @@ export async function saveCodeNote(_previous: Result, data: FormData): Promise<R
     baseVersion,
     favorite,
     tags,
+    folderId: newNoteFolder(data, existingId),
   }, liveOrigin(user, data));
 
   if (outcome.status === "error") return { error: outcome.message };

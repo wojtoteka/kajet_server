@@ -1,5 +1,7 @@
 "use client";
 
+import { NewNoteFolderField } from "@/components/NewNoteFolderField";
+import type { NewNoteFolder } from "@/lib/new-note-folder";
 import {
   startTransition,
   useActionState,
@@ -158,6 +160,7 @@ export function TextNoteEditor({
   autoSave = true,
   bold = false,
   submitLabel,
+  newNoteFolder,
   token,
 }: {
   action: Action;
@@ -173,6 +176,11 @@ export function TextNoteEditor({
   /** Ustawienie konta: grube pismo w polu do pisania. */
   bold?: boolean;
   submitLabel: string;
+  /**
+   * Tylko przy zakładaniu notatki: wybór folderu, w którym ma powstać.
+   * Znika po pierwszym zapisie - dalej folder zmienia się w bibliotece.
+   */
+  newNoteFolder?: NewNoteFolder;
   /** Odnośnik do udostępnienia - zdjęcia idą wtedy jego trasą, nie właściciela. */
   token?: string;
 }) {
@@ -848,6 +856,7 @@ export function TextNoteEditor({
           placeholder={words.untitled}
         />
       </div>
+      {!saved.noteId && newNoteFolder ? <NewNoteFolderField {...newNoteFolder} /> : null}
 
       {/*
         Pasek na ikonach z fonts.google.com/icons - tak samo jak w mapie myśli

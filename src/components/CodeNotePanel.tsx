@@ -1,5 +1,7 @@
 "use client";
 
+import { NewNoteFolderField } from "@/components/NewNoteFolderField";
+import type { NewNoteFolder } from "@/lib/new-note-folder";
 import {
   startTransition,
   useActionState,
@@ -63,6 +65,7 @@ export function CodeNotePanel({
   runnerHint,
   autoSave = true,
   submitLabel,
+  newNoteFolder,
 }: {
   saveAction: SaveAction;
   runAction: RunAction;
@@ -77,6 +80,11 @@ export function CodeNotePanel({
   /** Ustawienie konta: plik zapisuje się sam po pauzie w pisaniu. */
   autoSave?: boolean;
   submitLabel: string;
+  /**
+   * Tylko przy zakładaniu pliku: wybór folderu, w którym ma powstać.
+   * Znika po pierwszym zapisie - dalej folder zmienia się w bibliotece.
+   */
+  newNoteFolder?: NewNoteFolder;
 }) {
   const words = useWords();
   // safeAction: wywołanie, które nie doszło do serwera (stara karta po
@@ -313,6 +321,8 @@ export function CodeNotePanel({
             </select>
           </div>
         </div>
+
+        {!saved.noteId && newNoteFolder ? <NewNoteFolderField {...newNoteFolder} /> : null}
 
         <div className="field">
           <label htmlFor="code-source">{words.codeWord}</label>
