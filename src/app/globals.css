@@ -41,7 +41,7 @@
   --space-6: 32px;
   --space-7: 48px;
 
-  /* Pisma z next/font (layout.tsx); nazwy w cudzysĹ‚owach to zapas, gdyby
+  /* Pisma z fonts.css; nazwy w cudzysĹ‚owach to zapas, gdyby
      zmienne nie doszĹ‚y (np. strona bĹ‚Ä™du poza layoutem). */
   --font-heading: var(--font-archivo), "Archivo", "Segoe UI", system-ui, sans-serif;
   --font-body: var(--font-plex-sans), "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;

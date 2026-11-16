@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo, Bricolage_Grotesque, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import { headers } from "next/headers";
+import "./fonts.css";
 import "./globals.css";
 import { DESK_DARK, DESK_LIGHT, THEME_BOOT_SCRIPT } from "@/lib/theme";
 import { currentLanguage, currentWords } from "@/lib/language";
@@ -8,36 +8,10 @@ import { LanguageProvider } from "@/components/LanguageProvider";
 import { SiteFooter } from "@/components/SiteFooter";
 
 /*
-  Pisma tekstowe strony. next/font ściąga je raz, przy budowaniu, i serwuje
-  z naszego serwera - przeglądarka nie czeka już na arkusz z serwera Google,
-  zanim cokolwiek narysuje. Każde pismo trafia do zmiennej CSS, po którą
-  sięga globals.css (--font-heading, --font-body, --font-mono).
-
-  latin-ext to polskie znaki. Archivo i Bricolage są pismami zmiennymi,
-  więc nie wymieniamy grubości; Plex istnieje tylko w stałych odmianach.
+  Pisma tekstowe strony leżą w repo i opisuje je fonts.css (zmienne
+  --font-archivo, --font-bricolage, --font-plex-sans, --font-plex-mono, po które
+  sięga globals.css). Build nie pyta o nie Google - patrz komentarz w fonts.css.
 */
-const archivo = Archivo({
-  subsets: ["latin", "latin-ext"],
-  variable: "--font-archivo",
-  display: "swap",
-});
-const bricolage = Bricolage_Grotesque({
-  subsets: ["latin", "latin-ext"],
-  variable: "--font-bricolage",
-  display: "swap",
-});
-const plexSans = IBM_Plex_Sans({
-  subsets: ["latin", "latin-ext"],
-  weight: ["400", "500", "600"],
-  variable: "--font-plex-sans",
-  display: "swap",
-});
-const plexMono = IBM_Plex_Mono({
-  subsets: ["latin", "latin-ext"],
-  weight: ["400", "500"],
-  variable: "--font-plex-mono",
-  display: "swap",
-});
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -68,10 +42,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   return (
-    <html
-      lang={language}
-      className={`${archivo.variable} ${bricolage.variable} ${plexSans.variable} ${plexMono.variable}`}
-    >
+    <html lang={language}>
       <head>
         {/*
           Zapisany wybór motywu stawiamy przed pierwszym rysowaniem strony -
@@ -91,9 +62,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }}
         />
         {/*
-          Żadnych zapytań do Google: pisma tekstowe niesie next/font (wyżej),
-          a pismo ikon leży w repo i wczytuje je globals.css (@font-face przy
-          klasie .ms). Oba są przycięte do tego, czego strona używa.
+          Żadnych zapytań do Google: pisma tekstowe leżą w repo (fonts.css),
+          tak samo pismo ikon, które wczytuje globals.css (@font-face przy
+          klasie .ms).
         */}
       </head>
       {/* Edytory są klienckie i nie dosięgną ciasteczek serwera - język,
