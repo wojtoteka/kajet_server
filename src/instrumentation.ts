@@ -13,6 +13,10 @@ export async function register() {
   // Middleware i brzeg dostają ten sam plik, a tam nie ma ani bazy, ani dysku.
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
 
+  // Boty i stare karty pukające nieznanymi akcjami serwera - patrz quiet-logs.ts.
+  const { installQuietLogs } = await import("@/lib/quiet-logs");
+  installQuietLogs();
+
   /*
     Strefa czasowa, zanim cokolwiek policzy jakąkolwiek datę.
 
