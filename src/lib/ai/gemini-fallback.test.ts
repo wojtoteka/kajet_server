@@ -162,6 +162,53 @@ describe("model zapasowy", () => {
     expect(wynik.failure).toBe("rate-limit");
   });
 
+  it("model wycofany przez Google przeskakuje na następny, bez zrzutu do logu błędów", async () => {
+    // Dokładnie to, co przyszło z Google dla gemini-2.5-flash-lite.
+    const { wynik, uzyteModele } = await zapytaj([
+      blad(
+        404,
+        "This model models/gemini-2.5-flash-lite is no longer available to new users. " +
+          "Please update your code to use models/gemini-3.5-flash-lite for the latest features and improvements.",
+      ),
+      udana(),
+    ]);
+
+    expect(uzyteModele).toEqual([GLOWNY, ZAPASOWY_1]);
+    expect(wynik.ok).toBe(true);
+    expect(wynik.model).toBe(ZAPASOWY_1);
+    expect(console.error).not.toHaveBeenCalled();
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining("wycofany"));
+  });
+
+  it("wycofany model na końcu łańcucha nie przykrywa przeciążenia wcześniejszych", async () => {
+    const { wynik, uzyteModele } = await zapytaj([
+      blad(503, "high demand"),
+      blad(503, "high demand"),
+      blad(404, "This model models/gemini-2.5-flash-lite is no longer available to new users."),
+    ]);
+
+    expect(uzyteModele).toHaveLength(3);
+    expect(wynik.ok).toBe(false);
+    if (wynik.ok) return;
+    // Człowiek ma zobaczyć „przeciążony, spróbuj za chwilę", a nie „awaria".
+    expect(wynik.failure).toBe("overloaded");
+    expect(console.error).not.toHaveBeenCalled();
+  });
+
+  it("domyślny łańcuch nie ma już wycofanego gemini-2.5-flash-lite", async () => {
+    vi.resetModules();
+    vi.doUnmock("@/lib/settings");
+    const previous = process.env.GEMINI_FALLBACK_MODELS;
+    delete process.env.GEMINI_FALLBACK_MODELS;
+    try {
+      const { settings } = await import("@/lib/settings");
+      expect(settings.ai.fallbackModels).not.toContain("gemini-2.5-flash-lite");
+      expect(settings.ai.fallbackModels).toContain("gemini-3.5-flash-lite");
+    } finally {
+      if (previous !== undefined) process.env.GEMINI_FALLBACK_MODELS = previous;
+    }
+  });
+
   it("zły klucz nie uruchamia zapasowych - jest wspólny dla wszystkich", async () => {
     const { wynik, uzyteModele } = await zapytaj([blad(403, "PERMISSION_DENIED")]);
 
