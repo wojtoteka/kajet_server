@@ -192,6 +192,40 @@ describe("bloki", () => {
     expect(round("- mleko\n  - tłuste\n- chleb")).toBe("- mleko\n  - tłuste\n- chleb");
   });
 
+  it("pusty wiersz w liście numerowanej nie zaczyna liczenia od 1", () => {
+    // Tak przychodzi lista z tabletu: pozycje rozdzielone pustym wierszem.
+    expect(markdownToHtml("1. punkt\n\n2. punkt")).toBe(
+      '<ol><li>punkt</li></ol><ol start="2"><li>punkt</li></ol>',
+    );
+    expect(round("1. punkt\n\n2. punkt\n\n3. punkt")).toBe("1. punkt\n\n2. punkt\n\n3. punkt");
+  });
+
+  it("lista zepsuta wcześniejszym zapisem ze strony wraca do kolejnych numerów", () => {
+    expect(round("1. punkt\n\n1. punkt")).toBe("1. punkt\n\n2. punkt");
+  });
+
+  it("lista zaczęta od innego numeru zostaje przy nim", () => {
+    expect(markdownToHtml("3. trzy\n4. cztery")).toBe('<ol start="3"><li>trzy</li><li>cztery</li></ol>');
+    expect(round("3. trzy\n4. cztery")).toBe("3. trzy\n4. cztery");
+  });
+
+  it("wiersz spoza listy przerywa numerację, jak w aplikacji", () => {
+    expect(round("1. raz\n2. dwa\n\nZwykły akapit\n\n1. znowu")).toBe(
+      "1. raz\n2. dwa\n\nZwykły akapit\n\n1. znowu",
+    );
+    expect(round("1. raz\n\n# Tytuł\n\n1. znowu")).toBe("1. raz\n\n# Tytuł\n\n1. znowu");
+  });
+
+  it("podlista numerowana liczy się osobno, a lista nad nią idzie dalej", () => {
+    expect(round("1. raz\n  1. a\n  2. b\n\n2. dwa")).toBe("1. raz\n  1. a\n  2. b\n\n2. dwa");
+  });
+
+  it("lista z pola do pisania liczy od swojego start", () => {
+    expect(htmlToMarkdown('<ol start="4"><li>cztery</li><li>pięć</li></ol>')).toBe(
+      "4. cztery\n5. pięć",
+    );
+  });
+
   it("blok kodu i wzór", () => {
     expect(markdownToHtml("```\nprint(1)\n```")).toBe(
       '<pre data-kind="code">print(1)</pre>',

@@ -824,6 +824,8 @@ type ListEntry = {
   done: boolean;
   indent: number;
   kind: ListKindMd;
+  /** Numer pozycji listy numerowanej - ten zapisany w treści. */
+  number: number;
   align?: ParagraphAlign | null;
 };
 
@@ -838,14 +840,63 @@ function listEntry(line: string): ListEntry | null {
       done: task[1].toLowerCase() === "x",
       indent: indent.length,
       kind: "task",
+      number: 1,
     };
   }
+  const numbered = /^\d/.test(marker);
   return {
     text: rest,
     done: false,
     indent: indent.length,
-    kind: /^\d/.test(marker) ? "number" : "bullet",
+    kind: numbered ? "number" : "bullet",
+    number: numbered ? Number.parseInt(marker, 10) : 1,
   };
+}
+
+/*
+  Numeracja listy - te same zasady co w aplikacji (TextDocument.renumber):
+  pierwsza pozycja ciągu zachowuje swój numer, każda następna to poprzednia
+  plus jeden, podlisty (głębsze wcięcie) liczą się osobno, a ciąg przerywa
+  wiersz spoza listy. Pusty wiersz ciągu NIE przerywa - tak samo czyta to
+  markdown („1. a", pusty wiersz, „2. b" to jedna lista).
+
+  Wcześniej każdy kawałek listy za pustym wierszem był osobnym <ol>, a ten
+  w przeglądarce zawsze liczy od 1. Notatka z tabletu „1. punkt", pusty
+  wiersz, „2. punkt" wyglądała na stronie jak „1. punkt", „1. punkt" - i tak
+  też wracała do pliku po zapisie ze strony.
+*/
+class ListNumbering {
+  private last = new Map<number, number>();
+
+  /** Numer, pod którym pozycja stoi na kartce. */
+  next(entry: ListEntry): number {
+    for (const indent of [...this.last.keys()]) {
+      if (entry.kind === "number" ? indent > entry.indent : indent >= entry.indent) {
+        this.last.delete(indent);
+      }
+    }
+    if (entry.kind !== "number") return entry.number;
+    const previous = this.last.get(entry.indent);
+    const number = previous !== undefined ? previous + 1 : entry.number;
+    this.last.set(entry.indent, number);
+    return number;
+  }
+
+  /** Wiersz spoza listy - następna lista zaczyna się od swojego numeru. */
+  reset(): void {
+    this.last.clear();
+  }
+}
+
+/** Atrybut `start` listy numerowanej - tylko gdy nie zaczyna się od 1. */
+function listStart(number: number): string {
+  return number === 1 ? "" : ` start="${number}"`;
+}
+
+/** Numer, od którego liczy lista z pola do pisania (`<ol start="3">`). */
+function listStartOf(attrs: Record<string, string>): number {
+  const start = Number.parseInt(attrs.start ?? "", 10);
+  return Number.isFinite(start) && start >= 0 ? start : 1;
 }
 
 /** Buduje jedną listę (razem z podlistami) z wierszy o rosnącym wcięciu. */
@@ -882,7 +933,8 @@ function listToHtml(
     at += 1;
   }
 
-  const attribute = kind === "task" ? ' data-kind="task"' : "";
+  const attribute =
+    kind === "task" ? ' data-kind="task"' : kind === "number" ? listStart(entries[from].number) : "";
   return { html: `<${tag}${attribute}>${parts.join("")}</${tag}>`, next: at };
 }
 
@@ -917,10 +969,14 @@ export function markdownToHtml(markdown: string, options: HtmlOptions = {}): str
     paragraphAlign = null;
   };
 
+  const numbering = new ListNumbering();
+
   let at = 0;
   while (at < lines.length) {
     const line = lines[at];
     const align = aligns[at];
+    // Ciąg listy numerowanej przerywa każdy niepusty wiersz spoza listy.
+    if (line.trim() && !(listEntry(line) && !RULE.test(line))) numbering.reset();
     const fence = /^\s*(```|\$\$)\s*$/.exec(line);
     if (fence) {
       closeParagraph();
@@ -960,7 +1016,7 @@ export function markdownToHtml(markdown: string, options: HtmlOptions = {}): str
       while (at < lines.length) {
         const entry = listEntry(lines[at]);
         if (!entry) break;
-        entries.push({ ...entry, align: aligns[at] });
+        entries.push({ ...entry, number: numbering.next(entry), align: aligns[at] });
         at += 1;
       }
       let index = 0;
@@ -1449,7 +1505,8 @@ function listItems(node: HtmlElement, indent: string, inherited: ParagraphAlign 
   const lines: string[] = [];
   const ordered = node.tag === "ol";
   const task = node.attrs["data-kind"] === "task";
-  let number = 1;
+  // Lista dalej za pustym wierszem liczy od swojego `start`, a nie od nowa.
+  let number = ordered ? listStartOf(node.attrs) : 1;
 
   for (const child of node.children) {
     if (!isElement(child) || child.tag !== "li") continue;
