@@ -190,10 +190,15 @@ maxConcurrent: number("CODE_MAX_CONCURRENT", 3),
      * Wszystkie domyślne są na darmowym poziomie Gemini API. Limity darmowe
      * liczą się osobno dla każdego modelu, więc dłuższy łańcuch to po prostu
      * więcej zapytań, zanim wszystko odmówi.
+     *
+     * gemini-2.5-flash-lite wypadł z łańcucha: Google go wycofał („no longer
+     * available to new users") i każe przejść na gemini-3.5-flash-lite, który
+     * stoi tu na pierwszym miejscu. Model wycofany, a wciąż wpisany w .env,
+     * łańcuch i tak przeskoczy (gemini.ts, „gone").
      */
     fallbackModels: (
       process.env.GEMINI_FALLBACK_MODELS ??
-      "gemini-3.5-flash-lite,gemini-3.8-flash,gemini-3.7-flash,gemini-2.5-flash-lite"
+      "gemini-3.5-flash-lite,gemini-3.8-flash,gemini-3.7-flash"
     )
       .split(",")
       .map((name) => name.trim())

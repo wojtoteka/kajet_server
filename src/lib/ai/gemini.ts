@@ -30,7 +30,15 @@ import type { AiTurnRecord } from "./history";
 export type TokenUse = { input: number; output: number };
 
 /** Krótkie powody niepowodzenia. Trafiają do rozliczeń, więc bez zdań. */
-export type AiFailure = "timeout" | "rate-limit" | "overloaded" | "key" | "no-call" | "error";
+export type AiFailure =
+  | "timeout"
+  | "rate-limit"
+  | "overloaded"
+  | "key"
+  | "no-call"
+  /** Google wycofał model albo go nie zna - to sprawa .env, nie chwilowa awaria. */
+  | "gone"
+  | "error";
 
 export type GeminiResult =
   | {
@@ -82,9 +90,18 @@ function gemini(): GoogleGenAI {
  *    trzecia próba zrobiłyby z tego trzy minuty,
  *  - „no-call": model odpowiedział, tylko nie wywołał narzędzia. To nie jest
  *    awaria dostępności i kolejne podejście kosztowałoby cały rachunek za nic.
+ *
+ * „gone" (model wycofany przez Google) też odpowiada od razu, więc następny
+ * w łańcuchu jest tani - a wycofany model w .env nie może wyłączyć asystentowi
+ * reszty łańcucha.
  */
 function worthAnotherModel(failure: AiFailure): boolean {
-  return failure === "rate-limit" || failure === "overloaded" || failure === "error";
+  return (
+    failure === "rate-limit" ||
+    failure === "overloaded" ||
+    failure === "gone" ||
+    failure === "error"
+  );
 }
 
 /**
@@ -103,12 +120,17 @@ export async function askGemini(input: AskInput): Promise<GeminiResult> {
   const chain = [settings.ai.model, ...settings.ai.fallbackModels];
   const total: TokenUse = { input: 0, output: 0 };
   let last: GeminiResult | null = null;
+  // Niepowodzenie, które coś mówi człowiekowi. Wycofany model na końcu
+  // łańcucha nie może przykryć tego, że wszystkie wcześniejsze były
+  // przeciążone - wtedy ma zobaczyć „przeciążony", a nie „awaria".
+  let telling: Extract<GeminiResult, { ok: false }> | null = null;
 
   for (const [at, model] of chain.entries()) {
     const attempt = await askOneModel(model, input);
     total.input += attempt.usage.input;
     total.output += attempt.usage.output;
     last = attempt;
+    if (!attempt.ok && attempt.failure !== "gone") telling = attempt;
 
     if (attempt.ok) {
       if (at > 0) {
@@ -127,7 +149,7 @@ export async function askGemini(input: AskInput): Promise<GeminiResult> {
   // Do tego miejsca dochodzi się tylko z niepowodzeniem: albo łańcuch się
   // skończył, albo awaria była taka, że kolejny model nic by nie dał.
   return {
-    ...(last as Extract<GeminiResult, { ok: false }>),
+    ...(telling ?? (last as Extract<GeminiResult, { ok: false }>)),
     usage: { ...total },
     tookMs: Date.now() - started,
   };
@@ -244,6 +266,17 @@ function classify(problem: unknown, model: string): AiFailure {
 
   if (status === 429 || /RESOURCE_EXHAUSTED|too many requests|quota/i.test(text)) {
     return "rate-limit";
+  }
+  // Model wycofany albo nieznany: „This model models/gemini-2.5-flash-lite is
+  // no longer available to new users", 404 NOT_FOUND. Sprawdzane przed
+  // kluczem, bo po treści, a nie po samym kodzie stanu. Jedna linijka
+  // ostrzeżenia z nazwą modelu wystarcza, żeby poprawić .env - zrzut stosu
+  // SDK niczego tu nie dodaje.
+  if (status === 404 || /no longer available|NOT_FOUND|is not found|not supported for/i.test(text)) {
+    console.warn(
+      `[ai] model ${model} jest wycofany albo nieznany - usuń go z GEMINI_MODEL / GEMINI_FALLBACK_MODELS (${text})`,
+    );
+    return "gone";
   }
   if (status === 401 || status === 403 || /API key|UNAUTHENTICATED|PERMISSION_DENIED/i.test(text)) {
     return "key";
