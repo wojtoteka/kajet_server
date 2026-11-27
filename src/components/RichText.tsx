@@ -4,12 +4,14 @@ import { useEffect, useRef } from "react";
 import { htmlToMarkdown, markdownToHtml } from "@/lib/rich-text";
 import {
   ensureWritableEnd,
+  insertHardSpace,
   insertPlainText,
   insertTab,
   leaveBlock,
   leaveBlockOnArrowDown,
   leaveBlockOnEnter,
   prepareEditing,
+  skipHiddenBeforeHardSpace,
   tabInTable,
   toggleTaskAt,
 } from "@/components/rich-commands";
@@ -121,6 +123,24 @@ export function RichText({
         readOut(event.currentTarget);
       }}
       onKeyDown={(event) => {
+        /*
+          Twarda spacja, jak w Wordzie: Ctrl+Shift+Spacja. Na Macu Option+Spacja
+          pisze ją sama - przejmujemy ją, żeby przy zapisie nie stała się
+          zwykłą spacją (patrz insertHardSpace).
+        */
+        if (event.code === "Space" || event.key === " " || event.key === "\u00a0") {
+          const ctrlShift = (event.ctrlKey || event.metaKey) && event.shiftKey;
+          const option = event.altKey && !event.ctrlKey && !event.metaKey;
+          if (ctrlShift || option) {
+            event.preventDefault();
+            insertHardSpace();
+            readOut(event.currentTarget);
+            return;
+          }
+        }
+
+        if (event.key === "Backspace") skipHiddenBeforeHardSpace();
+
         if (event.key === "Tab") {
           if (tabInTable(event.shiftKey)) {
             event.preventDefault();

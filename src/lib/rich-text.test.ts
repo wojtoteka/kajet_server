@@ -400,8 +400,32 @@ describe("HTML z przeglądarki", () => {
     );
   });
 
-  it("twarda spacja wraca zwykłą", () => {
+  it("twarda spacja wstawiona przez przeglądarkę wraca zwykłą", () => {
     expect(htmlToMarkdown("<p>dwa&nbsp;słowa</p>")).toBe("dwa słowa");
+    expect(htmlToMarkdown("<p>dwa\u00a0słowa</p>")).toBe("dwa słowa");
+  });
+
+  it("twarda spacja z Ctrl+Shift+Spacja zostaje twardą", () => {
+    expect(htmlToMarkdown('<p>w<span class="hard-space">&nbsp;</span>\u200bdomu</p>')).toBe(
+      "w\u00a0domu",
+    );
+  });
+
+  it("tekst dopisany do środka spanu twardej spacji jest zwykłym tekstem", () => {
+    expect(htmlToMarkdown('<p>w<span class="hard-space">&nbsp;domu</span> i&nbsp; dalej</p>')).toBe(
+      "w\u00a0domu i  dalej",
+    );
+  });
+
+  it("twarda spacja z notatki przechodzi przez pole bez zmiany", () => {
+    const markdown = "Zakupy w\u00a0domu, **5\u00a0kg** jabłek";
+    const html = markdownToHtml(markdown);
+    expect(html).toContain('<span class="hard-space">\u00a0</span>');
+    expect(htmlToMarkdown(html)).toBe(markdown);
+  });
+
+  it("wklejona twarda spacja zostaje twardą", () => {
+    expect(htmlToMarkdown(plainTextToPasteHtml("w\u00a0domu"))).toBe("w\u00a0domu");
   });
 
   it("div zamiast akapitu też jest akapitem", () => {

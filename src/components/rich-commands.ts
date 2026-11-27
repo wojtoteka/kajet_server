@@ -1,6 +1,8 @@
 "use client";
 
 import {
+  HARD_SPACE,
+  HARD_SPACE_CLASS,
   headingInBlock,
   headingLevelsIn,
   htmlToMarkdown,
@@ -768,6 +770,33 @@ export function insertPlainText(text: string): void {
  */
 export function insertTab(): void {
   run("insertText", "\t");
+}
+
+/**
+ * Twarda spacja (Ctrl+Shift+Spacja, na Macu Option+Spacja) - w swoim spanie,
+ * bo tylko po nim przy zapisie widać, że to nie `&nbsp;` wstawione przez
+ * przeglądarkę (patrz HARD_SPACE_CLASS w rich-text.ts). Znak zerowej
+ * szerokości za spanem trzyma kursor na zewnątrz: dalsze pisanie nie wpada
+ * do środka spanu. Przy zapisie znika, jak w pustym nagłówku.
+ */
+export function insertHardSpace(): void {
+  run("insertHTML", `<span class="${HARD_SPACE_CLASS}">${HARD_SPACE}</span>\u200b`);
+}
+
+/**
+ * Backspace tuż za twardą spacją: znak zerowej szerokości za spanem jest
+ * niewidoczny, więc pierwsze naciśnięcie kasowałoby „nic". Kursor staje przed
+ * nim i Backspace zabiera od razu twardą spację - jak każdy inny znak.
+ */
+export function skipHiddenBeforeHardSpace(): void {
+  const current = window.getSelection();
+  if (!current || current.rangeCount === 0 || !current.isCollapsed) return;
+  const node = current.anchorNode;
+  if (!node || node.nodeType !== Node.TEXT_NODE || current.anchorOffset !== 1) return;
+  if ((node as Text).data[0] !== "\u200b") return;
+  const before = node.previousSibling;
+  if (!(before instanceof HTMLElement) || !before.classList.contains(HARD_SPACE_CLASS)) return;
+  current.collapse(node, 0);
 }
 
 export type ParagraphSide = "left" | "center" | "right";
