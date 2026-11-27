@@ -1,8 +1,36 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useWords } from "@/components/LanguageProvider";
-import type { LiveNote } from "@/components/useLiveNote";
+import type { LiveNote, LiveStatus } from "@/components/useLiveNote";
+import { calmLiveShown, calmRecheckIn, type LiveShown } from "@/lib/live/calm";
+
+/**
+ * Napis łącza bez migania: „Połączono" albo „Offline", krótkie zerwania
+ * strumienia go nie ruszają (lib/live/calm.ts).
+ */
+function useCalmStatus(status: LiveStatus): LiveShown {
+  const [shown, setShown] = useState<LiveShown>("none");
+  // Od kiedy strumień nie jest na żywo - nie od każdej próby łączenia.
+  const since = useRef<number | null>(null);
+
+  useEffect(() => {
+    const now = Date.now();
+    if (status === "live" || status === "off") since.current = null;
+    else since.current ??= now;
+    const start = since.current ?? now;
+    const next = calmLiveShown(shown, status, now - start);
+    setShown(next);
+    const wait = calmRecheckIn(next, status, now - start);
+    if (wait === null) return;
+    const timer = setTimeout(() => setShown((current) => calmLiveShown(current, status, Date.now() - start)), wait);
+    return () => clearTimeout(timer);
+    // `shown` celowo poza zależnościami: liczy się tylko zmiana stanu strumienia.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
+
+  return shown;
+}
 
 /*
   Stan edycji na żywo w wierszu etykiety „Tytuł", po prawej: czy jesteśmy
@@ -16,6 +44,7 @@ import type { LiveNote } from "@/components/useLiveNote";
 export function LivePresence<P>({ live }: { live: LiveNote<P> }) {
   const words = useWords();
   const [fresh, setFresh] = useState(false);
+  const shown = useCalmStatus(live.status);
 
   useEffect(() => {
     if (!live.lastAuthor) return;
@@ -34,27 +63,25 @@ export function LivePresence<P>({ live }: { live: LiveNote<P> }) {
     );
   }
 
-  // Gdy w notatce jest ktoś jeszcze, jego inicjały same mówią, że jesteśmy
-  // połączeni - napis mówi wtedy, czyje to kółka.
-  const together = live.status === "live" && live.people.length > 0;
-  const label = together
-    ? words.liveAlsoHere
-    : live.status === "live"
-      ? words.liveNow
-      : live.status === "connecting"
-        ? words.liveConnecting
-        : words.liveOffline;
+  // Pierwsze łączenie po otwarciu: chwila ciszy zamiast „Łączę…".
+  if (shown === "none") return null;
+
+  // Tylko dwa napisy: „Połączono" albo „Offline". Kółka z inicjałami stoją
+  // obok i same mówią, kto jeszcze jest w notatce.
+  const connected = shown === "connected";
+  const label = connected ? words.liveNow : words.liveOffline;
+  const look = connected ? "live" : "offline";
 
   return (
     <div
-      className={`live-presence ${live.status}`}
-      data-status={live.status}
-      title={live.status === "live" ? words.liveNowHint : undefined}
+      className={`live-presence ${look}`}
+      data-status={look}
+      title={connected ? words.liveNowHint : undefined}
       aria-live="polite"
     >
       <span>{label}</span>
       {live.people.length > 0 ? (
-        <span className="live-people" aria-label={together ? undefined : words.liveAlsoHere}>
+        <span className="live-people" aria-label={words.liveAlsoHere}>
           {live.people.map((person) => (
             <span
               key={person.client}
