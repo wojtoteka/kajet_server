@@ -534,6 +534,25 @@ function tabsToHtml(html: string): string {
   return html.replace(/\t/g, '<span class="tab">\t</span>');
 }
 
+/**
+ * Twarda spacja (U+00A0) - spacja, na której wiersz się nie łamie („w domu").
+ * W treści notatki stoi zwykłym znakiem, tak samo pisze ją aplikacja
+ * (Ctrl+Shift+Spacja). W polu do pisania dostaje własny span: przeglądarka
+ * sama wstawia `&nbsp;` przy podwójnych spacjach i spacji na końcu wiersza,
+ * więc tylko twarda spacja w tym spanie jest prawdziwą twardą spacją -
+ * każda inna wraca do notatki zwykłą (plainSpaces).
+ */
+export const HARD_SPACE = "\u00a0";
+export const HARD_SPACE_CLASS = "hard-space";
+
+function hardSpacesToHtml(html: string): string {
+  return html.replace(/\u00a0/g, `<span class="${HARD_SPACE_CLASS}">${HARD_SPACE}</span>`);
+}
+
+function isHardSpaceSpan(node: HtmlElement): boolean {
+  return node.tag === "span" && (node.attrs.class ?? "").split(/\s+/).includes(HARD_SPACE_CLASS);
+}
+
 function escapeHtml(text: string): string {
   return text
     .replace(/&/g, "&amp;")
@@ -637,7 +656,7 @@ function inlineToHtml(nodes: Inline[], options: HtmlOptions = {}): string {
     .map((node) => {
       switch (node.kind) {
         case "text":
-          return tabsToHtml(escapeHtml(node.text));
+          return tabsToHtml(hardSpacesToHtml(escapeHtml(node.text)));
         case "break":
           return "<br>";
         case "code":
@@ -750,7 +769,8 @@ function chunkToPasteHtml(chunk: string): string {
     parts.push(`<p>${paragraph.join("<br>")}</p>`);
     paragraph = [];
   };
-  for (const line of chunk.split("\n")) {
+  // Twarda spacja z wklejonego tekstu (z Worda, z aplikacji) zostaje twardą.
+  for (const line of hardSpacesToHtml(chunk).split("\n")) {
     const heading = headingLine(line);
     if (heading) {
       flush();
@@ -1221,7 +1241,9 @@ const ENTITIES: Record<string, string> = {
   gt: ">",
   quot: '"',
   apos: "'",
-  nbsp: " ",
+  // Twarda spacja zostaje twardą aż do plainSpaces - tylko ta w spanie
+  // twardej spacji ma prawo przejść do notatki.
+  nbsp: "\u00a0",
 };
 
 function decodeEntities(text: string): string {
@@ -1363,6 +1385,20 @@ function inlineFromHtml(nodes: HtmlNode[]): Inline[] {
     const tag = node.tag;
     if (tag === "br") {
       out.push({ kind: "break" });
+      continue;
+    }
+    // Twarda spacja wpisana Ctrl+Shift+Spacja (albo przyszła z notatki).
+    // Tekst dopisany przez przeglądarkę do środka tego spanu jest zwykłym
+    // tekstem - twarde zostają tylko same twarde spacje.
+    if (isHardSpaceSpan(node)) {
+      for (const child of node.children) {
+        if (isElement(child)) {
+          out.push(...inlineFromHtml([child]));
+          continue;
+        }
+        const text = child.text.replace(/\u200b/g, "");
+        if (text) out.push({ kind: "text", text });
+      }
       continue;
     }
     if (tag === "img") {
